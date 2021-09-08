@@ -10,4 +10,4 @@
 
 U should to write the next commands
 *  make
-*  ./progName [argument]
+*  ./progName [argument/arguments]
