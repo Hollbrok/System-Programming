@@ -5,6 +5,7 @@ const int MY_TO_MUCH_ARGUMENTS    = -6;
 const int MY_FORK_ERROR           = -7;
 const int MY_INVALID_NOPROCESS    = -8;
 const int MY_ERROR_SYSCONF        = -9;
+const int MY_ZEROSTRING_ARGV      = -10;
 
 long getNumber(char *numString);
 
@@ -22,6 +23,12 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "Too much arguments (need 2)\n");
         exit(MY_TO_MUCH_ARGUMENTS);
+    }
+
+    if (*argv[1] == '\0')
+    {
+        fprintf(stderr, "zero string argv2\n");
+        exit(MY_ZEROSTRING_ARGV);
     }
 
     long NOProcesses = getNumber(argv[1]);
@@ -57,14 +64,10 @@ int main(int argc, char *argv[])
 
 long getNumber(char *numString)
 {
-    /*if (numString == NULL)
-    {
-        fprintf(stderr, "null string argument\n");
-    }*/
     if (*numString == '\0')
     {
         fprintf(stderr, "empty number argument\n");
-        // exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     errno = 0;
@@ -78,12 +81,12 @@ long getNumber(char *numString)
     if(*endOfEnter != '\0')
     {
         fprintf(stderr, "strtol error\n");
-        // exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     if (errno != 0)
     {
         fprintf(stderr, "strtol error\n");
-        // exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     
     return gNumber;
@@ -94,9 +97,11 @@ void checkNOProcesses(long NOProcesses)
 {
     errno = 0;
 
-    int maxNOProcesse = sysconf(_SC_CHILD_MAX);
+    pid_t curPID = getpid();
 
-    if (maxNOProcesse == -1)
+    int maxNOProcesses = sysconf(_SC_CHILD_MAX);
+
+    if (maxNOProcesses == -1)
     {
         if (errno != 0)
             fprintf(stderr, "INVALID NAME\n");
@@ -106,9 +111,10 @@ void checkNOProcesses(long NOProcesses)
         exit(MY_ERROR_SYSCONF);
     }
 
-    if (NOProcesses > maxNOProcesse)
+    if (NOProcesses + curPID > maxNOProcesses) // check if total number of Processes at the end will not be more than maxNOProcesses
     {
-        fprintf(stderr, "Too big number of simultaneous processes (max = %d)\n", maxNOProcesse);
+        fprintf(stderr, "Too big number of simultaneous processes (current max = max - curPID = %d - %d = %d)\n",
+                maxNOProcesses, curPID, maxNOProcesses - curPID);
         exit(MY_INVALID_NOPROCESS);
     }
 
