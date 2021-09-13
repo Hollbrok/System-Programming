@@ -1,5 +1,4 @@
 #include "libs.h" 
-#include "MyErrors.h"
 
 const int MY_NOT_ENOUGH_ARGUMENTS = -5;
 const int MY_TO_MUCH_ARGUMENTS    = -6;
