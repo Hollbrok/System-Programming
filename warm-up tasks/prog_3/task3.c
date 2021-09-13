@@ -48,17 +48,19 @@ int main(int argc, char *argv[])
         }
         if (!isParent)
         {
-            printf("%ld. NOT Parent, PID: %d\n ", i + 1, getpid());
+            printf("%ld. CHILD, PID: %d\n", i + 1, getpid());
+            //fflush(stdout);
             break;
         }
-        else // Parent
+        else // if(isParent == getpid())  --> Parent
         {
             printf("PARENT, PID: %d\n", getpid());
+            //fflush(stdout);
         }
 
     }
 
-    printf("\n");
+    //printf("\n");
     return 1;
 }
 
