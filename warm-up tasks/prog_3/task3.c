@@ -1,39 +1,50 @@
 #include "libs.h" 
 
-const int MY_NOT_ENOUGH_ARGUMENTS = -5;
-const int MY_TO_MUCH_ARGUMENTS    = -6;
-const int MY_FORK_ERROR           = -7;
-const int MY_INVALID_NOPROCESS    = -8;
-const int MY_ERROR_SYSCONF        = -9;
-const int MY_ZEROSTRING_ARGV      = -10;
+// enum
+
+enum ERRORS_FORK 
+{
+    NOT_ENOUGH_ARGUMENTS = -5,
+    TO_MUCH_ARGUMENTS    = -6,
+    FORK_ERROR           = -7,
+    INVALID_NOPROCESS    = -8,
+    ERROR_SYSCONF        = -9,
+    ZEROSTRING_ARGV      = -10
+};
+
+
 
 long getNumber(char *numString);
 
-void checkNOProcesses(long NOProcesses);
+int checkNOProcesses(long NOProcesses);
 
 int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
         fprintf(stderr, "Program needs 2 arguments\n");
-        exit(MY_NOT_ENOUGH_ARGUMENTS);
+        exit(NOT_ENOUGH_ARGUMENTS);
     }
     
     if (argc > 2)
     {
         fprintf(stderr, "Too much arguments (need 2)\n");
-        exit(MY_TO_MUCH_ARGUMENTS);
+        exit(TO_MUCH_ARGUMENTS);
     }
 
     if (*argv[1] == '\0')
     {
         fprintf(stderr, "zero string argv2\n");
-        exit(MY_ZEROSTRING_ARGV);
+        exit(ZEROSTRING_ARGV);
     }
 
     long NOProcesses = getNumber(argv[1]);
 
-    checkNOProcesses(NOProcesses); // checking valid or invalid NOProcess is
+    if(checkNOProcesses(NOProcesses) != 0) // checking valid or invalid NOProcess is
+    {
+        fprintf(stderr, "Invalid number of processes\n");
+        exit(INVALID_NOPROCESS);
+    }
 
     pid_t isParent;
 
@@ -44,17 +55,17 @@ int main(int argc, char *argv[])
         if (isParent == -1)
         {
             fprintf(stderr, "Error in fork()\n");
-            exit(MY_FORK_ERROR);
+            exit(FORK_ERROR);
         }
         if (!isParent)
         {
-            printf("%ld. CHILD, PID: %d\n", i + 1, getpid());
+            fprintf(stdout, "%ld. CHILD, PID: %d\n", i + 1, getpid());
             //fflush(stdout);
             break;
         }
         else // if(isParent == getpid())  --> Parent
         {
-            printf("PARENT, PID: %d\n", getpid());
+            fprintf(stdout, "PARENT, PID: %d\n", getpid());
             //fflush(stdout);
         }
 
@@ -95,7 +106,7 @@ long getNumber(char *numString)
 
 }
 
-void checkNOProcesses(long NOProcesses)
+int checkNOProcesses(long NOProcesses)
 {
     errno = 0;
 
@@ -110,20 +121,22 @@ void checkNOProcesses(long NOProcesses)
         else
             fprintf(stderr, "limit is indeterminate\n");
     
-        exit(MY_ERROR_SYSCONF);
+        return -1;//exit(ERROR_SYSCONF);
     }
 
-    if (NOProcesses + curPID > maxNOProcesses) // check if total number of Processes at the end will not be more than maxNOProcesses
+    if (NOProcesses + curPID > maxNOProcesses) // check if total number of processes at the end will not be more than maxNOProcesses
     {
         fprintf(stderr, "Too big number of simultaneous processes (current max = max - curPID = %d - %d = %d)\n",
                 maxNOProcesses, curPID, maxNOProcesses - curPID);
-        exit(MY_INVALID_NOPROCESS);
+        return -1;
     }
 
     if (NOProcesses < 0)
     {
         fprintf(stderr, "Invalid value of 2nd argumnet (must be >= 0)\n");
-        exit(MY_INVALID_NOPROCESS);
+        return -1;    
     }
+
+    return 0;
 
 }
