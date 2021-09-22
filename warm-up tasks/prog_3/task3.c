@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     
     if (argc > 2)
     {
-        fprintf(stderr, "Too much arguments (need 2)\n");
+        fprintf(stderr, "Too many arguments (need 1 = number of wanted childs)\n");
         exit(TO_MUCH_ARGUMENTS);
     }
 
