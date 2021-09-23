@@ -48,7 +48,8 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Less then 0 NPThreads\n");
         exit(EXIT_FAILURE);
     }
-    if(NOThreads > 1000000)
+    
+    if (NOThreads > 1000000)
     {
         fprintf(stderr, "Too big NOThreads\n");
         exit(EXIT_FAILURE);
@@ -59,7 +60,7 @@ int main(int argc, const char *argv[])
     {
         pthread_t thread;
 
-        int isError= pthread_create(&thread, NULL, threadStuff, &funcArg);
+        int isError = pthread_create(&thread, NULL, threadStuff, &funcArg);
 
         if (isError)
         {
@@ -114,7 +115,13 @@ long getNumber(const char *numString)
 
 void *threadStuff(void * arg)
 {
-    TESTVAL += 10000;
+    int checkAnomaly = TESTVAL;
+    checkAnomaly += 1;
+    
+    for(int i = 0; i < 100000; i++)
+        printf("");
+
+    TESTVAL = checkAnomaly;
     return NULL;
 }
 
