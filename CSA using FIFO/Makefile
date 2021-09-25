@@ -1,2 +1,2 @@
 all:
-	g++ $(filename).c -o server
+	g++ $(filename).c -o $(filename)
