@@ -38,32 +38,17 @@ enum ERRORS_HANDLER
     SIGPIPE_IGN_ERROR       ,
     WRITE_TO_CLIENT         ,
     ERROR_OPEN_TO_READ_CLIENT,
+    FIFO_HANDLER_SIGNALS    ,
+    SET_SIGHANDLER_ERROR    ,
+
 };
 
 long getNumber(const char *numString);
 
+void handlerFIFO(int sig);
+
 int main(int argc, const char *argv[])
 {
-    /*
-    if (argc < 2)
-    {
-        fprintf(stderr, "Program needs 2 arguments\n");
-        exit(NOT_ENOUGH_ARGUMENTS);
-    }
-    
-    if (argc > 2)
-    {
-        fprintf(stderr, "Too many arguments (need 1 number)\n");
-        exit(TO_MUCH_ARGUMENTS);
-    }
-
-    if (*argv[1] == '\0')
-    {
-        fprintf(stderr, "zero string argv2\n");
-        exit(ZEROSTRING_ARGV);
-    }
-    */
-
 /// 
 
     int serverFd = -1;      // read client request
@@ -76,35 +61,44 @@ int main(int argc, const char *argv[])
 
     char clientFifo[CLIENT_FIFO_NAME_LEN];
 
-//
+// Set signal handlers
 
+    if( (signal(SIGINT, handlerFIFO) == SIG_ERR) || (signal(SIGTERM, handlerFIFO) == SIG_ERR) )
+    {
+        fprintf(stderr, "Can't set signal handler for SIGINT or SIGTERM\n");
+        exit(SET_SIGHANDLER_ERROR);
+    }
+
+
+//
     // Creating FIFO (only 1 for server to read from all clients)
 
     umask(0);       /* So we get the permissions we want */
     errno = 0;
 
-    while (mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP) == -1)
-    {
-        fprintf(stderr, "\nTEST: MKFIFO returns -1\n");
-        perror("TEST: errno?\n");
+    int mkfifoStatus = mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP);
 
-        unlink(SERVER_FIFO);
+    while (mkfifoStatus == -1)
+    {
+        perror("\nTEST: MKFIFO returns -1\nTEST: errno");
+
+        if( unlink(SERVER_FIFO) == -1)
+        {
+            perror("Can't unlink FIFO, exit\n");
+            exit(EXIT_FAILURE);
+        }
+
+        fprintf(stderr, "SUCCESS unlink FIFO, creating new..\n");
+        //exit(EXIT_FAILURE);
 
         if(errno != EEXIST)
         {
             fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
             exit(MKFIFO_NO_EEXIT);
         } 
+
+        mkfifoStatus = mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP);
     }
-    
-    /*if (mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP) == -1 
-        && errno != EEXIST)
-    {
-        fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
-        exit(MKFIFO_NO_EEXIT);
-    } */
-
-
 
     serverFd = open(SERVER_FIFO, O_RDONLY);
     if (serverFd == -1)
@@ -208,4 +202,13 @@ long getNumber(const char *numString)
     
     return gNumber;
 
+}
+
+void handlerFIFO(int sig)
+{
+    unlink(SERVER_FIFO);
+
+    fprintf(stderr, "FIFO handler got SIGNAL: %s\nTERMINATE\n", strsignal(sig));
+
+    exit(FIFO_HANDLER_SIGNALS);
 }
