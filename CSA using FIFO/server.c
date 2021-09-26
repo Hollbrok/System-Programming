@@ -65,7 +65,7 @@ static int getRDofFIFO();
 int main(int argc, const char *argv[])
 {
     int serverRFd = -1;             /* read client request              */
-    int clientFd = -1;              /* read server response             */
+    int clientWFd = -1;             /* write server response            */
 
     struct request req   = {};      /* request to server from client    */
     struct response resp = {};      /* answer to client from server     */
@@ -116,10 +116,25 @@ int main(int argc, const char *argv[])
         
         /* get FD of exclusive client FIFO (see the pic in README) to answer to client                  */
 
-        clientFd = open(clientFifo, O_WRONLY); /* Open failed, give up on client, reading the next data */
-        if (clientFd == -1)         
+        /*  client created a client FIFO and sent a request to the
+            server, but did not open its FIFO, then the server’s attempt to open the client FIFO
+            would block, and other client’s requests would be indefinitely delayed.                     */
+
+        /*  to fix this we should firstly open client FIFO for read and only after this for write*/
+
+        int clientRFd = open(clientFifo, O_RDONLY | O_NONBLOCK);        /* Open failed, give up on client, reading the next data */
+        if (clientRFd == -1)         
         {
-            fprintf(stderr, "client FIFO failed to open."); 
+            fprintf(stderr, "client FIFO failed to open on read."); 
+            continue;
+        }
+
+
+
+        clientWFd = open(clientFifo, O_WRONLY);                         /* Open failed, give up on client, reading the next data */
+        if (clientWFd == -1)         
+        {
+            fprintf(stderr, "client FIFO failed to open on write."); 
             continue;
         }
 
@@ -130,7 +145,7 @@ int main(int argc, const char *argv[])
 
         NO_APPEALS = resp.NOappeals;
 
-        if ( write(clientFd, &resp, sizeof(struct response)) != sizeof(struct response) )
+        if ( write(clientWFd, &resp, sizeof(struct response)) != sizeof(struct response) )
         {
             fprintf(stderr, "Error in write to client\n");
             exit(WRITE_TO_CLIENT);
@@ -138,7 +153,7 @@ int main(int argc, const char *argv[])
 
         printf("SERVER: size of write response = %d\n", sizeof(struct response));
 
-        if ( close(clientFd) != 0 )
+        if ( close(clientWFd) != 0 )
         {
             fprintf(stderr, "Error in close client FD\n");
         }
