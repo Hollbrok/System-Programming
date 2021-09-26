@@ -2,13 +2,16 @@
 
 //////////////////////
 
-#define SERVER_FIFO "/tmp/seqnum_sv"            /* Well-known name for server's FIFO */
+#define SERVER_FIFO "/tmp/seqnum_sv"                /* Well-known name for server's FIFO */
+
+#define SERVER_BACKUP_FILE "/tmp/backup"            /* backup files for save different info */
 
 #define CLIENT_FIFO_TEMPLATE "/tmp/seqnum_cl.%ld"   /* Template for building client FIFO name */
 
-
 #define CLIENT_FIFO_NAME_LEN (sizeof(CLIENT_FIFO_TEMPLATE) + 20)    /* Space required for client FIFO pathname
                                                                     (+20 as a generous allowance for the PID) */
+
+static int NO_APPEALS; 
 
 struct request      /* Request (client --> server) */       
 {                 
@@ -47,6 +50,37 @@ long getNumber(const char *numString);
 
 void handlerFIFO(int sig);
 
+static void updateBackUpFile(void)
+{
+    // Update NO_APPEALS
+
+    int backupFd;
+    if ( (backupFd = open(SERVER_BACKUP_FILE, O_SYNC | O_RDWR)) == -1) 
+    {
+        if ( (backupFd = open(SERVER_BACKUP_FILE, O_SYNC | O_RDWR | O_CREAT, S_IRWXU)) == -1)
+        {
+            perror("Can't create backup file");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if( lseek(backupFd, 0, SEEK_SET) == -1)
+    {
+        perror("lseek");
+    }
+
+    if(write(backupFd, &NO_APPEALS, sizeof(int)) != sizeof(int))
+    {
+        perror("ERROR in updating backup file");
+    }
+
+    if( close(backupFd) == -1)
+    {
+        perror("ERROR in close backup file");
+    }
+
+}
+
 int main(int argc, const char *argv[])
 {
 /// 
@@ -63,13 +97,52 @@ int main(int argc, const char *argv[])
 
 // Set signal handlers
 
-    if( (signal(SIGINT, handlerFIFO) == SIG_ERR) || (signal(SIGTERM, handlerFIFO) == SIG_ERR) )
+    if ( (signal(SIGINT, handlerFIFO) == SIG_ERR) || (signal(SIGTERM, handlerFIFO) == SIG_ERR) )
     {
         fprintf(stderr, "Can't set signal handler for SIGINT or SIGTERM\n");
         exit(SET_SIGHANDLER_ERROR);
     }
 
+//
 
+    int backupFd;
+    if ( (backupFd = open(SERVER_BACKUP_FILE, O_SYNC | O_RDWR)) == -1) 
+    {
+        if ( (backupFd = open(SERVER_BACKUP_FILE, O_SYNC | O_RDWR | O_CREAT, S_IRWXU)) == -1)
+        {
+            perror("Can't create backup file");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (atexit(updateBackUpFile) != 0)
+    {
+        fprintf(stderr, "Can't set exit function\n");
+        exit(EXIT_FAILURE);
+    }  
+    
+
+    struct stat st  = {}; 
+    int backupFSize = 0;
+
+    if (stat(SERVER_BACKUP_FILE, &st) == 0)
+        backupFSize = st.st_size;
+
+    if (backupFSize == 0)
+    {
+        fprintf(stderr, "TEST: backupFSize = 0\n");
+        resp.NOappeal = 0;
+    }
+    else
+    {
+        fprintf(stderr, "TEST: backupFSize = %d\n", backupFSize);
+        if( read(backupFd, &resp.NOappeal, sizeof(int)) != sizeof(int))
+        {
+            perror("Can't read data from backup file");
+            exit(EXIT_FAILURE); // or just = 0, not EXIT
+        }
+        fprintf(stderr, "TEST: read resp.NOappeal = %d\n", resp.NOappeal);
+    }
 //
     // Creating FIFO (only 1 for server to read from all clients)
 
@@ -88,7 +161,7 @@ int main(int argc, const char *argv[])
             exit(EXIT_FAILURE);
         }
 
-        fprintf(stderr, "SUCCESS unlink FIFO, creating new..\n");
+        //fprintf(stderr, "SUCCESS unlink FIFO, creating new..\n");
         //exit(EXIT_FAILURE);
 
         if(errno != EEXIST)
@@ -124,7 +197,7 @@ int main(int argc, const char *argv[])
     
 
     // Getting REQUEST AND SENDING RESPONSE
-    resp.NOappeal = 0;
+    //resp.NOappeal = 0;
 
     while(1)
     {
@@ -151,6 +224,8 @@ int main(int argc, const char *argv[])
 
         resp.sum = req.inNum + req.pid;
         resp.NOappeal += 1;
+
+        NO_APPEALS = resp.NOappeal;
 
         if ( write(clientFd, &resp, sizeof(struct response)) != sizeof(struct response) )
         {

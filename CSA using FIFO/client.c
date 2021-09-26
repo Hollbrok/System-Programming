@@ -99,8 +99,8 @@ int main(int argc, const char *argv[])
 
     if (atexit(removeFifo) != 0)
     {
-        fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
-        exit(MKFIFO_NO_EEXIT);
+        fprintf(stderr, "Can't set exit function\n");
+        exit(EXIT_FAILURE);
     }  
 
     /* Construct request message, open server FIFO, and send request */
