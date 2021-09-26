@@ -77,8 +77,8 @@ int main(int argc, const char *argv[])
 
 /// 
 
-    int serverFd = -1;      // read client request
-    int clientFd = -1;      // read server response
+    int serverWFd = -1;      // write request
+    int clientRFd = -1;      // read server response
 
     struct request req;     // request to server from client
     struct response resp;   // answer to client from server
@@ -108,44 +108,41 @@ int main(int argc, const char *argv[])
     req.pid = getpid();
     req.inNum = getNumber(argv[1]);
 
-    serverFd = open(SERVER_FIFO, O_WRONLY);
+    serverWFd = open(SERVER_FIFO, O_WRONLY);
 
-    if (serverFd == -1)
+    if (serverWFd == -1)
     {
         fprintf(stderr, "ERROR in open on write server FIFO\n");
         exit(EXIT_FAILURE); // add special error-name
     }
 
 
-    if ( write(serverFd, &req, sizeof(struct request)) != sizeof(struct request) )
+    if ( write(serverWFd, &req, sizeof(struct request)) != sizeof(struct request) )
     {
         fprintf(stderr, "Cant write to server FIFO\n");
         exit(EXIT_FAILURE); // add special error-name
     }
+
     /* Open our FIFO, read and display response */
 
-    clientFd = open(clientFifo, O_RDONLY);
-
-    if (clientFd == -1)
+    clientRFd = open(clientFifo, O_RDONLY);
+    if (clientRFd == -1)
     {
         fprintf(stderr, "can't open clientFIFO to read\n");
         exit(EXIT_FAILURE); // add special error-name
     }
     
-    //sleep(1);
-
     int NOread;
 
-    if ( (NOread = read(clientFd, &resp, sizeof(struct response)) ) != sizeof(struct response) )
+    if ( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) != sizeof(struct response) )
     {
         fprintf(stderr, "Can't get answer from server. NOread = %d (need = %d)\n", NOread, sizeof(struct response));
         exit(EXIT_FAILURE); // add special error-name
     }
 
-    printf("sum = %d\n", resp.sum);
+    //printf("sum = %d\n", resp.sum);
     printf("NO appeals = %d\n", resp.NOappeal);   
 
-///
     exit(EXIT_SUCCESS);
 }
 
