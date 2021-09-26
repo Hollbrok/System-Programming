@@ -86,7 +86,7 @@ int main(int argc, const char *argv[])
     while (mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP) == -1)
     {
         fprintf(stderr, "\nTEST: MKFIFO returns -1\n");
-        perror("TEST: errno?");
+        perror("TEST: errno?\n");
 
         unlink(SERVER_FIFO);
 
