@@ -84,19 +84,26 @@ int main(int argc, const char *argv[])
 
 /* Creating FIFO (only 1 for server to read from all clients)   */
 
+    umask(0);       /* So we get the permissions we want */
+    errno = 0;
+
     createServerFIFO();
+    fprintf(stderr, "TEST: HERE1\n");
 
-
-/* fix that fifo may meet EOF if there are no clients           */
-
-    fixFifoEof();
-    
 /* Get FD to read from serverFIFO                               */
 
     serverRFd = getRDofFIFO();
 
+/* fix that fifo may meet EOF if there are no clients           */
+
+    fixFifoEof();
+    fprintf(stderr, "TEST: HERE2\n");
+
+    //serverRFd = getRDofFIFO();
+
 /* Getting Request from client                                  */
 
+    fprintf(stderr, "TEST: HERE3\n");
     while (TRUE)
     {
         /* trying to read request from client until we got it                                           */
@@ -277,8 +284,10 @@ static int getBackupData()
 static void fixFifoEof()
 {
     int fixFd  = -1;    /* this is FD to fix problem with FIFO: it needs to open FIFO write end to not meet EOF. */
+    fprintf(stderr, "1\n");
 
     fixFd = open(SERVER_FIFO, O_WRONLY);
+    fprintf(stderr, "2\n");
 
     if (fixFd  == -1)
     {
@@ -290,6 +299,7 @@ static void fixFifoEof()
         fprintf(stderr, "Can't set ignore to do in signal SISPIPE.\n");
         exit(SIGPIPE_IGN_ERROR);
     }
+    fprintf(stderr, "3\n");
 }
 
 static void createServerFIFO()
