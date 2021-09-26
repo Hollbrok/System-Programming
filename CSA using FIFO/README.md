@@ -44,3 +44,4 @@ TODO: create terminater of server
 - [X] If server receives signals SIGTERM or SIGINT, it removes the FIFO and  terminates.
 - [ ] Protection from DOS-attacks
 - [ ] Now I can only delete server by using ./server + INT. So I need to add __serdel__ stuff.
+- [X] Function separation
