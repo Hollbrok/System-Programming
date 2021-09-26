@@ -31,8 +31,9 @@ struct response     /* Response (server --> client) */
 
 /// ALL INFO AT THE TOP CAN BE moved to a separate file (CSA_info) 
 
-static void /* Invoked on exit to delete client FIFO */
-removeFifo(void)
+ /* Invoked on exit to delete client FIFO */
+
+static void removeFifo(void)
 {
     unlink(clientFifo);
 }
