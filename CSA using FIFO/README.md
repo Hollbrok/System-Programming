@@ -13,3 +13,4 @@
 
 - [X] if server is already created -- unlink it and create new
 - [ ] if server is sleeping for a __X__ time then I can delete it.
+- [ ] Create new file for general stuff between server and client.
