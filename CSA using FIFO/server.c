@@ -81,13 +81,30 @@ int main(int argc, const char *argv[])
     // Creating FIFO (only 1 for server to read from all clients)
 
     umask(0);       /* So we get the permissions we want */
+    errno = 0;
+
+    while (mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP) == -1)
+    {
+        fprintf(stderr, "\nTEST: MKFIFO returns -1\n");
+        perror("TEST: errno?");
+
+        unlink(SERVER_FIFO);
+
+        if(errno != EEXIST)
+        {
+            fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
+            exit(MKFIFO_NO_EEXIT);
+        } 
+    }
     
-    if (mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP) == -1 
+    /*if (mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP) == -1 
         && errno != EEXIST)
     {
         fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
         exit(MKFIFO_NO_EEXIT);
-    } 
+    } */
+
+
 
     serverFd = open(SERVER_FIFO, O_RDONLY);
     if (serverFd == -1)
