@@ -191,6 +191,8 @@ static void updateBackUpFile(void)
 {
     // Update NO_APPEALS -- global const
 
+    fprintf(stderr, "IN updateBackupFile: NOAPPELS = %d\n", NO_APPEALS);
+
     int backupFd;
     if ( (backupFd = open(SERVER_BACKUP_FILE, O_SYNC | O_RDWR)) == -1) 
     {
