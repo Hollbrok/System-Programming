@@ -7,6 +7,7 @@
     - [X] __Forker__ (need to add error processing after close)
     - [X] __Threader__
     - [X] __Executor__
+- [X] __CSA__ (client-service application), using __FIFO__
 - [ ] FIFO
 
 # How to build
