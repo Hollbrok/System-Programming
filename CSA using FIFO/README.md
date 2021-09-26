@@ -11,4 +11,5 @@
 
 ## TODO
 
-if server is already create -- dont create it
+- [X] if server is already created -- unlink it and create new
+- [ ] if server is sleeping for a __X__ time then I can delete it.
