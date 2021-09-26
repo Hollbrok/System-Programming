@@ -91,7 +91,7 @@ int main(int argc, const char *argv[])
     fprintf(stderr, "TEST: HERE1\n");
 
 /* Get FD to read from serverFIFO                               */
-
+ 
     serverRFd = getRDofFIFO();
 
 /* fix that fifo may meet EOF if there are no clients           */
