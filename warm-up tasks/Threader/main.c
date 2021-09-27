@@ -55,30 +55,33 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    pthread_t *thread = (pthread_t *) calloc(NOThreads, sizeof(pthread_t));
 
-    for(size_t i = 0; i < NOThreads; i++)
+    for (size_t i = 0; i < NOThreads; i++)
     {
-        pthread_t thread;
-
-        int isError = pthread_create(&thread, NULL, threadStuff, &funcArg);
-
-        if (isError)
+        if (pthread_create(&thread[i], NULL, threadStuff, &funcArg) != 0)
         {
             fprintf(stderr, "ERROR pthread_create\n");
             exit(EXIT_FAILURE);
-        }
+        } 
+    }
 
-        if (pthread_join(thread, NULL) != 0)
+    for (size_t i = 0; i < NOThreads; i++)
+    {
+        if (pthread_join(thread[i], NULL) != 0)
         {
             fprintf(stderr, "ERROR pthread_join\n");
             exit(EXIT_FAILURE);
-        }   
+        }  
     }
 
-    fprintf(stdout, "VAL = %d\n", TESTVAL);
+    fprintf(stdout, "FINVAL = %d\n"
+                    "REQUEST VAL = %d\n", TESTVAL, NOThreads);
 
 ////
     //fflush(stdout);
+
+    free(thread);
     exit(EXIT_SUCCESS);
 }
 
