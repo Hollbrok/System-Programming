@@ -18,8 +18,21 @@ int main(int argc, char *argv[], char *env[])
     printf("///////////\n");
     */
     
-    execv(argv[1], &argv[1]);
-    perror("EXIT error\n");
+    switch (fork())
+    {
+    case -1:
+        perror("fork()");
+        break;
+    case 0:
+        execv(argv[1], &argv[1]);
+        perror("EXIT error\n");
+        break;
+    default:
+        fprintf(stdout, "MAIN: SUCCESS\n");
+        break;
+    }
+    
+    
 
     exit(EXIT_SUCCESS);
 }
