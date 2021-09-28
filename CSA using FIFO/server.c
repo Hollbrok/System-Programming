@@ -11,6 +11,8 @@
 #define CLIENT_FIFO_NAME_LEN (sizeof(CLIENT_FIFO_TEMPLATE) + 20)    /* Space required for client FIFO pathname
                                                                     (+20 as a generous allowance for the PID) */
 
+const int BUF_SIZE = 4096;
+
 const int TRUE  = 1;
 const int FALSE = 0;
 
@@ -19,15 +21,14 @@ static int NO_APPEALS;
 struct request      /* Request (client --> server) */       
 {                 
     pid_t pid;      /* PID of client */
-    int inNum;      /* input number from cmd line */ 
+    char filename[20];      /* input number from cmd line */ 
 };
 
 
 
 struct response     /* Response (server --> client) */
 {   
-    int sum;        
-    int NOappeals;
+    char buffer[BUF_SIZE];
 };
 
 
@@ -78,8 +79,8 @@ int main(int argc, const char *argv[])
 
 /* Get data from backup file (Number of appeals)                */
 
-    resp.NOappeals = getBackupData();
-    NO_APPEALS = resp.NOappeals;
+    //!! resp.NOappeals = getBackupData();
+    //!! NO_APPEALS = resp.NOappeals;
 
 
 /* Creating FIFO (only 1 for server to read from all clients)   */
@@ -140,20 +141,44 @@ int main(int argc, const char *argv[])
 
         /* Now server can send response to client by client FIFO                                        */
 
-        resp.sum = req.inNum + req.pid;
-        resp.NOappeals += 1;
+        //! resp.sum = req.inNum + req.pid;
+        //! resp.NOappeals += 1;
 
-        NO_APPEALS = resp.NOappeals;
+        //! NO_APPEALS = resp.NOappeals;
 
-        if ( write(clientWFd, &resp, sizeof(struct response)) != sizeof(struct response) )
+        if ( strlen(req.filename) < 2 )
         {
-            fprintf(stderr, "Error in write to client\n");
-            exit(WRITE_TO_CLIENT);
+            fprintf(stderr, "Zero filename in request\n");
+            continue;
         }
 
-        printf("SERVER: size of write response = %d\n", sizeof(struct response));
+        int fileRFd = open(req.filename, O_RDONLY);
+        if (fileRFd == -1)         
+        {
+            fprintf(stderr, "file in request [%s] failed to open on write.", req.filename); 
+            continue;
+        }
+
+        int lastByteRead;
+        while ( (lastByteRead = read(fileRFd, resp.buffer, BUF_SIZE)) > 0 )
+        {
+            if ( write(clientWFd, &resp, sizeof(struct response)) != sizeof(struct response) )
+            {
+                fprintf(stderr, "Error in write to client\n");
+                exit(WRITE_TO_CLIENT);
+            }
+        }
+        /* / \  read from file */
+        /*  |                   */
+
+        //printf("SERVER: size of write response = %d\n", sizeof(struct response));
 
         if ( close(clientWFd) != 0 )
+        {
+            fprintf(stderr, "Error in close client FD\n");
+        }
+        
+        if ( close(fileRFd) != 0 )
         {
             fprintf(stderr, "Error in close client FD\n");
         }
