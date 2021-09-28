@@ -11,7 +11,7 @@
 #define CLIENT_FIFO_NAME_LEN (sizeof(CLIENT_FIFO_TEMPLATE) + 20)    /* Space required for client FIFO pathname
                                                                     (+20 as a generous allowance for the PID) */
 
-const int BUF_SIZE = 4096;
+const int BUF_SIZE = 512;
 
 const int TRUE  = 1;
 const int FALSE = 0;
@@ -155,14 +155,23 @@ int main(int argc, const char *argv[])
         int fileRFd = open(req.filename, O_RDONLY);
         if (fileRFd == -1)         
         {
-            fprintf(stderr, "file in request [%s] failed to open on write.", req.filename); 
+            fprintf(stderr, "file in request [%s] failed to open on write.\n", req.filename); 
             continue;
+
+            /* ? I need to send some info that file is failed to open */
         }
 
         int lastByteRead;
-        while ( (lastByteRead = read(fileRFd, resp.buffer, BUF_SIZE)) > 0 )
+        while ( (lastByteRead = read(fileRFd, &resp, BUF_SIZE)) > 0 )
         {
-            if ( write(clientWFd, &resp, sizeof(struct response)) != sizeof(struct response) )
+            //fprintf(stdout, "READ [%d] bytes\n", lastByteRead);
+            
+            //if (lastByteRead < sizeof(struct response))
+            //    resp.buffer[lastByteRead] = '\0';
+
+            //fprintf(stderr, "%.*s\n", lastByteRead, resp.buffer);
+
+            if ( write(clientWFd, &resp, lastByteRead) != lastByteRead )
             {
                 fprintf(stderr, "Error in write to client\n");
                 exit(WRITE_TO_CLIENT);
@@ -177,11 +186,13 @@ int main(int argc, const char *argv[])
         {
             fprintf(stderr, "Error in close client FD\n");
         }
-        
+
         if ( close(fileRFd) != 0 )
         {
             fprintf(stderr, "Error in close client FD\n");
         }
+
+        fprintf(stderr, "Served client\n");
     }
 
     exit(EXIT_SUCCESS);
