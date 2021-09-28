@@ -11,20 +11,19 @@
                                                                     (+20 as a generous allowance for the PID) */
 
 static char clientFifo[CLIENT_FIFO_NAME_LEN];
+const int BUF_SIZE = 512;
 
-
-struct request      /* Request (client --> server) */       
+struct request              /* Request (client --> server) */       
 {                 
-    pid_t pid;      /* PID of client */
-    int inNum;     /* Length of desired sequence */ 
+    pid_t pid;              /* PID of client */
+    char filename[20];      /* input number from cmd line */ 
 };
 
 
 
-struct response     /* Response (server --> client) */
+struct response             /* Response (server --> client) */
 {   
-    int sum;     /* Start of sequence */
-    int NOappeal;
+    char buffer[BUF_SIZE];
 };
 
 
@@ -106,7 +105,8 @@ int main(int argc, const char *argv[])
 
     /* Construct request message, open server FIFO, and send request */
     req.pid = getpid();
-    req.inNum = getNumber(argv[1]);
+    strncpy(req.filename, argv[1], 20);
+    //req.inNum = getNumber(argv[1]);
 
     serverWFd = open(SERVER_FIFO, O_WRONLY);
 
@@ -133,15 +133,26 @@ int main(int argc, const char *argv[])
     }
     
     int NOread;
+    //int NOiterations = 0;
+    while ( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) > 0 )
+    {
+        //if (NOread  < sizeof(struct response))
+        //    resp.buffer[NOread] = '\0';
 
-    if ( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) != sizeof(struct response) )
+        fprintf(stderr, "[%d]Read info:\n[%.*s]\n", NOread, NOread, resp.buffer);
+        //NOiterations++;
+        //fprintf(stderr, "Iteration %d\n", NOiterations);
+    }
+
+    /*if ( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) <= 0 )//( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) != sizeof(struct response) )
     {
         fprintf(stderr, "Can't get answer from server. NOread = %d (need = %d)\n", NOread, sizeof(struct response));
         exit(EXIT_FAILURE); // add special error-name
-    }
+    }*/
 
     //printf("sum = %d\n", resp.sum);
-    printf("NO appeals = %d\n", resp.NOappeal);   
+    //printf("NO appeals = %d\n", resp.NOappeal);   
+    //fprintf(stdout, "Read info:\n", resp.buffer);
 
     exit(EXIT_SUCCESS);
 }
