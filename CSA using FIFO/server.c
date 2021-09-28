@@ -81,7 +81,8 @@ int main(int argc, const char *argv[])
 
     //!! resp.NOappeals = getBackupData();
     //!! NO_APPEALS = resp.NOappeals;
-
+    
+    NO_APPEALS = getBackupData();
 
 /* Creating FIFO (only 1 for server to read from all clients)   */
 
@@ -146,6 +147,8 @@ int main(int argc, const char *argv[])
 
         //! NO_APPEALS = resp.NOappeals;
 
+        ++NO_APPEALS;
+
         if ( strlen(req.filename) < 2 )
         {
             fprintf(stderr, "Zero filename in request\n");
@@ -158,7 +161,7 @@ int main(int argc, const char *argv[])
             fprintf(stderr, "file in request [%s] failed to open on write.\n", req.filename); 
             continue;
 
-            /* ? I need to send some info that file is failed to open */
+            /* ? Server needs to send some info that file is failed to open */
         }
 
         int lastByteRead;

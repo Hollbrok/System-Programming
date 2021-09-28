@@ -13,7 +13,7 @@ To start you've two options:
 
 * ./server * IN 1st CONSOLE *
 
-* ./client [number] * IN 2nd CONSOLE *
+* ./client [file_name] * IN 2nd CONSOLE *
 
 2) Or use this method:
 
@@ -21,7 +21,7 @@ To start you've two options:
 
 And then you can be client:
 
-* ./client [number]
+* ./client [file_name]
 
 Note: to terminate server you must call __./server__ again and generate Interrupt or Terminate.
 
