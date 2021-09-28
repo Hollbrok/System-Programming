@@ -1,61 +1,18 @@
- #include "libs.h"
+#include "libs.h"
+#include "commun.h"
 
-//////////////////////
-
-#define SERVER_FIFO "/tmp/seqnum_sv"            /* Well-known name for server's FIFO */
-
-#define CLIENT_FIFO_TEMPLATE "/tmp/seqnum_cl.%ld"   /* Template for building client FIFO name */
-
-
-#define CLIENT_FIFO_NAME_LEN (sizeof(CLIENT_FIFO_TEMPLATE) + 20)    /* Space required for client FIFO pathname
-                                                                    (+20 as a generous allowance for the PID) */
 
 static char clientFifo[CLIENT_FIFO_NAME_LEN];
-const int BUF_SIZE = 512;
-
-struct request              /* Request (client --> server) */       
-{                 
-    pid_t pid;              /* PID of client */
-    char filename[20];      /* input number from cmd line */ 
-};
 
 
+/* Invoked on exit to delete client FIFO */
 
-struct response             /* Response (server --> client) */
-{   
-    char buffer[BUF_SIZE];
-};
+static void removeFifo(void);
 
-
-
-/// ALL INFO AT THE TOP CAN BE moved to a separate file (CSA_info) 
-
- /* Invoked on exit to delete client FIFO */
-
-static void removeFifo(void)
-{
-    unlink(clientFifo);
-}
-
-
-//////////////////////
-
-enum ERRORS_HANDLER
-{
-    NOT_ENOUGH_ARGUMENTS = -5,
-    TO_MUCH_ARGUMENTS       ,
-    ZEROSTRING_ARGV         ,
-    MKFIFO_NO_EEXIT            ,
-    OPEN_FIX_FD             ,
-    SIGPIPE_IGN_ERROR       ,
-    WRITE_TO_CLIENT         ,
-};
-
-long getNumber(const char *numString);
+static long getNumber(const char *numString);
 
 int main(int argc, const char *argv[])
 {
-
     if (argc < 2)
     {
         fprintf(stderr, "Program needs 2 arguments\n");
@@ -74,19 +31,15 @@ int main(int argc, const char *argv[])
         exit(ZEROSTRING_ARGV);
     }
 
-/// 
-
     int serverWFd = -1;      // write request
     int clientRFd = -1;      // read server response
 
     struct request req;     // request to server from client
     struct response resp;   // answer to client from server
 
-///
+    /* Create client FIFO according to his PID */
 
-    /* Create our FIFO (before sending request, to avoid a race) */
-
-    umask(0); /* So we get the permissions we want */
+    umask(0); /* we get the permissions we want */
     
     snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) getpid());
 
@@ -133,31 +86,22 @@ int main(int argc, const char *argv[])
     }
     
     int NOread;
-    //int NOiterations = 0;
+    errno = 0;
+    
     while ( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) > 0 )
     {
-        //if (NOread  < sizeof(struct response))
-        //    resp.buffer[NOread] = '\0';
-
         fprintf(stderr, "[%d]Read info:\n[%.*s]\n", NOread, NOread, resp.buffer);
-        //NOiterations++;
-        //fprintf(stderr, "Iteration %d\n", NOiterations);
+        
+        if (errno)
+        {
+            perror("Error in reading from FIFO\n");
+        }
     }
-
-    /*if ( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) <= 0 )//( (NOread = read(clientRFd, &resp, sizeof(struct response)) ) != sizeof(struct response) )
-    {
-        fprintf(stderr, "Can't get answer from server. NOread = %d (need = %d)\n", NOread, sizeof(struct response));
-        exit(EXIT_FAILURE); // add special error-name
-    }*/
-
-    //printf("sum = %d\n", resp.sum);
-    //printf("NO appeals = %d\n", resp.NOappeal);   
-    //fprintf(stdout, "Read info:\n", resp.buffer);
 
     exit(EXIT_SUCCESS);
 }
 
-long getNumber(const char *numString)
+static long getNumber(const char *numString)
 {
     if (*numString == '\0')
     {
@@ -186,4 +130,10 @@ long getNumber(const char *numString)
     
     return gNumber;
 
+}
+
+static void removeFifo(void)
+{
+    fprintf(stderr, "TEST: IN REMOVE FIFO\n");
+    unlink(clientFifo);
 }
