@@ -142,23 +142,14 @@ int main(int argc, const char *argv[])
         int lastByteRead;
         while ( (lastByteRead = read(fileRFd, &resp, BUF_SIZE)) > 0 )
         {
-            //fprintf(stdout, "READ [%d] bytes\n", lastByteRead);
-            
-            //if (lastByteRead < sizeof(struct response))
-            //    resp.buffer[lastByteRead] = '\0';
-
-            //fprintf(stderr, "%.*s\n", lastByteRead, resp.buffer);
-
             if ( write(clientWFd, &resp, lastByteRead) != lastByteRead )
             {
                 fprintf(stderr, "Error in write to client\n");
                 exit(WRITE_TO_CLIENT);
             }
         }
-        /* / \  read from file */
+        /* / \  read from file and write to client's FIFO */
         /*  |                   */
-
-        //printf("SERVER: size of write response = %d\n", sizeof(struct response));
 
         if ( close(clientWFd) != 0 )
         {
