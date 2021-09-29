@@ -1,6 +1,12 @@
 #ifndef COMMUN_H_INC
 #define COMMUN_H_INC
 
+const char CLIENT_FIFO_TEMPLATE[] = "./clientfifo.%ld";   /* Template for building client FIFO name */
+
+const int  CLIENT_FIFO_NAME_LEN  = (sizeof(CLIENT_FIFO_TEMPLATE) + 20);    /* Space required for client FIFO pathname */
+
+const char SERVER_FIFO_ACCESS[] = "./serverfifoACCESS";   /* this fifo using to get permission on write */
+
 const char SERVER_FIFO[] = "./serverfifo";                /* Well-known name for server's FIFO */
 
 const int BUF_SIZE = 4096;
@@ -8,12 +14,19 @@ const int BUF_SIZE = 4096;
 const int TRUE  = 1;
 const int FALSE = 0;
 
+struct AccReq  // request to server about using FIFO  
+{
+    pid_t pid;
+};
+
+struct Accresp // answer from server about access
+{
+    int isYes;
+};
+
 struct Req
 {
-    int realSize = 0;
-    int NOaccess = 0;
-    pid_t pid = 0;
-    char buffer[BUF_SIZE] = {};
+    char buffer[BUF_SIZE];
 };
 
 enum ERRORS_HANDLER
