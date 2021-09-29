@@ -52,15 +52,16 @@ int main(int argc, const char *argv[])
     }  
 
     serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
-    if (serverAccWFd == -1)
+    while (serverAccWFd == -1)
     {   
         if(errno != ENOENT)
         {
             perror("ERROR in open on write server access FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
         }
-
+        //printf("1111");
         createServerFIFOAccess();
+        serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
     }
 
     if ( (fileRD = open(argv[1], O_RDONLY)) == -1)
@@ -95,7 +96,7 @@ int main(int argc, const char *argv[])
     }
 
     serverWFd = open(SERVER_FIFO, O_WRONLY); // a lot of client can open FIFO
-    if (serverWFd == -1)
+    while (serverWFd == -1)
     {
         if(errno != ENOENT)
         {
@@ -106,6 +107,7 @@ int main(int argc, const char *argv[])
         createServerFIFO();
         //fprintf(stderr, "ERROR in open on write server FIFO\n");
         //exit(EXIT_FAILURE); // add special error-name
+        serverWFd = open(SERVER_FIFO, O_WRONLY);
     }
 
     lastByteRead = 0;
