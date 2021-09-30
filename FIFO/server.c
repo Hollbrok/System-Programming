@@ -107,6 +107,8 @@ int main(int argc, const char *argv[])
             exit(EXIT_FAILURE);
         }
 
+        unlink(clientFifo);
+
         fprintf(stderr, "CLIENT SERVED\n");
 
     }
@@ -164,25 +166,6 @@ static void createServerFIFO()
 
     int mkfifoStatus = mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP);
 
-    /*while (mkfifoStatus == -1)
-    {
-        perror("TEST: MKFIFO returns -1\nTEST: errno");
-
-        if (unlink(SERVER_FIFO) == -1)
-        {
-            perror("Can't unlink FIFO, exit\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (errno != EEXIST)
-        {
-            fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
-            exit(MKFIFO_NO_EEXIT);
-        } 
-
-        mkfifoStatus = mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP);
-    }*/
-
     if (mkfifoStatus == -1)
     {
         if(errno != EEXIST)
@@ -199,26 +182,7 @@ static void createServerFIFOAccess()
     errno = 0;
 
     int mkfifoStatus = mkfifo(SERVER_FIFO_ACCESS, S_IRUSR | S_IWUSR | S_IWGRP);
-
-    /*while (mkfifoStatus == -1)
-    {
-        perror("TEST: MKFIFO returns -1\nTEST: errno");
-
-        if (unlink(SERVER_FIFO_ACCESS) == -1)
-        {
-            perror("Can't unlink FIFO, exit\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (errno != EEXIST)
-        {
-            fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
-            exit(MKFIFO_NO_EEXIT);
-        } 
-
-        mkfifoStatus = mkfifo(SERVER_FIFO_ACCESS, S_IRUSR | S_IWUSR | S_IWGRP);
-    }*/
-
+    
     if (mkfifoStatus == -1)
     {
         if(errno != EEXIST)
