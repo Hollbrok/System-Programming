@@ -1,19 +1,35 @@
 #include "libs.h"
 #include "commun.h"
 
+#define DEBUG_REGIME TRUE
+
+#define DEBPRINT(args...)   \
+    if(DEBUG_REGIME)        \
+        fprintf(stderr, args);
+
+#define ERRCHECK_CLOSE(FD)      \
+    if (close(FD) != 0)         \
+    {                           \
+        perror("Close #FD");    \
+    }    
+
+
+
 static char clientFifo[CLIENT_FIFO_NAME_LEN];
+
+
 
 /* on succ-exit must delete client FIFO */
 
 static void removeFifo(void);
-
-static long getNumber(const char *numString);
 
 static void checkargv(int argc, const char *argv[]);
 
 static void createServerFIFOAccess();
 
 static void createServerFIFO();
+
+static void createClientFIFO();
 
 int main(int argc, const char *argv[])
 {
@@ -30,41 +46,37 @@ int main(int argc, const char *argv[])
     int lastByteRead;       // 
     int lastByteWrite;
 
-    //for (int i = 0; i < BUF_SIZE; i++)
-     //   req.buffer[i] = 'x';
-    //req.buffer[BUF_SIZE - 1] = '\0';        /* <-- Useless*/
+/* we get the permissions on file creating that we want */
 
-    umask(0); /* we get the permissions we want */
+    umask(0); 
+
+    createClientFIFO();
+
+/* process is blocked until server opens on read */
+
+
+    serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);          
     
-    snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) getpid());
-
-    if (mkfifo(clientFifo, S_IRUSR | S_IWUSR | S_IWGRP) == -1
-        && errno != EEXIST)
-    {
-        fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
-        exit(MKFIFO_NO_EEXIT);
-    }   
-
-    if (atexit(removeFifo) != 0)
-    {
-        fprintf(stderr, "Can't set exit function\n");
-        exit(EXIT_FAILURE);
-    }  
-
-    serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY); // blocked until server dont open on read
-    fprintf(stderr, "After open SERVER_FIFO_ACCESS on write\n");
-    //sleep(5);
-    //fprintf(stderr, "sleep ends\n");
-    while (serverAccWFd == -1)
+    DEBPRINT("After open SERVER_FIFO_ACCESS on write\n");
+   
+    if (serverAccWFd == -1)
     {   
         if(errno != ENOENT)
         {
             perror("ERROR in open on write server access FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
         }
-        //printf("1111");
+
+        /* errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFOACCESS it our own*/
+
         createServerFIFOAccess();
         serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
+
+        /*if ( (serverWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
+        {
+            perror("ERROR in open on write server FIFO\n");
+            exit(EXIT_FAILURE); // add special error-name
+        } */    
     }
 
     if ( (fileRD = open(argv[1], O_RDONLY)) == -1)
@@ -83,15 +95,18 @@ int main(int argc, const char *argv[])
     }
 
     lastByteWrite = 0;
-    
 
-    int clientRFd = open(clientFifo, O_RDONLY); // blocking while server dont open another end of FIFO
-    fprintf(stderr, "After open clienFIFO on read\n");
+    int clientRFd = open(clientFifo, O_RDONLY); // blocking while server dont open another end of FIFO ==== we get access on write to transfer data to server
+    
+    DEBPRINT("After open clienFIFO on read\n");
+
     if (clientRFd < 0)
     {
         perror("client fifo on READ");
         exit(EXIT_FAILURE);
     }
+
+/* get access from server */
 
     if ( (lastByteRead = read(clientRFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp) )
     {
@@ -99,7 +114,7 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE); 
     }
 
-/* ignore SIGPIPE and we will catch EPIPE if read-end of SF will close */
+/* ignore SIGPIPE so we will catch EPIPE if read-end of SF will close instead of SIGPIPE that will end our process*/
 
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
     {
@@ -110,7 +125,7 @@ int main(int argc, const char *argv[])
 /* open SF on write*/
 
     serverWFd = open(SERVER_FIFO, O_WRONLY); // a lot of client can open FIFO
-    while (serverWFd == -1)
+    if (serverWFd == -1)
     {
         if(errno != ENOENT)
         {
@@ -118,24 +133,24 @@ int main(int argc, const char *argv[])
             exit(EXIT_FAILURE); // add special error-name
         }
 
+        /* errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFO*/
+
         createServerFIFO();
-        //fprintf(stderr, "ERROR in open on write server FIFO\n");
-        //exit(EXIT_FAILURE); // add special error-name
-        serverWFd = open(SERVER_FIFO, O_WRONLY);
+        
+        /*if ( (serverWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
+        {
+            perror("ERROR in open on write server FIFO\n");
+            exit(EXIT_FAILURE); // add special error-name
+        } */    
     }
 
     lastByteRead = 0;
-
     errno = 0;
     
+    /* read from file, write to server FIFO */
+
     while ( (lastByteRead = read(fileRD, req.buffer, BUF_SIZE)) > 0 )
     {
-
-        /*fprintf(stderr, "before sleep\n");
-        sleep(5);
-        fprintf(stderr, "after sleep\n");
-        */
-
         if ( write(serverWFd, req.buffer, lastByteRead) != lastByteRead )
         {
             if(errno == EPIPE)
@@ -147,8 +162,9 @@ int main(int argc, const char *argv[])
             fprintf(stderr, "Can't write to server FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
         }
-        //++req.NOaccess;
     }
+
+
 
     if (lastByteRead != 0)
     {
@@ -156,28 +172,14 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (close(serverWFd) != 0)
-    {
-        perror("Close serverWFd");
-    }
+/* closes all FD's */
 
-    if (close(fileRD) != 0)
-    {
-        perror("Close fileRD");
-    }
-
-    if (close(serverAccWFd) != 0)
-    {
-        perror("Close fileRD");
-    }
-
-    if (close(clientRFd) != 0)
-    {
-        perror("Close fileRD");
-    }
+    ERRCHECK_CLOSE(serverWFd)
+    ERRCHECK_CLOSE(fileRD)
+    ERRCHECK_CLOSE(serverAccWFd)
+    ERRCHECK_CLOSE(clientRFd)
     
-
-    fprintf(stderr, "SECCUSSFUL\n");
+    DEBPRINT("SECCUSSFUL\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -243,3 +245,24 @@ static void createServerFIFO()
         }
     }  
 }
+
+static void createClientFIFO()
+{
+    snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) getpid());
+
+    if ( mkfifo(clientFifo, S_IRUSR | S_IWUSR | S_IWGRP) == -1
+         && errno != EEXIST)
+    {
+        fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
+        exit(MKFIFO_NO_EEXIT);
+    }   
+
+    if (atexit(removeFifo) != 0)
+    {
+        fprintf(stderr, "Can't set exit function\n");
+        exit(EXIT_FAILURE);
+    }  
+}
+
+
+
