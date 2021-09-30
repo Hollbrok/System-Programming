@@ -1,6 +1,19 @@
 #ifndef COMMUN_H_INC
 #define COMMUN_H_INC
 
+
+#define DEBUG_REGIME TRUE
+
+#define DEBPRINT(args...)   \
+    if(DEBUG_REGIME)        \
+        fprintf(stderr, args);
+
+#define ERRCHECK_CLOSE(FD)      \
+    if (close(FD) != 0)         \
+    {                           \
+        perror("Close #FD");    \
+    }    
+
 const char CLIENT_FIFO_TEMPLATE[] = "./clientfifo.%ld";   /* Template for building client FIFO name */
 
 const int  CLIENT_FIFO_NAME_LEN  = (sizeof(CLIENT_FIFO_TEMPLATE) + 20);    /* Space required for client FIFO pathname */
