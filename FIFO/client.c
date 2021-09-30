@@ -1,20 +1,6 @@
 #include "libs.h"
 #include "commun.h"
 
-#define DEBUG_REGIME TRUE
-
-#define DEBPRINT(args...)   \
-    if(DEBUG_REGIME)        \
-        fprintf(stderr, args);
-
-#define ERRCHECK_CLOSE(FD)      \
-    if (close(FD) != 0)         \
-    {                           \
-        perror("Close #FD");    \
-    }    
-
-
-
 static char clientFifo[CLIENT_FIFO_NAME_LEN];
 
 
@@ -39,11 +25,14 @@ int main(int argc, const char *argv[])
     struct AccReq accReq = {getpid()};
     struct Accresp accResp = {1};
 
-    int serverWFd = -1;     // write request
-    int serverAccWFd = -1;  // write to server access fifo
+    int serverAccWFd = -1;      // write to server access fifo
+    int clientRFd    = -1;      // reding access from server
+    
+    int fileRFd      = -1;      // read from file
+    int serverWFd    = -1;      // transfer data from file to server
+    
 
-    int fileRD = -1;        // read from file 
-    int lastByteRead;       // 
+    int lastByteRead; 
     int lastByteWrite;
 
 /* we get the permissions on file creating that we want */
@@ -79,7 +68,7 @@ int main(int argc, const char *argv[])
         } */    
     }
 
-    if ( (fileRD = open(argv[1], O_RDONLY)) == -1)
+    if ( (fileRFd = open(argv[1], O_RDONLY)) == -1)
     {
         perror("Can't open file on read\n");
         exit(EXIT_FAILURE);
@@ -96,7 +85,7 @@ int main(int argc, const char *argv[])
 
     lastByteWrite = 0;
 
-    int clientRFd = open(clientFifo, O_RDONLY); // blocking while server dont open another end of FIFO ==== we get access on write to transfer data to server
+    clientRFd = open(clientFifo, O_RDONLY); // blocking while server dont open another end of FIFO ==== we get access on write to transfer data to server
     
     DEBPRINT("After open clienFIFO on read\n");
 
@@ -149,7 +138,7 @@ int main(int argc, const char *argv[])
     
     /* read from file, write to server FIFO */
 
-    while ( (lastByteRead = read(fileRD, req.buffer, BUF_SIZE)) > 0 )
+    while ( (lastByteRead = read(fileRFd, req.buffer, BUF_SIZE)) > 0 )
     {
         if ( write(serverWFd, req.buffer, lastByteRead) != lastByteRead )
         {
@@ -175,7 +164,7 @@ int main(int argc, const char *argv[])
 /* closes all FD's */
 
     ERRCHECK_CLOSE(serverWFd)
-    ERRCHECK_CLOSE(fileRD)
+    ERRCHECK_CLOSE(fileRFd)
     ERRCHECK_CLOSE(serverAccWFd)
     ERRCHECK_CLOSE(clientRFd)
     
