@@ -18,9 +18,9 @@ static void createServerFIFOAccess();
 
 int main(int argc, const char *argv[])
 {
-    int serverRFd = -1;             /* read client request              */
-    int serverAccRFd = -1;          /* read client accessing request    */
-    int clientWFd = -1;             /* write server response            */
+    int serverAccRFd = -1;              /* read client accessing request    */
+    int clientWFd    = -1;              /* write response to client         */
+    int serverRFd    = -1;              /* read client data transfering     */
 
     struct Req req;        /* request to server from client     */
     struct AccReq accReq;
@@ -51,11 +51,11 @@ int main(int argc, const char *argv[])
     fixFifoEof();
 
 
-    /*if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
     {
         fprintf(stderr, "Can't set ignore to signal SISPIPE.\n");
         exit(SIGPIPE_IGN_ERROR);
-    }*/
+    }
 
 /* getting requests from clients                           */
 
@@ -66,38 +66,39 @@ int main(int argc, const char *argv[])
         /* trying to READ REQUEST from client until we got it                                           */
 
         if (read(serverAccRFd, &accReq, sizeof(struct AccReq)) != sizeof(struct AccReq))
-        {
-            //fprintf(stderr, "Not full read from client [ACCESS request] or error, continue to read.\n");
             continue;
-        }
 
         snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) accReq.pid); 
 
-        int clientRFd = open(clientFifo, O_WRONLY);
-        if (clientRFd < 0)
+        clientWFd = open(clientFifo, O_WRONLY);
+        if (clientWFd < 0)
         {
             fprintf(stderr, "clientFifo = %s\n", clientFifo);
             perror("clientFifo");
         }
 
-        // may be sleep(5)?
-        // sleep(5);
+        errno = 0;
 
-        if (write(clientRFd, &accResp, sizeof(struct Accresp)) != sizeof(struct Accresp))
+        if ( write(clientWFd, &accResp, sizeof(struct Accresp)) != sizeof(struct Accresp))
         {
+            if (errno == EPIPE)
+            {
+                fprintf(stderr, "Client fifo died or close read FD\n");
+                exit(EXIT_FAILURE);
+            }            
+
             perror("answering to client [write clietFIFO]");
             continue;
         }
 
-        
         int lastByteRead;
         errno = 0;
 
         serverRFd = getRDofFIFO();
 
-        while ( (lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0) // == BUF_SIZE
+        while ( (lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0)
         {
-            //fprintf(stderr, "[%d]\n", lastByteRead);
+            DEBPRINT("[%d]\n", lastByteRead);
             fprintf(stderr, "%.*s", lastByteRead, req.buffer);
         }
 
@@ -113,7 +114,13 @@ int main(int argc, const char *argv[])
 
     }
 
-// close all FD
+/* close all FD */
+
+    ERRCHECK_CLOSE(serverAccRFd)
+    ERRCHECK_CLOSE(clientWFd)
+    ERRCHECK_CLOSE(serverRFd)
+
+
     exit(EXIT_SUCCESS);
 }
 
@@ -207,12 +214,12 @@ static int getRDofFIFO()
 
 static int getRDofFIFOAccess()
 {
-    int serverRFd = open(SERVER_FIFO_ACCESS, O_RDONLY | O_NONBLOCK);
-    if (serverRFd == -1)
+    int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY | O_NONBLOCK);
+    if (serverRAccFd == -1)
     {
-        fprintf(stderr, "ERRORopen %s", SERVER_FIFO_ACCESS);
+        fprintf(stderr, "ERROR open %s", SERVER_FIFO_ACCESS);
         exit(ERROR_OPEN_TO_READ_CLIENT);
     }
 
-    return serverRFd;
+    return serverRAccFd;
 }
