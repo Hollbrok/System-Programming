@@ -51,7 +51,10 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }  
 
-    serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
+    serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY); // blocked until server dont open on read
+    fprintf(stderr, "After open SERVER_FIFO_ACCESS on write\n");
+    //sleep(5);
+    //fprintf(stderr, "sleep ends\n");
     while (serverAccWFd == -1)
     {   
         if(errno != ENOENT)
@@ -83,6 +86,7 @@ int main(int argc, const char *argv[])
     
 
     int clientRFd = open(clientFifo, O_RDONLY); // blocking while server dont open another end of FIFO
+    fprintf(stderr, "After open clienFIFO on read\n");
     if (clientRFd < 0)
     {
         perror("client fifo on READ");
@@ -94,6 +98,16 @@ int main(int argc, const char *argv[])
         perror("Error in read from client FIFO");
         exit(EXIT_FAILURE); 
     }
+
+/* ignore SIGPIPE and we will catch EPIPE if read-end of SF will close */
+
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    {
+        fprintf(stderr, "Can't set ignore to signal SISPIPE.\n");
+        exit(SIGPIPE_IGN_ERROR);
+    }
+
+/* open SF on write*/
 
     serverWFd = open(SERVER_FIFO, O_WRONLY); // a lot of client can open FIFO
     while (serverWFd == -1)
@@ -116,11 +130,20 @@ int main(int argc, const char *argv[])
     
     while ( (lastByteRead = read(fileRD, req.buffer, BUF_SIZE)) > 0 )
     {
-        //req.realSize = lastByteRead;
-        //req.pid = getpid();
+
+        /*fprintf(stderr, "before sleep\n");
+        sleep(5);
+        fprintf(stderr, "after sleep\n");
+        */
 
         if ( write(serverWFd, req.buffer, lastByteRead) != lastByteRead )
         {
+            if(errno == EPIPE)
+            {
+                fprintf(stderr, "server died or closed read-end of FIFO\n");
+                exit(EXIT_FAILURE);
+            }
+
             fprintf(stderr, "Can't write to server FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
         }
@@ -163,6 +186,7 @@ static void removeFifo(void)
 {
     fprintf(stderr, "TEST: IN REMOVE FIFO\n");
     unlink(clientFifo);
+    fprintf(stderr, "clientFifo unlinked\n");
 }
 
 static void checkargv(int argc, const char *argv[])
