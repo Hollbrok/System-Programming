@@ -3,7 +3,8 @@
 
 static char clientFifo[CLIENT_FIFO_NAME_LEN];
 
-
+static int NEED_UNLINK_SAFIFO  = 0;
+static int NEED_UNLINK_SFIFO   = 0;
 
 /* on succ-exit must delete client FIFO */
 
@@ -16,6 +17,11 @@ static void createServerFIFOAccess();
 static void createServerFIFO();
 
 static void createClientFIFO();
+
+static void handlerFIFO(int sig);
+
+static void setSignalsHandler();
+
 
 int main(int argc, const char *argv[])
 {
@@ -35,13 +41,17 @@ int main(int argc, const char *argv[])
     int lastByteRead; 
     int lastByteWrite;
 
+/* Set signals (INT + TERM) handlers                    */
+
+    setSignalsHandler();
+
 /* we get the permissions on file creating that we want */
 
     umask(0); 
 
     createClientFIFO();
 
-/* process is blocked until server opens on read */
+/* process is blocked until server opens on read        */
 
 
     serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);          
@@ -173,13 +183,6 @@ int main(int argc, const char *argv[])
     exit(EXIT_SUCCESS);
 }
 
-static void removeFifo(void)
-{
-    fprintf(stderr, "TEST: IN REMOVE FIFO\n");
-    unlink(clientFifo);
-    fprintf(stderr, "clientFifo unlinked\n");
-}
-
 static void checkargv(int argc, const char *argv[])
 {
     if (argc < 2)
@@ -202,11 +205,10 @@ static void checkargv(int argc, const char *argv[])
 }
 
 static void createServerFIFOAccess()
-{
-    umask(0);           
+{           
     errno = 0;
 
-    int mkfifoStatus = mkfifo(SERVER_FIFO_ACCESS, S_IRUSR | S_IWUSR | S_IWGRP);
+    int mkfifoStatus = mkfifo(SERVER_FIFO_ACCESS, S_IRUSR | S_IWUSR | S_IWGRP); 
 
     if (mkfifoStatus == -1)
     {
@@ -216,11 +218,14 @@ static void createServerFIFOAccess()
             exit(MKFIFO_NO_EEXIT);
         }
     }  
+    else /* belonging serverACCESSFIFO to client not to server */
+    {
+        NEED_UNLINK_SAFIFO = 1;
+    }
 }
 
 static void createServerFIFO()
 {
-    umask(0);           
     errno = 0;
 
     int mkfifoStatus = mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP);
@@ -232,26 +237,69 @@ static void createServerFIFO()
             perror("ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
             exit(MKFIFO_NO_EEXIT);
         }
-    }  
+    }
+    else /* belonging serverFIFO to client not to server */
+    {
+        NEED_UNLINK_SFIFO = 1;
+    }
 }
 
 static void createClientFIFO()
 {
     snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) getpid());
 
-    if ( mkfifo(clientFifo, S_IRUSR | S_IWUSR | S_IWGRP) == -1
-         && errno != EEXIST)
+    if ( mkfifo(clientFifo, S_IRUSR | S_IWUSR | S_IWGRP) == -1)
     {
-        fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
-        exit(MKFIFO_NO_EEXIT);
+        if(errno != EEXIST)
+        {
+            fprintf(stderr, "ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
+            exit(MKFIFO_NO_EEXIT);
+        }
+        /* else all good */
     }   
+}
 
+static void removeFifo(void)
+{
+    fprintf(stderr, "TEST: IN REMOVE FIFO\n");
+ 
+    unlink(clientFifo);
+ 
+    if (NEED_UNLINK_SAFIFO)
+    {
+        unlink(SERVER_FIFO_ACCESS);
+        DEBPRINT("SERVER ACCESS FIFO unlinked\n")
+    }
+    if (NEED_UNLINK_SFIFO)
+    {
+        unlink(SERVER_FIFO);
+        DEBPRINT("SERVER FIFO unlinked\n")
+    }
+    fprintf(stderr, "clientFifo unlinked\n");
+}
+
+static void handlerFIFO(int sig)
+{
+    fprintf(stderr, "FIFO handler got SIGNAL: %s(%d)\n", strsignal(sig), sig);
+
+    exit(FIFO_HANDLER_SIGNALS);
+}
+
+static void setSignalsHandler()
+{
+    if ( (signal(SIGINT, handlerFIFO) == SIG_ERR) || (signal(SIGTERM, handlerFIFO) == SIG_ERR) )
+    {
+        fprintf(stderr, "Can't set signal handler for SIGINT or SIGTERM\n");
+        exit(SET_SIGHANDLER_ERROR);
+    }
+    
     if (atexit(removeFifo) != 0)
     {
         fprintf(stderr, "Can't set exit function\n");
         exit(EXIT_FAILURE);
     }  
+    else
+        DEBPRINT("Successful set removeFIFO\n")
 }
-
 
 
