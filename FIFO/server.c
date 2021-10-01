@@ -1,6 +1,8 @@
 #include "libs.h"
 #include "commun.h"
 
+static int NEED_UNLINK_SAFIFO  = 0;
+static int NEED_UNLINK_SFIFO   = 0;
 
 static int getRDofFIFO();
 
@@ -50,7 +52,6 @@ int main(int argc, const char *argv[])
 
     fixFifoEof();
 
-
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
     {
         fprintf(stderr, "Can't set ignore to signal SISPIPE.\n");
@@ -94,7 +95,7 @@ int main(int argc, const char *argv[])
         int lastByteRead;
         errno = 0;
 
-        serverRFd = getRDofFIFO();
+        serverRFd = getRDofFIFO(); // will block unlit client will not open write-end of SERVER_FIFO
 
         while ( (lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0)
         {
@@ -110,11 +111,15 @@ int main(int argc, const char *argv[])
 
         unlink(clientFifo);
 
-        fprintf(stderr, "CLIENT SERVED\n");
+        DEBPRINT("CLIENT SERVED\n");
+
+        /* TODO: IF SERVER FIFO (ACC FIFO) were created by client that server can create his own */
 
     }
 
 /* close all FD */
+
+    DEBPRINT("TEST: HERETEST: HERETEST: HERE\n");
 
     ERRCHECK_CLOSE(serverAccRFd)
     ERRCHECK_CLOSE(clientWFd)
@@ -126,10 +131,18 @@ int main(int argc, const char *argv[])
 
 static void handlerFIFO(int sig)
 {
-    unlink(SERVER_FIFO);
-    unlink(SERVER_FIFO_ACCESS);
+    if (NEED_UNLINK_SFIFO)
+    {
+        unlink(SERVER_FIFO);
+        DEBPRINT("SERVER FIFO UNLINKED\n")
+    }
+    if (NEED_UNLINK_SAFIFO)
+    {
+        unlink(SERVER_FIFO_ACCESS);
+        DEBPRINT("SERVER ACCESS FIFO UNLINKED\n")
+    }
 
-    fprintf(stderr, "FIFO handler got SIGNAL: %s(%d)\n", strsignal(sig), sig);
+    DEBPRINT("FIFO handler got SIGNAL: %s(%d)\n", strsignal(sig), sig);
 
     exit(FIFO_HANDLER_SIGNALS);
 }
@@ -180,7 +193,13 @@ static void createServerFIFO()
             perror("ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
             exit(MKFIFO_NO_EEXIT);
         }
-    }  
+    }
+    else
+    {
+        NEED_UNLINK_SFIFO = 1;
+        DEBPRINT("NEED UNLINK = true\n");
+    }
+    
 }
 
 static void createServerFIFOAccess()
@@ -197,11 +216,18 @@ static void createServerFIFOAccess()
             perror("ERROR: mk(client)fifo access. ERROR IS NOT EEXIST\n");
             exit(MKFIFO_NO_EEXIT);
         }
+    }
+    else
+    {
+        NEED_UNLINK_SAFIFO = 1;
+        DEBPRINT("NEED UNLINK A = true\n");
     }  
 }
 
 static int getRDofFIFO()
-{
+{ 
+    /* blocked while write-end close. To fix endless blocking we must open write-end */
+
     int serverRFd = open(SERVER_FIFO, O_RDONLY); //| O_NONBLOCK);  
     if (serverRFd == -1)
     {
