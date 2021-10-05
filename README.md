@@ -8,7 +8,7 @@
     - [X] __Threader__
     - [X] __Executor__
 - [X] __CSA__ (client-service application), using __FIFO__
-- [ ] FIFO
+- [X] __FIFO__
 
 # How to build
 
