@@ -2,6 +2,7 @@
 #include "commun.h"
 
 static char clientFifo[CLIENT_FIFO_NAME_LEN];
+static char clientAccessFifo[CLIENT_FIFO_ACCESS_NAME_LEN];
 
 static int NEED_UNLINK_SAFIFO  = 0;
 static int NEED_UNLINK_SFIFO   = 0;
@@ -14,7 +15,7 @@ static void checkargv(int argc, const char *argv[]);
 
 static void createServerFIFOAccess();
 
-static void createServerFIFO();
+static void createClientAccessFIFO();
 
 static void createClientFIFO();
 
@@ -27,16 +28,18 @@ int main(int argc, const char *argv[])
 {
     checkargv(argc, argv);
 
+    DEBPRINT("PID = [%d]\n", long (getpid()));
+
     struct Req req;
     struct AccReq accReq = {getpid()};
     struct Accresp accResp = {1};
 
-    int serverAccWFd = -1;      // write to server access fifo
-    int clientRFd    = -1;      // reding access from server
+    int serverAccWFd    = -1;      /* write to server access fifo */
+    int clientAccRFd    = -1;      /* reading access from server  */
     
-    int fileRFd      = -1;      // read from file
-    int serverWFd    = -1;      // transfer data from file to server
-    
+    int fileRFd         = -1;      /* read from file */
+    int clientWFd       = -1;      /* transfer data from client(file) to server */
+     
 
     int lastByteRead; 
     int lastByteWrite;
@@ -49,10 +52,14 @@ int main(int argc, const char *argv[])
 
     umask(0); 
 
+    createClientAccessFIFO();
+
     createClientFIFO();
 
-/* process is blocked until server opens on read        */
 
+/* process is blocked until server opens on read  or if SERVER_FIFO_ACCESS wasn't created */
+
+    DEBPRINT("Before open SERVER_FIFO_ACCESS on write\n")
 
     serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);          
     
@@ -60,22 +67,26 @@ int main(int argc, const char *argv[])
    
     if (serverAccWFd == -1)
     {   
+        DEBPRINT("server fifo access FD == -1\n");
+
         if(errno != ENOENT)
         {
             perror("ERROR in open on write server access FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
         }
 
-        /* errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFOACCESS it our own*/
+        /* here errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFOACCESS it our own*/
 
         createServerFIFOAccess();
         serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
 
-        /*if ( (serverWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
+        DEBPRINT("\"REAL\" open SERVER_FIFO_ACCESS\n");
+
+        /*if ( (clientWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
         {
             perror("ERROR in open on write server FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
-        } */    
+        }  if error occurs and errno == ENOENT so fifo already created */    
     }
 
     if ( (fileRFd = open(argv[1], O_RDONLY)) == -1)
@@ -83,7 +94,6 @@ int main(int argc, const char *argv[])
         perror("Can't open file on read\n");
         exit(EXIT_FAILURE);
     } 
-
 
 /* Getting access to write in real FIFO*/
 
@@ -95,25 +105,32 @@ int main(int argc, const char *argv[])
 
     lastByteWrite = 0;
 
-    clientRFd = open(clientFifo, O_RDONLY); // blocking while server dont open another end of FIFO ==== we get access on write to transfer data to server
+    clientAccRFd = open(clientAccessFifo, O_RDONLY); // blocking while server dont open another end of FIFO ==== we get access on write to transfer data to server
     
     DEBPRINT("After open clienFIFO on read\n");
 
-    if (clientRFd < 0)
+    if (clientAccRFd < 0)
     {
         perror("client fifo on READ");
         exit(EXIT_FAILURE);
     }
 
-/* get access from server */
+/* getting access from server */
 
-    if ( (lastByteRead = read(clientRFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp) )
+    /* because the server may not have time to record the response by this time
+    sleep (1);
+    
+        or just we can do while() instead of if
+        or if "!=" we can push request againt (not exit).
+    */
+
+    if ( (lastByteRead = read(clientAccRFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp) )
     {
         perror("Error in read from client FIFO");
         exit(EXIT_FAILURE); 
     }
 
-/* ignore SIGPIPE so we will catch EPIPE if read-end of SF will close instead of SIGPIPE that will end our process*/
+/* ignore SIGPIPE so we will catch EPIPE if read-end of clientFIFO will close instead of SIGPIPE that will end our process*/
 
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
     {
@@ -123,8 +140,9 @@ int main(int argc, const char *argv[])
 
 /* open SF on write*/
 
-    serverWFd = open(SERVER_FIFO, O_WRONLY); // a lot of client can open FIFO
-    if (serverWFd == -1)
+    
+    clientWFd = open(clientFifo, O_WRONLY); // a lot of client can open FIFO
+    if (clientWFd == -1)
     {
         if(errno != ENOENT)
         {
@@ -132,11 +150,11 @@ int main(int argc, const char *argv[])
             exit(EXIT_FAILURE); // add special error-name
         }
 
-        /* errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFO*/
+        /* errno == ENOENT. It means no such file or dir. So client's fifo doesn't exist yet and we must create clientFIFO*/
 
-        createServerFIFO();
+        createClientFIFO();
         
-        /*if ( (serverWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
+        /*if ( (clientWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
         {
             perror("ERROR in open on write server FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
@@ -150,7 +168,7 @@ int main(int argc, const char *argv[])
 
     while ( (lastByteRead = read(fileRFd, req.buffer, BUF_SIZE)) > 0 )
     {
-        if ( write(serverWFd, req.buffer, lastByteRead) != lastByteRead )
+        if ( write(clientWFd, req.buffer, lastByteRead) != lastByteRead )
         {
             if(errno == EPIPE)
             {
@@ -173,10 +191,10 @@ int main(int argc, const char *argv[])
 
 /* closes all FD's */
 
-    ERRCHECK_CLOSE(serverWFd)
+    ERRCHECK_CLOSE(clientWFd)
     ERRCHECK_CLOSE(fileRFd)
     ERRCHECK_CLOSE(serverAccWFd)
-    ERRCHECK_CLOSE(clientRFd)
+    ERRCHECK_CLOSE(clientAccRFd)
     
     DEBPRINT("SECCUSSFUL\n");
 
@@ -220,27 +238,8 @@ static void createServerFIFOAccess()
     }  
     else /* belonging serverACCESSFIFO to client not to server */
     {
+        DEBPRINT("Server Access fifo was created by client\n");
         NEED_UNLINK_SAFIFO = 1;
-    }
-}
-
-static void createServerFIFO()
-{
-    errno = 0;
-
-    int mkfifoStatus = mkfifo(SERVER_FIFO, S_IRUSR | S_IWUSR | S_IWGRP);
-
-    if (mkfifoStatus == -1)
-    {
-        if(errno != EEXIST)
-        {
-            perror("ERROR: mk(client)fifo. ERROR IS NOT EEXIST\n");
-            exit(MKFIFO_NO_EEXIT);
-        }
-    }
-    else /* belonging serverFIFO to client not to server */
-    {
-        NEED_UNLINK_SFIFO = 1;
     }
 }
 
@@ -259,23 +258,37 @@ static void createClientFIFO()
     }   
 }
 
+static void createClientAccessFIFO()
+{
+    snprintf(clientAccessFifo, CLIENT_FIFO_ACCESS_NAME_LEN, CLIENT_FIFO_ACCESS_TEMPLATE, (long) getpid());
+
+    if ( mkfifo(clientAccessFifo, S_IRUSR | S_IWUSR | S_IWGRP) == -1)
+    {
+        if(errno != EEXIST)
+        {
+            perror("ERROR: mk(client_access)fifo. ERROR != EEXIST\n");
+            exit(MKFIFO_NO_EEXIT);
+        }
+        /* else all good */
+    }   
+}
+
 static void removeFifo(void)
 {
-    fprintf(stderr, "TEST: IN REMOVE FIFO\n");
- 
+    DEBPRINT("TEST: IN REMOVE FIFO\n")
+
     unlink(clientFifo);
- 
+    fprintf(stderr, "clientFifo unlinked\n");
+
+    unlink(clientAccessFifo);
+    fprintf(stderr, "clientAccessFifo unlinked\n");
+
     if (NEED_UNLINK_SAFIFO)
     {
         unlink(SERVER_FIFO_ACCESS);
         DEBPRINT("SERVER ACCESS FIFO unlinked\n")
     }
-    if (NEED_UNLINK_SFIFO)
-    {
-        unlink(SERVER_FIFO);
-        DEBPRINT("SERVER FIFO unlinked\n")
-    }
-    fprintf(stderr, "clientFifo unlinked\n");
+
 }
 
 static void handlerFIFO(int sig)
