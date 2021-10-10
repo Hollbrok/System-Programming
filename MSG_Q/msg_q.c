@@ -8,8 +8,7 @@ struct mbuf
     char mtext[MAX_MSG_LENGTH];
 };
 
-
-#define DEBUG_REGIME true
+#define DEBUG_REGIME 1
 
 #define DEBPRINT(args...)   \
     if(DEBUG_REGIME)        \
