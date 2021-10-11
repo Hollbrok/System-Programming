@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    /* get a System V semaphore set identifier and initialize them*/
+    /* get (create) a System V semaphore set identifier and initialize them*/
 
     
     if ( (semId = semget(SEM_KEY, 2, IPC_CREAT | OBJ_PERMS)) == -1)
@@ -74,21 +74,23 @@ int main(int argc, char* argv[])
     }
 
     while (1)
-    {
+    {     
         /* Wait for our turn */
         if (reserveSem(semId, SEM_W) == -1)
         {
             perror("reserver Write Sem");
             exit(EXIT_FAILURE);
-        }
-        
-        if ( (lastByteRead = read(fileRd, shmSeg->buf, BUF_SIZE)) != -1)
+        } /* now both SEM_W/R are used (value is 0)*/
+
+        if ( (lastByteRead = read(fileRd, shmSeg->buf, BUF_SIZE)) == -1)
         {
             perror("read from file");
             exit(EXIT_FAILURE);
         }
 
+
         shmSeg->cnt = lastByteRead;
+        DEBPRINT("lastByte to shm = %d\n", shmSeg->cnt)
 
         /* shmSeg is ready for reader so we give reader a turn */
 
@@ -98,8 +100,14 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
         }
 
-        if(lastByteRead == 0) /* got EOF*/
+        if (lastByteRead == 0) /* got EOF*/
+        {
+            DEBPRINT("find EOF\n")
             break;
+        }
+
+        DEBPRINT("done 1 write cicle\n")
+
     }
 
     /*  After exiting the loop we must wait till reader will done, then
@@ -125,7 +133,7 @@ int main(int argc, char* argv[])
         perror("detach shm");
         exit(EXIT_FAILURE);
     }
-    if (shmctl(shmSeg, IPC_RMID, 0) == -1)
+    if (shmctl(shmId, IPC_RMID, 0) == -1)
     {
         perror("remove shm Seg");
         exit(EXIT_FAILURE);
