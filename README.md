@@ -9,6 +9,8 @@
     - [X] __Executor__
 - [X] __CSA__ (client-service application), using __FIFO__
 - [X] __FIFO__
+- [X] __Message's queue__
+- [X] __Shared memory__
 
 # How to build
 
