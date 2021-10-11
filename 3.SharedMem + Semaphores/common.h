@@ -27,7 +27,7 @@ int reserveSem(int semId, int semNum);
 int releaseSem(int semId, int semNum);
 
 
-/* key_t keys */
+/* well-known keys for getting shm and sem */
 
 #define SHM_KEY 0xDEAD
 #define SEM_KEY 0x1000
@@ -48,7 +48,7 @@ int releaseSem(int semId, int semNum);
 
 /* structure of shared mem segment */
 
-struct shmseg 
+struct ShmSeg 
 {
     int cnt;            /* real size of data in buf*/
     char buf[BUF_SIZE]; /* data being transferred */
