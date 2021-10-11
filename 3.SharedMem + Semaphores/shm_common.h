@@ -1,4 +1,5 @@
-#include "libs.h"
+#ifndef SHM_COMMON_H
+#define SHM_COMMON_H
 
 #define DEBUG_REGIME 1
 
@@ -24,43 +25,8 @@
             (long) number);         \
     } while (0);
 
-long getNumber(char *numString);
-
-int main(int argc, char* argv[])
-{
-    
 
 
-    exit(EXIT_SUCCESS);
-}
 
-long getNumber(char *numString)
-{
-    if (*numString == '\0')
-    {
-        fprintf(stderr, "empty number argument\n");
-        exit(EXIT_FAILURE);
-    }
 
-    errno = 0;
-
-    long gNumber;
-    char* endOfEnter;
-
-    const int baseOfNumber = 10;
-    gNumber = strtol(numString, &endOfEnter, baseOfNumber);
-
-    if(*endOfEnter != '\0')
-    {
-        fprintf(stderr, "strtol error\n");
-        // exit(EXIT_FAILURE);
-    }
-    if (errno != 0)
-    {
-        fprintf(stderr, "strtol error\n");
-        // exit(EXIT_FAILURE);
-    }
-    
-    return gNumber;
-
-}
+#endif

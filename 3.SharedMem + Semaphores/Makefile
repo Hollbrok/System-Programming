@@ -1,2 +1,2 @@
 all:
-	g++ shm.c -o shm
+	g++ $(f).c -o $(f)
