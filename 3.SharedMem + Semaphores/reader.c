@@ -24,13 +24,13 @@ int main(int argc, char* argv[])
     if ( (shmId = shmget(SHM_KEY, 0, 0)) == -1)
     {
         perror("shmget");
-        EXIT(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     
     if ( (shmSeq = shmat(shmId, NULL, SHM_RDONLY)) == (void *) -1)
     {
         perror("shmat (RDONLY)");
-        EXIT(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     /* get info in a loop */
@@ -43,10 +43,12 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
         } 
 
+        DEBPRINT("after reserve\n")
+
         if (shmSeq->cnt == 0)
             break;
 
-        fprintf(stderr, "%*.s", shmSeq->cnt, shmSeq->buf);
+        fprintf(stderr, "[%.*s][%d]", shmSeq->cnt, shmSeq->buf, shmSeq->cnt);
 
 
         if (releaseSem(semId, SEM_W) == -1)
