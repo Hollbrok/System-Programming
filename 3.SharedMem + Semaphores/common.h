@@ -50,7 +50,7 @@ int releaseSem(int semId, int semNum);
 
 struct ShmSeg 
 {
-    int cnt;            /* real size of data in buf*/
+    int  cnt;           /* real size of data in buf*/
     char buf[BUF_SIZE]; /* data being transferred */
 };
 

@@ -2,6 +2,12 @@
 #define LIBS_H_INC
 
 
+#include <sys/types.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,14 +16,5 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/stat.h>
-
-#include <signal.h>
-
-#include <sys/types.h>
-/* For portability */
-#include <sys/msg.h>
-#include <sys/wait.h>
-
 
 #endif
