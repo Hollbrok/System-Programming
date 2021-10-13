@@ -79,12 +79,13 @@ int main(int argc, const char *argv[])
         snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) accReq.pid);
         snprintf(clientAccFifo, CLIENT_FIFO_ACCESS_NAME_LEN, CLIENT_FIFO_ACCESS_TEMPLATE, (long) accReq.pid); 
 
-        DEB_SLEEP(2, "test: DO INT CLIENT\n")
+        //DEB_SLEEP(5, "test1: DO INT CLIENT\n")
 
         if ( (clientAccWFd = getWDofClientAccFIFO(clientAccFifo)) == -1)
         {
             /* read-end of client acc fifo closed --> let's serve another one */
             DEBPRINT("can't get any actions from clients. Go to server next\n")
+            //fprintf(stderr, "test1: success\n");
             continue;
         }
 
@@ -105,9 +106,15 @@ int main(int argc, const char *argv[])
         int lastByteRead;
         errno = 0;
 
-        serverRFd = getRDofClientFIFO(clientFifo); // will block unlit client will not open write-end of SERVER_FIFO
+        serverRFd = getRDofClientFIFO(clientFifo); 
 
-        while ( (lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0)
+        if (serverRFd == -1)
+        {
+            DEBPRINT("client can't open write-end of fifo\n")
+            continue;
+        }
+
+        while ( ( (lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0 ) || (errno == EAGAIN) )
         {
             DEBPRINT("[%d]\n", lastByteRead);
             fprintf(stderr, "%.*s", lastByteRead, req.buffer);
@@ -202,14 +209,27 @@ static void createServerFIFOAccess()
 
 static int getRDofFIFOAccess()
 {
-    /* will in block till here no client */
-
-    int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY);  // | O_NONBLOCK);
+    /*int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY | O_NONBLOCK);
     if (serverRAccFd == -1)
     {
         fprintf(stderr, "ERROR open %s", SERVER_FIFO_ACCESS);
         exit(ERROR_OPEN_TO_READ_CLIENT);
     }
+
+    fcntl(serverRAccFd, F_SETFL, fcntl(serverRAccFd, F_GETFL, NULL) & ~O_NONBLOCK);
+
+    DEBPRINT("GOT READ END OF SERVER FIFO ACCESS\n") */
+
+    /* will in block till here no client */
+
+    int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY);
+    if (serverRAccFd == -1)
+    {
+        fprintf(stderr, "ERROR open %s", SERVER_FIFO_ACCESS);
+        exit(ERROR_OPEN_TO_READ_CLIENT);
+    }
+
+    DEBPRINT("GOT READ END OF SERVER FIFO ACCESS\n")
 
     return serverRAccFd;
 }
@@ -219,49 +239,34 @@ static int getWDofClientAccFIFO(char *clientAccFifo)
     int clientAccWFd = open(clientAccFifo, O_WRONLY | O_NONBLOCK);
 
     DEBPRINT("after open CAF on W|NB\n");
-    
+
     if (clientAccWFd == -1)
     {   
-        fd_set readFDs = {};
-        FD_ZERO( &readFDs);
-        FD_SET(clientAccWFd, &readFDs);
-
         struct timeval waitTime = {};
         waitTime.tv_sec = 3;
 
-        DEBPRINT("do select\n");
-        if ( (select (clientAccWFd + 1, &readFDs, NULL, NULL, &waitTime)) > 0)
+        fd_set writeFDs = {};
+        FD_ZERO(&writeFDs);
+        FD_SET(0, &writeFDs);// FD_SET(clientAccWFd, &writeFDs);
+
+        DEBPRINT("[getting R] do select\n");
+        if ( (select(1, NULL, &writeFDs, NULL, &waitTime)) > 0)// ( (select(clientAccWFd + 1, NULL, &writeFDs, NULL, &waitTime)) > 0)
         {
             DEBPRINT("successful select\n")
-            return clientAccWFd; 
+            return open(clientAccFifo, O_WRONLY);//return clientAccWFd; 
         }
         else 
         {
+            perror("TEST");
             DEBPRINT("select failed\n");
             return -1;
         }
-        /*for (int attemps = 0; errno == ENXIO && attemps < 3; ++attemps)
-        {
-            errno = 0;
-            DEBPRINT("read-end of clientAccessFifo closed\n")
-            clientAccWFd = open(clientAccFifo, O_WRONLY | O_NONBLOCK);
-            if (errno == ENXIO)
-                sleep(1);   
-            else
-                return clientAccWFd;
-        }*/
-
-        DEBPRINT("clientAccFifo = %s\n", clientAccFifo);
-        perror("clientAccFifo");
-        exit(EXIT_FAILURE);
     }
     else
     {
-        fprintf(stderr, "SUCCESSFUL open CAF\n");
+        DEBPRINT("SUCCESSFUL open CAF (read-end opened by client)\n");
         return clientAccWFd;
     }
-
-
 }
 
 static int getRDofClientFIFO(char *clientFifo)
@@ -269,17 +274,53 @@ static int getRDofClientFIFO(char *clientFifo)
     /* blocked while write-end close. To fix endless blocking we must open write-end */
 
     DEBPRINT("before opening clientFIFO\n")
-    int serverRFd = open(clientFifo, O_RDONLY); //| O_NONBLOCK);  
     
+    int serverRFd = open(clientFifo, O_RDONLY | O_NONBLOCK);  // EAGAIN if server'll read from empty fifo with write end open
 
-    DEB_SLEEP(2, "after opening clientFIFO\n")
+    //DEB_SLEEP(2, "after opening clientFIFO\n")
 
     if (serverRFd == -1)
+    {   
+        perror("should never get here!!!!!!!!!!!!!!!!!\n");
+        
+        exit(EXIT_FAILURE);
+
+        /*struct timeval waitTime = {};
+        waitTime.tv_sec = 3;
+
+        fd_set readFDs = {};
+        FD_ZERO(&readFDs);
+        FD_SET(serverRFd, &readFDs);
+
+        DEBPRINT("[getting R] do select\n");
+        if ( (select(serverRFd+ 1, &readFDs, NULL, NULL, &waitTime)) > 0)
+        {
+            DEBPRINT("successful select\n")
+            return serverRFd; 
+        }
+        else 
+        {
+            DEBPRINT("select failed\n");
+            return -1;
+        }*/
+    }
+    else
     {
+        DEBPRINT("SUCCESSFUL open CAF (read-end opened by client)\n");
+
+        /* off O_NONBLOCKING  (!!!!)*/
+        DEB_SLEEP(5, "OFF NON_BLOCKING [TEST: try to close client]\n");
+        fcntl(serverRFd, F_SETFL, (fcntl(serverRFd, F_GETFL, NULL) & ~O_NONBLOCK) );
+        DEBPRINT("SUCCESS OFFED\n");
+        //fprintf(stderr, "test2:success\n");
+        return serverRFd;
+    }
+    
+   /* {
         fprintf(stderr, "clientAccFifo = %s\n", clientFifo);
         perror("clientFifo");
         exit(ERROR_OPEN_TO_READ_CLIENT);
-    }
+    } 
 
-    return serverRFd;
+    return serverRFd; */
 }
