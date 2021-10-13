@@ -20,9 +20,9 @@ static void createServerFIFOAccess();
 
 int main(int argc, const char *argv[])
 {
-    int serverAccRFd = -1;              /* read client accessing request    */
-    int clientAccWFd    = -1;           /* write response to client         */
-    int serverRFd    = -1;              /* read client data transfering     */
+    int serverAccRFd    = -1;              /* read client accessing request     */
+    int clientAccWFd    = -1;              /* write response to client          */
+    int serverRFd       = -1;              /* read client data transfering      */
 
     struct Req req;        /* request to server from client     */
     struct AccReq accReq;
@@ -31,14 +31,9 @@ int main(int argc, const char *argv[])
     char clientFifo[CLIENT_FIFO_NAME_LEN];
     char clientAccFifo[CLIENT_FIFO_ACCESS_NAME_LEN];
 
-
 /* Set signals (INT + TERM) handlers                            */
 
     setSignalsHandler();
-
-/* Creating FIFO (only 1 for server to read from all clients)   */
-
-    //createServerFIFO();
 
 /* Creating Access FIFO (only 1 for server to read from all clients)   */
 
@@ -48,16 +43,15 @@ int main(int argc, const char *argv[])
  
     serverAccRFd = getRDofFIFOAccess();
 
-
-/* fix that fifo may meet EOF if there are no clients           */
+/* fix that fifo may meet EOF if there are no clients (to wait for new clients in cycle) */
 
     fixFifoEof();
 
-    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    /*if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
     {
         fprintf(stderr, "Can't set ignore to signal SISPIPE.\n");
         exit(SIGPIPE_IGN_ERROR);
-    }
+    }*/
 
 /* getting requests from clients                           */
 
@@ -66,16 +60,33 @@ int main(int argc, const char *argv[])
     while (TRUE)
     {
         /* trying to READ REQUEST from client until we got it                                           */
+        
+        DEBPRINT("[test]\n")
 
-        if ( read(serverAccRFd, &accReq, sizeof(struct AccReq)) != sizeof(struct AccReq))
+        int testRead;
+
+        if ( (testRead = (read(serverAccRFd, &accReq, sizeof(struct AccReq)) )) != sizeof(struct AccReq))
+        {
+            DEBPRINT("testRead = %d\n", testRead);
             continue;
+        }
+
+        DEBPRINT("testRead = %d\n", testRead);
+
 
         /* got client's request to access*/
 
         snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) accReq.pid);
         snprintf(clientAccFifo, CLIENT_FIFO_ACCESS_NAME_LEN, CLIENT_FIFO_ACCESS_TEMPLATE, (long) accReq.pid); 
 
-        clientAccWFd = getWDofClientAccFIFO(clientAccFifo);
+        DEB_SLEEP(2, "test: DO INT CLIENT\n")
+
+        if ( (clientAccWFd = getWDofClientAccFIFO(clientAccFifo)) == -1)
+        {
+            /* read-end of client acc fifo closed --> let's serve another one */
+            DEBPRINT("can't get any actions from clients. Go to server next\n")
+            continue;
+        }
 
         errno = 0;
 
@@ -103,13 +114,10 @@ int main(int argc, const char *argv[])
         }
 
         if (lastByteRead != 0)
-        {
+        { 
             perror("reader\n");
             exit(EXIT_FAILURE);
         }
-
-        // unlink(clientAccFifo);
-        // !/ unlink(clientFifo);
 
         DEBPRINT("CLIENT SERVED\n");
 
@@ -157,19 +165,11 @@ static void setSignalsHandler()
 
 static void fixFifoEof()
 {
-    //int fixFd  = -1;    /* this is FD to fix problem with FIFO: it needs to open FIFO write end to not meet EOF. */
-
-    /*fixFd = open(SERVER_FIFO, O_WRONLY);
-
-    if (fixFd  == -1)
-    {
-        fprintf(stderr, "ERROR: open fixFD. %s\n", SERVER_FIFO);
-        exit(OPEN_FIX_FD);
-    }*/
-
     int fixAccFd  = -1;    /* this is FD to fix problem with FIFO: it needs to open FIFO write end to not meet EOF. */
 
     fixAccFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
+
+    /* got here only after client client open read-end*/
 
     if (fixAccFd  == -1)
     {
@@ -180,13 +180,13 @@ static void fixFifoEof()
 
 static void createServerFIFOAccess()
 {
-    umask(0);           
     errno = 0;
 
     int mkfifoStatus = mkfifo(SERVER_FIFO_ACCESS, S_IRUSR | S_IWUSR | S_IWGRP);
     
     if (mkfifoStatus == -1)
     {
+        NEED_UNLINK_SAFIFO = 1; /* test */
         if(errno != EEXIST)
         {
             perror("ERROR: mk(client)fifo access. ERROR IS NOT EEXIST\n");
@@ -196,13 +196,15 @@ static void createServerFIFOAccess()
     else
     {
         NEED_UNLINK_SAFIFO = 1;
-        DEBPRINT("NEED UNLINK A = true\n");
+        DEBPRINT("NEED UNLINK SAFIFO = true\n");
     }  
 }
 
 static int getRDofFIFOAccess()
 {
-    int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY | O_NONBLOCK);
+    /* will in block till here no client */
+
+    int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY);  // | O_NONBLOCK);
     if (serverRAccFd == -1)
     {
         fprintf(stderr, "ERROR open %s", SERVER_FIFO_ACCESS);
@@ -214,22 +216,64 @@ static int getRDofFIFOAccess()
 
 static int getWDofClientAccFIFO(char *clientAccFifo)
 {
-    int clientAccWFd = open(clientAccFifo, O_WRONLY);
+    int clientAccWFd = open(clientAccFifo, O_WRONLY | O_NONBLOCK);
+
+    DEBPRINT("after open CAF on W|NB\n");
+    
     if (clientAccWFd == -1)
-    {
-        fprintf(stderr, "clientAccFifo = %s\n", clientAccFifo);
+    {   
+        fd_set readFDs = {};
+        FD_ZERO( &readFDs);
+        FD_SET(clientAccWFd, &readFDs);
+
+        struct timeval waitTime = {};
+        waitTime.tv_sec = 3;
+
+        DEBPRINT("do select\n");
+        if ( (select (clientAccWFd + 1, &readFDs, NULL, NULL, &waitTime)) > 0)
+        {
+            DEBPRINT("successful select\n")
+            return clientAccWFd; 
+        }
+        else 
+        {
+            DEBPRINT("select failed\n");
+            return -1;
+        }
+        /*for (int attemps = 0; errno == ENXIO && attemps < 3; ++attemps)
+        {
+            errno = 0;
+            DEBPRINT("read-end of clientAccessFifo closed\n")
+            clientAccWFd = open(clientAccFifo, O_WRONLY | O_NONBLOCK);
+            if (errno == ENXIO)
+                sleep(1);   
+            else
+                return clientAccWFd;
+        }*/
+
+        DEBPRINT("clientAccFifo = %s\n", clientAccFifo);
         perror("clientAccFifo");
         exit(EXIT_FAILURE);
     }
+    else
+    {
+        fprintf(stderr, "SUCCESSFUL open CAF\n");
+        return clientAccWFd;
+    }
 
-    return clientAccWFd;
+
 }
 
 static int getRDofClientFIFO(char *clientFifo)
 { 
     /* blocked while write-end close. To fix endless blocking we must open write-end */
 
+    DEBPRINT("before opening clientFIFO\n")
     int serverRFd = open(clientFifo, O_RDONLY); //| O_NONBLOCK);  
+    
+
+    DEB_SLEEP(2, "after opening clientFIFO\n")
+
     if (serverRFd == -1)
     {
         fprintf(stderr, "clientAccFifo = %s\n", clientFifo);
