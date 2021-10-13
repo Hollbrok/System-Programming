@@ -23,6 +23,8 @@ static void handlerFIFO(int sig);
 
 static void setSignalsHandler();
 
+// static int getWDofServerFIFOAccess();
+
 
 int main(int argc, const char *argv[])
 {
@@ -85,6 +87,8 @@ int main(int argc, const char *argv[])
         }  if error occurs and errno == ENOENT so fifo already created */    
     }
 
+/* open file with data */
+
     if ( (fileRFd = open(argv[1], O_RDONLY)) == -1)
     {
         perror("Can't open file on read\n");
@@ -98,6 +102,8 @@ int main(int argc, const char *argv[])
         perror("Error in write to SERVER_FIFO_ACCESS");
         exit(EXIT_FAILURE); 
     }
+    else
+        DEBPRINT("Successful write request to server\n")
 
     lastByteWrite = 0;
 
@@ -116,7 +122,7 @@ int main(int argc, const char *argv[])
     /* if in clientAccRFd write end closed read will return 0*/
 
     errno = 0;
-    DEB_SLEEP(2, "BEFORE read from clientAcc FIFO\n") 
+    //DEB_SLEEP(2, "BEFORE read from clientAcc FIFO\n") 
 
     while ( (lastByteRead = read(clientAccRFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp) )
     {
@@ -130,7 +136,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    fprintf(stderr, "After read access\n");
+    DEBPRINT("After read access\n");
 
 /* ignore SIGPIPE so we will catch EPIPE if read-end of clientFIFO will close instead of SIGPIPE that will end our process*/
 
@@ -144,7 +150,7 @@ int main(int argc, const char *argv[])
 
     clientWFd = open(clientFifo, O_WRONLY);
 
-    fprintf(stderr, "After open clientFifo on write\n");
+    DEBPRINT("After open clientFifo on write\n");
 
     if (clientWFd == -1)
     {
@@ -201,6 +207,63 @@ int main(int argc, const char *argv[])
     exit(EXIT_SUCCESS);
 }
 
+/*static int getWDofServerFIFOAccess()
+{
+    /*int ret_fd = open(SERVER_FIFO_ACCESS, O_WRONLY | O_NONBLOCK); // will block till read-end of SFA close 
+    
+    DEBPRINT("After open SERVER_FIFO_ACCESS on write\n");
+   
+    if (ret_fd == -1)
+    {   
+        DEBPRINT("errno = [%s]\n", strerror(errno))
+        perror("ERROR in open on write server access FIFO");
+
+        if (errno == ENXIO || errno == ENOENT) /* other end of FIFO closed */
+        /*{
+            struct timeval waitTime = {};
+            waitTime.tv_sec = 3;
+
+            fd_set writeFDs = {};
+            FD_ZERO(&writeFDs);
+            FD_SET(getpid(), &writeFDs);
+
+            DEBPRINT("[getting W] do select\n");
+            if ( (select(getpid() + 1, NULL, &writeFDs, NULL, &waitTime)) > 0)
+            {
+                DEBPRINT("successful select\n")
+                return open(SERVER_FIFO_ACCESS, O_WRONLY);  //return clientAccWFd; 
+            }
+            else 
+            {
+                DEBPRINT("failed\n");
+                return open(SERVER_FIFO_ACCESS, O_WRONLY);
+            }
+        } */
+
+        /* if (errno != ENOENT)
+        {
+            DEBPRINT("errno = [%s]\n", strerror(errno))
+            perror("ERROR in open on write server access FIFO");
+            exit(EXIT_FAILURE); // add special error-name
+        } */
+
+        /* here errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFOACCESS it our own*/
+
+        /*createServerFIFOAccess();
+        ret_fd= open(SERVER_FIFO_ACCESS, O_WRONLY); // will block if server died or doesn't exist
+
+        DEBPRINT("\"REAL\" open SERVER_FIFO_ACCESS\n"); */
+
+        /*if ( (clientWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
+        {
+            perror("ERROR in open on write server FIFO\n");
+            exit(EXIT_FAILURE); // add special error-name
+        }  if error occurs and errno == ENOENT so fifo already created */    
+    /* }
+
+    return ret_fd; 
+}*/
+
 static void checkargv(int argc, const char *argv[])
 {
     if (argc < 2)
@@ -247,6 +310,8 @@ static void createServerFIFOAccess()
 static void createClientFIFO()
 {
     snprintf(clientFifo, CLIENT_FIFO_NAME_LEN, CLIENT_FIFO_TEMPLATE, (long) getpid());
+
+    DEBPRINT("before mkfifo\n")
 
     if ( mkfifo(clientFifo, S_IRUSR | S_IWUSR | S_IWGRP) == -1)
     {
