@@ -28,12 +28,10 @@ int main(int argc, const char *argv[])
 {
     checkargv(argc, argv);
 
-    DEBPRINT("PID = [%d]\n", long (getpid()));
-
-    struct Req req;
-    struct AccReq accReq = {getpid()};
-    struct Accresp accResp = {1};
-
+    struct Req req          = {};
+    struct AccReq accReq    = {getpid()};
+    struct Accresp accResp  = {1};
+ 
     int serverAccWFd    = -1;      /* write to server access fifo */
     int clientAccRFd    = -1;      /* reading access from server  */
     
@@ -41,16 +39,14 @@ int main(int argc, const char *argv[])
     int clientWFd       = -1;      /* transfer data from client(file) to server */
      
 
-    int lastByteRead; 
-    int lastByteWrite;
+    int lastByteRead    = -1; 
+    int lastByteWrite   = -1;
 
 /* Set signals (INT + TERM) handlers                    */
 
     setSignalsHandler();
 
-/* we get the permissions on file creating that we want */
-
-    umask(0); 
+/* creates FIFO's for read access and write data from file to server */ 
 
     createClientAccessFIFO();
 
@@ -105,7 +101,7 @@ int main(int argc, const char *argv[])
 
     lastByteWrite = 0;
 
-    clientAccRFd = open(clientAccessFifo, O_RDONLY); // blocking while server dont open another end of FIFO ==== we get access on write to transfer data to server
+    clientAccRFd = open(clientAccessFifo, O_RDONLY | O_NONBLOCK); // succeeds immediately
     
     DEBPRINT("After open clienFIFO on read\n");
 
@@ -117,18 +113,24 @@ int main(int argc, const char *argv[])
 
 /* getting access from server */
 
-    /* because the server may not have time to record the response by this time
-    sleep (1);
-    
-        or just we can do while() instead of if
-        or if "!=" we can push request againt (not exit).
-    */
+    /* if in clientAccRFd write end closed read will return 0*/
 
-    if ( (lastByteRead = read(clientAccRFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp) )
+    errno = 0;
+    DEB_SLEEP(2, "BEFORE read from clientAcc FIFO\n") 
+
+    while ( (lastByteRead = read(clientAccRFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp) )
     {
-        perror("Error in read from client FIFO");
-        exit(EXIT_FAILURE); 
+
+        if (errno == EAGAIN) /* write end open so server can write and we need to trying again */
+            continue;
+        else if (errno)
+        {
+            perror("Error in read from client FIFO (!=EAGAIN)");
+            exit(EXIT_FAILURE); 
+        }
     }
+
+    fprintf(stderr, "After read access\n");
 
 /* ignore SIGPIPE so we will catch EPIPE if read-end of clientFIFO will close instead of SIGPIPE that will end our process*/
 
@@ -140,25 +142,23 @@ int main(int argc, const char *argv[])
 
 /* open SF on write*/
 
-    
-    clientWFd = open(clientFifo, O_WRONLY); // a lot of client can open FIFO
+    clientWFd = open(clientFifo, O_WRONLY);
+
+    fprintf(stderr, "After open clientFifo on write\n");
+
     if (clientWFd == -1)
     {
         if(errno != ENOENT)
         {
             perror("ERROR in open on write server FIFO\n");
-            exit(EXIT_FAILURE); // add special error-name
+            exit(EXIT_FAILURE);
         }
 
-        /* errno == ENOENT. It means no such file or dir. So client's fifo doesn't exist yet and we must create clientFIFO*/
+        /* errno == ENOENT. It means no such file or dir. So client's fifo doesn't exist*/
 
-        createClientFIFO();
+        DEBPRINT("open clientFifo on write");
         
-        /*if ( (clientWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
-        {
-            perror("ERROR in open on write server FIFO\n");
-            exit(EXIT_FAILURE); // add special error-name
-        } */    
+        exit(EXIT_FAILURE);    
     }
 
     lastByteRead = 0;
@@ -170,7 +170,7 @@ int main(int argc, const char *argv[])
     {
         if ( write(clientWFd, req.buffer, lastByteRead) != lastByteRead )
         {
-            if(errno == EPIPE)
+            if (errno == EPIPE)
             {
                 fprintf(stderr, "server died or closed read-end of FIFO\n");
                 exit(EXIT_FAILURE);
@@ -239,7 +239,8 @@ static void createServerFIFOAccess()
     else /* belonging serverACCESSFIFO to client not to server */
     {
         DEBPRINT("Server Access fifo was created by client\n");
-        NEED_UNLINK_SAFIFO = 1;
+        
+        NEED_UNLINK_SAFIFO = 0; //  (=0 TEST)
     }
 }
 
@@ -278,17 +279,17 @@ static void removeFifo(void)
     DEBPRINT("TEST: IN REMOVE FIFO\n")
 
     unlink(clientFifo);
-    fprintf(stderr, "clientFifo unlinked\n");
+    DEBPRINT("clientFifo unlinked\n")
 
     unlink(clientAccessFifo);
-    fprintf(stderr, "clientAccessFifo unlinked\n");
+    DEBPRINT("clientAccessFifo unlinked\n");
 
     if (NEED_UNLINK_SAFIFO)
     {
+        /* need to check if server created and only after unlink*/
         unlink(SERVER_FIFO_ACCESS);
         DEBPRINT("SERVER ACCESS FIFO unlinked\n")
     }
-
 }
 
 static void handlerFIFO(int sig)
@@ -314,5 +315,3 @@ static void setSignalsHandler()
     else
         DEBPRINT("Successful set removeFIFO\n")
 }
-
-
