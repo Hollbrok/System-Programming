@@ -17,6 +17,8 @@ static void createClientFIFO();
 
 static void removeFifo(void);
 
+static int getWDofClientFIFO();
+
 int main(int argc, const char *argv[])
 {
     checkargv(argc, argv);
@@ -41,9 +43,9 @@ int main(int argc, const char *argv[])
 
 /*  */
 
-    DEBPRINT("opening serverFIFO access on write\n")
+    DEBPRINT("opening serverFIFO  access on write\n")
 
-    serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);  /* in block till server doesn't open on read*/      
+    serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);  /* in block till server doesn't open on read or error if SERVER FIFO doesn't exists*/      
     
     DEBPRINT("after open SERVER_FIFO_ACCESS on write\n");
    
@@ -60,7 +62,7 @@ int main(int argc, const char *argv[])
         /* here errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFOACCESS it our's own*/
 
         createServerFIFOAccess();
-        if ( (serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY)) == -1)
+        if ( (serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY)) == -1) /* now can only be in block till server will not open read-end */
         {
             perror("erron in open serverFIFO access on write\n");
             exit(EXIT_FAILURE);
@@ -79,6 +81,20 @@ int main(int argc, const char *argv[])
 
 /* writing request on access to transfer data */
 
+/*
+
+    sleep(5);
+
+    int testWd = open(clientFifo, O_WRONLY | O_NONBLOCK);
+    if ( testWd == -1 )
+    {
+        DEBPRINT("ALARM!!!!!. clientFifo = %s\n", clientFifo)
+        perror("");
+        exit(EXIT_FAILURE);
+    }
+
+*/
+
     if ( (lastByteWrite = write(serverAccWFd, &accReq, sizeof(struct AccReq))) != sizeof(struct AccReq) )
     {
         perror("Error in write to SERVER_FIFO_ACCESS");
@@ -86,8 +102,6 @@ int main(int argc, const char *argv[])
     }
     else
         DEBPRINT("successful write request to server\n")
-
-    lastByteWrite = 0;
 
 
 /* ignore SIGPIPE so we will catch EPIPE if read-end of clientFIFO are closed while writing to clientFIFO instead of SIGPIPE that will end our process */
@@ -98,44 +112,43 @@ int main(int argc, const char *argv[])
         exit(SIGPIPE_IGN_ERROR);
     }
 
-/* open SF on write*/
+/* open CF on write*/
 
-    clientWFd = open(clientFifo, O_WRONLY); // may be deadlock if server died 
+    clientWFd = getWDofClientFIFO(); 
+
+/*
+
+    ERRCHECK_CLOSE(testWd)
+
+*/
 
     DEBPRINT("After open clientFifo on write\n");
 
     if (clientWFd == -1)
     {
-        if(errno != ENOENT)
-        {
-            perror("ERROR in open on write server FIFO\n");
-            exit(EXIT_FAILURE);
-        }
-
-        /* errno == ENOENT. It means no such file or dir. So client's fifo doesn't exist*/
-
-        DEBPRINT("open clientFifo on write");
-        
+        DEBPRINT("server probably died\n");
         exit(EXIT_FAILURE);    
     }
 
     lastByteRead = 0;
+    lastByteWrite = 0;
     errno = 0;
     
-    /* read from file, write to server FIFO */
+    /* read from file, write to server FIFO                                     */
+    /* if read-end are closed we got EPIPE error (+SIGPIPE, but we ignore them) */
 
     while ( (lastByteRead = read(fileRFd, req.buffer, BUF_SIZE)) > 0 )
     {
         if ( write(clientWFd, req.buffer, lastByteRead) != lastByteRead )
         {
-            if (errno == EPIPE)
+            if (errno == EPIPE) /* so server died (read-end closed) */
             {
                 fprintf(stderr, "server died or closed read-end of FIFO\n");
                 exit(EXIT_FAILURE);
             }
 
             fprintf(stderr, "Can't write to server FIFO\n");
-            exit(EXIT_FAILURE); // add special error-name
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -150,7 +163,6 @@ int main(int argc, const char *argv[])
     ERRCHECK_CLOSE(clientWFd)
     ERRCHECK_CLOSE(serverAccWFd)
     ERRCHECK_CLOSE(fileRFd)
-
 
     DEBPRINT("SECCUSSFUL\n");
 
@@ -216,6 +228,8 @@ static void createClientFIFO()
         }
         /* else all good */
     }   
+    else
+        DEBPRINT("successfull mkfile clientFifo = %s\n", clientFifo)
 }
 
 static void removeFifo(void)
@@ -256,3 +270,56 @@ static void setSignalsHandler()
     else
         DEBPRINT("Successful set removeFIFO\n")
 }
+
+static int getWDofClientFIFO()
+{
+    errno = 0;
+    int attemps = 3;
+
+    int clientWFd = open(clientFifo, O_WRONLY | O_NONBLOCK); // may be deadlock if server died 
+
+    DEBPRINT("After open clientFifo on write+O_NONBLOCK\n");
+
+    if (clientWFd == -1)
+    {
+        if (errno == ENOENT)
+        {
+            perror("client fifo doesn't exists\n");
+            exit(EXIT_FAILURE);
+        }
+        while (errno  == ENXIO && attemps)
+        {
+            sleep(1);
+            --attemps;
+            errno = 0;
+            clientWFd = open(clientFifo, O_WRONLY | O_NONBLOCK);    
+        }
+
+        if (attemps != 0)
+        {
+            DEBPRINT("successful opened on write client FIFO\n")
+        }
+        else
+        {
+            DEBPRINT("WAIT TIME ended\n")
+            return -1;
+        }
+    }
+
+    errno = 0;
+
+    fcntl(clientWFd, F_SETFL, O_RDONLY);//(fcntl(clientWFd, F_GETFL, NULL) & ~O_NONBLOCK));
+
+    if (errno == -1)
+    {
+        DEBPRINT("can't disable O_NONBLOCK\n")
+        exit(EXIT_FAILURE);
+    }
+
+    DEBPRINT("O_NONBLOCK disabled\n")
+    
+    return clientWFd;
+
+}
+
+

@@ -87,8 +87,12 @@ int main(int argc, const char *argv[])
             perror("read from client FIFO failed\n");
             exit(EXIT_FAILURE);
         }
+        else
+        {
+            fprintf(stderr, "Got EOF\n");
+        }
 
-        DEBPRINT("CLIENT SERVED\n");
+        DEBPRINT("CLIENT SERVED. LBR = %d\n", lastByteRead);
     }
 
 
@@ -126,6 +130,7 @@ static void setSignalsHandler()
 
 static void fixFifoEof()
 {
+
 /* this is FD to fix problem with FIFO: it needs to open FIFO write end to not meet EOF.  switch behavior to block*/
 
     int fixAccFd  = -1;    
@@ -184,7 +189,7 @@ static int getRDofClientFIFO(char *clientFifo)
     int savedErrno = errno;
     errno = 0;
 
-    DEBPRINT("before opening clientFIFO on read\n")
+    DEBPRINT("before  opening clientFIFO on read\n")
     
     int serverRFd = open(clientFifo, O_RDONLY | O_NONBLOCK); 
 
@@ -203,7 +208,7 @@ static int getRDofClientFIFO(char *clientFifo)
         
         //DEB_SLEEP(5, "OFF NON_BLOCKING [TEST: try to close client]\n");
 
-        fcntl(serverRFd, F_SETFL, (fcntl(serverRFd, F_GETFL, NULL) & ~O_NONBLOCK) );
+        fcntl(serverRFd, F_SETFL, O_RDONLY);//(fcntl(serverRFd, F_GETFL, NULL) & ~O_NONBLOCK) );
         if (errno == -1)
         {
             DEBPRINT("can't disable O_NONBLOCK\n")
