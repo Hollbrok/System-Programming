@@ -1,4 +1,5 @@
 #include "libs.h"
+#include "debug.h"
 
 static const int MAX_MSG_LENGTH = 1024;
 
@@ -8,29 +9,6 @@ struct mbuf
     char mtext[MAX_MSG_LENGTH];
 };
 
-#define DEBUG_REGIME 1
-
-#define DEBPRINT(args...)   \
-    if(DEBUG_REGIME)        \
-        fprintf(stderr, args);
-
-#define ERRCHECK_CLOSE(FD)          \
-    do                              \
-    {                               \
-        if (close(FD) != 0)         \
-        {                           \
-            fprintf(stderr, #FD);   \
-            perror("");             \
-        }                           \
-    } while(0);
-
-#define PRINT_INT(number)           \
-    do                              \
-    {                               \
-    fprintf(stderr, #number);       \
-    fprintf(stderr, " = %ld",       \
-            (long) number);         \
-    } while (0);
 
 long getNumber(char *numString);
 
@@ -40,7 +18,6 @@ int main(int argc, char* argv[])
     int msgId;
     struct mbuf sendMsg;
     struct mbuf recMsg;
-
 
     if (argc != 2)
     {
@@ -56,9 +33,8 @@ int main(int argc, char* argv[])
         perror("msgget");
         exit(EXIT_FAILURE);
     }
-    fprintf(stderr, "[%d]\n", msgId);
-    DEBPRINT("msgQ ID = %d\n", msgId)
 
+    DEBPRINT("msgQ ID = %d\n", msgId)
 
     for (int i = 0; i < NOchild; i++)
     {
@@ -80,7 +56,7 @@ int main(int argc, char* argv[])
             if ( msgsnd(msgId, &sendMsg, strlen(sendMsg.mtext), 0) == -1)
             {
                 perror("msgsnd");
-                exit(EXIT_FAILURE);
+                _exit(EXIT_FAILURE);
             }
         
             _exit(EXIT_SUCCESS);

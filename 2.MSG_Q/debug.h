@@ -1,0 +1,44 @@
+#ifndef DEBUG_H_INC
+#define DEBUG_H_INC
+
+
+#ifdef ND
+
+#define DEBUG_REGIME 1
+
+#else
+
+#define DEBUG_REGIME 0
+
+#endif
+
+#define NEED_SLEEP   0
+#define NEED_LINE    1
+
+
+#define DEBPRINT(args...)                       \
+    if(DEBUG_REGIME)                            \
+    {                                           \
+        if (NEED_LINE)                          \
+            fprintf(stderr, "\n|                LINE: %d\n"    \
+                            "->", __LINE__);    \
+        fprintf(stderr, args);                  \
+    }
+
+#define ERRCHECK_CLOSE(FD)      \
+    if (close(FD) != 0)         \
+    {                           \
+        perror("Close #FD");    \
+    }    
+
+#define DEB_SLEEP(x, msg)                               \
+    if(NEED_SLEEP)                                    \
+    {                                                   \
+        fprintf(stderr, msg);                           \
+        fprintf(stderr, "\n\nbefore test sleep = %d\n", x);   \
+        sleep(x);                                       \
+        fprintf(stderr, "after test sleep = %d\n\n", x);  \
+    }
+
+
+#endif
