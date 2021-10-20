@@ -24,39 +24,29 @@ static int getRDofServerFIFO(char *clientFifo);
 
 int main(int argc, const char *argv[])
 {
-    int serverAccWFd    = -1;              /* write PID to server FIFO     */
-    int serverRFd       = -1;              /* read client data transfering      */
+    int serverAccWFd    = -1;              /* write PID to server FIFO      */
+    int serverRFd       = -1;              /* read client data transfering  */
 
     int fixFD           = -1;
 
     struct Req req;                        /* request to server from client     */
-    struct AccReq accReq = {getpid()};     /* access request to server from client [PID] to know fifo */
+    struct AccResp accResp = {getpid()};   /* access request to server from client [PID] to know fifo */
 
     char serverFifo[SERVER_FIFO_NAME_LEN];
 
     snprintf(serverFifo, SERVER_FIFO_NAME_LEN, SERVER_FIFO_TEMPLATE, (long) getpid());
 
-/* Set signals (INT + TERM) handlers                                    */
+/* Set signals (INT + TERM) handlers [rather for debugging]             */
 
     setSignalsHandler();
 
 /* Creating Access FIFO (only 1 for server to read from all clients)    */
 
     createServerFIFOAccess();
-    
-/* Get FD to write to serverAccessFIFO                                 */
- 
-    //serverAccWFd = getWDofFIFOAccess();
 
-/* fix that fifo may meet EOF if there are no clients (to wait for new clients in cycle) */
-
-    //int fixFD = fixFifoEof();
-
-/*  create and get read-end of serverFIFO*/
+/*  create serverFIFO*/
 
     createServerFifo(serverFifo);
-
-    //serverRFd = getRDofServerFIFO(serverFifo); 
 
 /* serving clients in loop */
 
@@ -66,18 +56,20 @@ int main(int argc, const char *argv[])
     {
         DEBPRINT("At the start of while\n");
 
+    /* Get FD to write to serverAccessFIFO  */
         serverAccWFd = getWDofFIFOAccess();
-        fixFD =fixFifoEof();
-        serverRFd = getRDofServerFIFO(serverFifo); 
+
+    /* Get read-end of serverFIFO           */
+        serverRFd    = getRDofServerFIFO(serverFifo); 
 
 
         /* WRITE REQUEST [PID] to FIFO it equals that we are ready to server client*/
         
         DEBPRINT("writing pid to server ACC FIFO\n")
 
-        if ( write(serverAccWFd, &accReq, sizeof(struct AccReq)) != sizeof(struct AccReq)) /* get SIGPIPE + EPIPE of read end closed */
+        if ( write(serverAccWFd, &accResp, sizeof(struct AccResp)) != sizeof(struct AccResp)) /* get SIGPIPE + EPIPE of read end closed */
         {
-            DEBPRINT("read from serverAcc FIFO != sizeof(struct AccReq). LINE = %d\n", __LINE__);
+            DEBPRINT("read from serverAcc FIFO != sizeof(struct AccResp). LINE = %d\n", __LINE__);
             continue;
         }
 
@@ -87,11 +79,12 @@ int main(int argc, const char *argv[])
         int lastByteRead = -1;
         errno = 0;
 
-//!!!!  Client has 1 sec to open write-end
-//!!!!
+    //!!!!  Client has 1 sec to open write-end of serverFIFO
+    //!!!!
         sleep(1);
-//!!!!
-//!!!!
+    //!!!!
+    //!!!!
+
         while ( ((lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0 ) )
         {
             DEBPRINT("[%d]\n", lastByteRead);
@@ -109,7 +102,7 @@ int main(int argc, const char *argv[])
         }
 
         ERRCHECK_CLOSE(serverAccWFd);
-        ERRCHECK_CLOSE(fixFD);
+        //ERRCHECK_CLOSE(fixFD);
         ERRCHECK_CLOSE(serverRFd);
 
         DEBPRINT("CLIENT SERVED. LBR = %d\n", lastByteRead);
@@ -156,11 +149,9 @@ static void setSignalsHandler()
 static int fixFifoEof()
 {
 
-/* this is FD to fix problem with FIFO: it needs to open FIFO write end to not meet EOF.  switch behavior to block*/
-
     int fixAccFd  = -1;    
 
-    fixAccFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
+    fixAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY);
 
 /* read-end already opened */
 

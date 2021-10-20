@@ -5,6 +5,7 @@ static char serverFifo[SERVER_FIFO_NAME_LEN];
 
 static int NEED_UNLINK_SAFIFO  = 0;
 
+
 static void handlerFIFO(int sig);
 
 static void setSignalsHandler();
@@ -22,7 +23,7 @@ int main(int argc, const char *argv[])
     checkargv(argc, argv);
 
     struct Req req          = {};
-    struct AccReq accReq    = {};
+    struct AccResp accResp  = {};
  
     int serverAccRFd    = -1;      /* read from server access fifo */
 
@@ -32,11 +33,11 @@ int main(int argc, const char *argv[])
     int lastByteRead    = -1; 
     int lastByteWrite   = -1;
 
-/* Set signals (INT + TERM) handlers                    */
+/* Set signals (INT + TERM) handlers [rather for debugging] */
 
     setSignalsHandler();
 
-/*  */
+/*  getting response from server to known pid */
 
     DEBPRINT("opening serverFIFO  access on read\n")
 
@@ -85,9 +86,7 @@ int main(int argc, const char *argv[])
 
 /* reading request on access to transfer data */
 
-    //sleep(1);
-
-    if ( (lastByteWrite = read(serverAccRFd, &accReq, sizeof(struct AccReq))) != sizeof(struct AccReq) )
+    if ( (lastByteWrite = read(serverAccRFd, &accResp, sizeof(struct AccResp))) != sizeof(struct AccResp) )
     {
         perror("Error in read from SERVER_FIFO_ACCESS");
         DEBPRINT("LBR = %d\n", lastByteWrite)
@@ -98,7 +97,7 @@ int main(int argc, const char *argv[])
 
 /* open CF on write*/
 
-    clientWFd = getWDofServerFIFO(accReq.pid); 
+    clientWFd = getWDofServerFIFO(accResp.pid); 
 
     DEBPRINT("After open serverFifo on write\n");
 
@@ -259,7 +258,7 @@ static int getWDofServerFIFO(pid_t pid)
 
     errno = 0;
 
-    fcntl(serverWFd, F_SETFL, O_RDONLY);//(fcntl(serverWFd, F_GETFL, NULL) & ~O_NONBLOCK));
+    fcntl(serverWFd, F_SETFL, (fcntl(serverWFd, F_GETFL, NULL) & ~O_NONBLOCK));
 
     if (errno == -1)
     {

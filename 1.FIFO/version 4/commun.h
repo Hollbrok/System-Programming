@@ -60,14 +60,14 @@ const int TRUE  = 1;
 const int FALSE = 0;
 
 
-/* data which writing to server ACCESS FIFO about using FIFO  */
+/* data that comes to well-known FIFO from server to client */
 
-struct AccReq 
+struct AccResp
 {
     pid_t pid;
 };
 
-/* request which consists of data from file */
+/* request which consists of data from client's file to server */
 
 struct Req
 {
