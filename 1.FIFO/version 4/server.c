@@ -52,7 +52,7 @@ int main(int argc, const char *argv[])
 
     DEBPRINT("Before while(1)\n")
 
-    while (TRUE)
+    do /* only 1 iteration */
     {
         DEBPRINT("At the start of while\n");
 
@@ -70,7 +70,7 @@ int main(int argc, const char *argv[])
         if ( write(serverAccWFd, &accResp, sizeof(struct AccResp)) != sizeof(struct AccResp)) /* get SIGPIPE + EPIPE of read end closed */
         {
             DEBPRINT("read from serverAcc FIFO != sizeof(struct AccResp). LINE = %d\n", __LINE__);
-            continue;
+            break;//continue;
         }
 
         DEBPRINT("after writing PID \n")
@@ -88,7 +88,11 @@ int main(int argc, const char *argv[])
         while ( ((lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0 ) )
         {
             DEBPRINT("[%d]\n", lastByteRead);
-            fprintf(stderr, "%.*s", lastByteRead, req.buffer);
+
+            for(int j = 0; j < lastByteRead; j++)
+                fprintf(stderr, "%c", req.buffer[j]);
+
+            //fprintf(stderr, "%.*s", lastByteRead, req.buffer);
         }
 
         if (lastByteRead != 0)
@@ -106,7 +110,7 @@ int main(int argc, const char *argv[])
         ERRCHECK_CLOSE(serverRFd);
 
         DEBPRINT("CLIENT SERVED. LBR = %d\n", lastByteRead);
-    }
+    } while(0);
 
 
     DEBPRINT("SUCCESSFUL COMPLETED")

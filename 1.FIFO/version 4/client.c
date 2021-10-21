@@ -1,6 +1,6 @@
 #include "libs.h"
 #include "commun.h"
- 
+  
 static char serverFifo[SERVER_FIFO_NAME_LEN];
 
 static int NEED_UNLINK_SAFIFO  = 0;
@@ -145,7 +145,6 @@ int main(int argc, const char *argv[])
 
     exit(EXIT_SUCCESS);
 }
-
 
 static void checkargv(int argc, const char *argv[])
 {
