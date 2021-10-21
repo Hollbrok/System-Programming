@@ -15,13 +15,21 @@
 #define NEED_SLEEP   0
 #define NEED_LINE    1
 
+#define NEED_PID 1
+
 
 #define DEBPRINT(args...)                       \
     if(DEBUG_REGIME)                            \
     {                                           \
         if (NEED_LINE)                          \
-            fprintf(stderr, "\n|                LINE: %d\n"    \
-                            "->", __LINE__);    \
+        {                                       \
+            if (NEED_PID)                       \
+                fprintf(stderr, "\n|[%ld]   ", (long) getpid());    \
+            else                                \
+                fprintf(stderr, "\n|        "); \
+            fprintf(stderr, "LINE: %d\n"                            \
+                            "->", __LINE__);                        \
+        }                                                           \
         fprintf(stderr, args);                  \
     }
 
