@@ -21,7 +21,7 @@ U should to write the next commands
 # Progress
 
 
-| __1st sem__   |       __Test programms__      |   __FIFO__         | __Message Queue__ |   __Shared Memory__    |  __Signals__          |
-|:------------- |:---------------:              |:---------------:   |:-------------:    |:-------------:         |   :-------------:     |
-|   status      | __all passed successfully__   | `so close to pass` |  `+`              |    **waiting to pass** |                       |
+| __1st sem__   |       __Test programms__      |   __FIFO__            | __Message Queue__ |   __Shared Memory__    |  __Signals__          |
+|:------------- |:---------------:              |:--------------------:      |:-------------:    |:-------------:         |   :-------------:     |
+|   status      | __all passed successfully__   | `so close to pass`    |  `+`              |    **waiting to pass** |                       |
 
