@@ -76,6 +76,11 @@ int main(int argc, const char *argv[])
             continue;
         }
 
+//!!!!
+//!!!!
+        // sleep(1);
+//!!!!
+//!!!!
         while ( ((lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0 ) ) // || (errno == EAGAIN) )
         {
             DEBPRINT("[%d]\n", lastByteRead);

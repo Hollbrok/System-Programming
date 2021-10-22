@@ -47,11 +47,11 @@ int main(int argc, const char *argv[])
 
     fixFifoEof();
 
-    /*if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
     {
         fprintf(stderr, "Can't set ignore to signal SISPIPE.\n");
         exit(SIGPIPE_IGN_ERROR);
-    }*/
+    }
 
 /* getting requests from clients                           */
 
@@ -91,7 +91,11 @@ int main(int argc, const char *argv[])
 
         errno = 0;
 
-        if ( write(clientAccWFd, &accResp, sizeof(struct Accresp)) != sizeof(struct Accresp))
+        DEBPRINT("writing on CLIENT_ACC_FIFO\n")
+
+        int test_write = 0;
+
+        if ( (test_write = write(clientAccWFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp))
         {
             if (errno == EPIPE)
             {
@@ -102,6 +106,8 @@ int main(int argc, const char *argv[])
             perror("answering to client [write clietAccessFIFO]");
             continue;
         }
+
+        DEBPRINT("after writing on CLIENT_ACC_FIFO. test_write = %d\n", test_write)       
 
         int lastByteRead;
         errno = 0;
@@ -114,7 +120,7 @@ int main(int argc, const char *argv[])
             continue;
         }
 
-        while ( ( (lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0 ) || (errno == EAGAIN) )
+        while ( (lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0 )
         {
             DEBPRINT("[%d]\n", lastByteRead);
             fprintf(stderr, "%.*s", lastByteRead, req.buffer);
@@ -126,10 +132,7 @@ int main(int argc, const char *argv[])
             exit(EXIT_FAILURE);
         }
 
-        DEBPRINT("CLIENT SERVED\n");
-
-        /* TODO: IF SERVER FIFO (ACC FIFO) were created by client that server can create his own */
-
+        DEBPRINT("CLIENT SERVED, LBR = %d\n", lastByteRead);
     }
 
 /* close all FD */
@@ -172,7 +175,9 @@ static void setSignalsHandler()
 
 static void fixFifoEof()
 {
-    int fixAccFd  = -1;    /* this is FD to fix problem with FIFO: it needs to open FIFO write end to not meet EOF. */
+    /* this is FD to fix problem with FIFO: it needs to open FIFO write end to not meet EOF. */
+
+    int fixAccFd  = -1;    
 
     fixAccFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
 
@@ -209,17 +214,6 @@ static void createServerFIFOAccess()
 
 static int getRDofFIFOAccess()
 {
-    /*int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY | O_NONBLOCK);
-    if (serverRAccFd == -1)
-    {
-        fprintf(stderr, "ERROR open %s", SERVER_FIFO_ACCESS);
-        exit(ERROR_OPEN_TO_READ_CLIENT);
-    }
-
-    fcntl(serverRAccFd, F_SETFL, fcntl(serverRAccFd, F_GETFL, NULL) & ~O_NONBLOCK);
-
-    DEBPRINT("GOT READ END OF SERVER FIFO ACCESS\n") */
-
     /* will in block till here no client */
 
     int serverRAccFd = open(SERVER_FIFO_ACCESS, O_RDONLY);
@@ -247,10 +241,10 @@ static int getWDofClientAccFIFO(char *clientAccFifo)
 
         fd_set writeFDs = {};
         FD_ZERO(&writeFDs);
-        FD_SET(0, &writeFDs);// FD_SET(clientAccWFd, &writeFDs);
+        FD_SET(getpid(), &writeFDs);// FD_SET(clientAccWFd, &writeFDs);
 
         DEBPRINT("[getting R] do select\n");
-        if ( (select(1, NULL, &writeFDs, NULL, &waitTime)) > 0)// ( (select(clientAccWFd + 1, NULL, &writeFDs, NULL, &waitTime)) > 0)
+        if ( (select(getpid() + 1, NULL, &writeFDs, NULL, &waitTime)) > 0)// ( (select(clientAccWFd + 1, NULL, &writeFDs, NULL, &waitTime)) > 0)
         {
             DEBPRINT("successful select\n")
             return open(clientAccFifo, O_WRONLY);//return clientAccWFd; 
@@ -285,34 +279,24 @@ static int getRDofClientFIFO(char *clientFifo)
         
         exit(EXIT_FAILURE);
 
-        /*struct timeval waitTime = {};
-        waitTime.tv_sec = 3;
-
-        fd_set readFDs = {};
-        FD_ZERO(&readFDs);
-        FD_SET(serverRFd, &readFDs);
-
-        DEBPRINT("[getting R] do select\n");
-        if ( (select(serverRFd+ 1, &readFDs, NULL, NULL, &waitTime)) > 0)
-        {
-            DEBPRINT("successful select\n")
-            return serverRFd; 
-        }
-        else 
-        {
-            DEBPRINT("select failed\n");
-            return -1;
-        }*/
     }
     else
     {
-        DEBPRINT("SUCCESSFUL open CAF (read-end opened by client)\n");
+        DEBPRINT("SUCCESSFUL open CF (read-end opened by client)\n");
 
         /* off O_NONBLOCKING  (!!!!)*/
+        
         DEB_SLEEP(5, "OFF NON_BLOCKING [TEST: try to close client]\n");
-        fcntl(serverRFd, F_SETFL, (fcntl(serverRFd, F_GETFL, NULL) & ~O_NONBLOCK) );
-        DEBPRINT("SUCCESS OFFED\n");
-        //fprintf(stderr, "test2:success\n");
+        
+        errno = 0;
+
+        fcntl(serverRFd, F_SETFL, O_RDONLY);
+
+        if (errno == 0)
+            DEBPRINT("SUCCESS OFFED\n")
+        else 
+            DEBPRINT("NOT SUCCESS OFFED\n")
+
         return serverRFd;
     }
     

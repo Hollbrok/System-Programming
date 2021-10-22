@@ -3,10 +3,17 @@
 
 #define DEBUG_REGIME 1
 #define NEED_SLEEP   0
+#define NEED_LINE    1
 
-#define DEBPRINT(args...)   \
-    if(DEBUG_REGIME)        \
-        fprintf(stderr, args);
+
+#define DEBPRINT(args...)                       \
+    if(DEBUG_REGIME)                            \
+    {                                           \
+        if (NEED_LINE)                          \
+            fprintf(stderr, "|   LINE: %d\n"    \
+                            "->", __LINE__);    \
+        fprintf(stderr, args);                  \
+    }
 
 #define ERRCHECK_CLOSE(FD)      \
     if (close(FD) != 0)         \
@@ -18,49 +25,45 @@
     if(NEED_SLEEP)                                    \
     {                                                   \
         fprintf(stderr, msg);                           \
-        fprintf(stderr, "before test sleep = %d", x);   \
+        fprintf(stderr, "\n\nbefore test sleep = %d\n", x);   \
         sleep(x);                                       \
-        fprintf(stderr, "after test sleep = %d\n", x);  \
+        fprintf(stderr, "after test sleep = %d\n\n", x);  \
     }
 
 
-/* name templates */
+/* client FIFO name template */
 
-const char CLIENT_FIFO_ACCESS_TEMPLATE[] = "./fifos/clientfifoACCESS.%ld";        /* template for building client FIFO name */
+const char CLIENT_FIFO_TEMPLATE[] = "./fifos/clientfifo.%ld";                       /* template for building client FIFO name */
 
-const char CLIENT_FIFO_TEMPLATE[] = "./fifos/clientfifo.%ld";                     /* template for building client FIFO name */
+/* client FIFO name length */
 
-/* FIFO names length */
-
-const int  CLIENT_FIFO_NAME_LEN  = (sizeof(CLIENT_FIFO_TEMPLATE) + 15);                 /* size required for client FIFO pathname */
-
-const int  CLIENT_FIFO_ACCESS_NAME_LEN  = (sizeof(CLIENT_FIFO_ACCESS_TEMPLATE) + 15);   /* size required for client FIFO pathname */
-
+const int CLIENT_FIFO_NAME_LEN    = (sizeof(CLIENT_FIFO_TEMPLATE) + 15);            /* size required for client FIFO pathname */
 
 /* well-known name of server fifo */
 
-const char SERVER_FIFO_ACCESS[] = "./fifos/serverfifoACCESS";                     /* this fifo using to get permission on write */
-
+const char SERVER_FIFO_ACCESS[]   = "./fifos/serverfifoACCESS";                     /* this fifo using to get permission on write */
 
 const int BUF_SIZE = PIPE_BUF;
 
 const int TRUE  = 1;
 const int FALSE = 0;
 
-struct AccReq  // request to server about using FIFO  
+
+/* request to server about using FIFO  */
+
+struct AccReq 
 {
     pid_t pid;
 };
 
-struct Accresp // answer from server about access
-{
-    int isYes;
-};
+/* request which consists of data from file */
 
 struct Req
 {
     char buffer[BUF_SIZE];
 };
+
+
 
 enum ERRORS_SPEC
 {

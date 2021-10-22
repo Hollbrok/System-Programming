@@ -23,7 +23,9 @@ static void handlerFIFO(int sig);
 
 static void setSignalsHandler();
 
-// static int getWDofServerFIFOAccess();
+static int getWDofServerFIFOAccess();
+
+static int getWDofClientFIFO();
 
 
 int main(int argc, const char *argv[])
@@ -54,7 +56,6 @@ int main(int argc, const char *argv[])
 
     createClientFIFO();
 
-
 /* process is blocked until server opens on read  or if SERVER_FIFO_ACCESS wasn't created */
 
     DEBPRINT("Before open SERVER_FIFO_ACCESS on write\n")
@@ -79,12 +80,6 @@ int main(int argc, const char *argv[])
         serverAccWFd = open(SERVER_FIFO_ACCESS, O_WRONLY);
 
         DEBPRINT("\"REAL\" open SERVER_FIFO_ACCESS\n");
-
-        /*if ( (clientWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
-        {
-            perror("ERROR in open on write server FIFO\n");
-            exit(EXIT_FAILURE); // add special error-name
-        }  if error occurs and errno == ENOENT so fifo already created */    
     }
 
 /* open file with data */
@@ -105,11 +100,12 @@ int main(int argc, const char *argv[])
     else
         DEBPRINT("Successful write request to server\n")
 
+
     lastByteWrite = 0;
 
-    clientAccRFd = open(clientAccessFifo, O_RDONLY | O_NONBLOCK); // succeeds immediately
-    
-    DEBPRINT("After open clienFIFO on read\n");
+    clientAccRFd = open(clientAccessFifo, O_RDONLY);// | O_NONBLOCK); // succeeds immediately
+
+    DEBPRINT("After open clienFIFO on read\n")
 
     if (clientAccRFd < 0)
     {
@@ -117,18 +113,31 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    errno = 0;
+    
+    fcntl(clientAccRFd, F_SETFL, O_RDONLY);
+
+    if (errno != 0)
+    {
+        fprintf(stderr, "SOOOOOOOOOOOOOOOO BAD\n");
+        exit(EXIT_FAILURE);
+    }
+    
 /* getting access from server */
 
-    /* if in clientAccRFd write end closed read will return 0*/
+    /* if in clientAccRFd write end closed read will return 0 */
 
     errno = 0;
-    //DEB_SLEEP(2, "BEFORE read from clientAcc FIFO\n") 
+    DEB_SLEEP(2, "BEFORE read from clientAcc FIFO\n") 
 
     while ( (lastByteRead = read(clientAccRFd, &accResp, sizeof(struct Accresp))) != sizeof(struct Accresp) )
     {
 
         if (errno == EAGAIN) /* write end open so server can write and we need to trying again */
+        {
+            fprintf(stderr, "lastByteRead = %d\n", lastByteRead);
             continue;
+        }
         else if (errno)
         {
             perror("Error in read from client FIFO (!=EAGAIN)");
@@ -148,24 +157,7 @@ int main(int argc, const char *argv[])
 
 /* open SF on write*/
 
-    clientWFd = open(clientFifo, O_WRONLY);
-
-    DEBPRINT("After open clientFifo on write\n");
-
-    if (clientWFd == -1)
-    {
-        if(errno != ENOENT)
-        {
-            perror("ERROR in open on write server FIFO\n");
-            exit(EXIT_FAILURE);
-        }
-
-        /* errno == ENOENT. It means no such file or dir. So client's fifo doesn't exist*/
-
-        DEBPRINT("open clientFifo on write");
-        
-        exit(EXIT_FAILURE);    
-    }
+    clientWFd = getWDofClientFIFO();
 
     lastByteRead = 0;
     errno = 0;
@@ -185,9 +177,9 @@ int main(int argc, const char *argv[])
             fprintf(stderr, "Can't write to server FIFO\n");
             exit(EXIT_FAILURE); // add special error-name
         }
+        else
+            DEBPRINT("SUCC write\n");
     }
-
-
 
     if (lastByteRead != 0)
     {
@@ -202,67 +194,46 @@ int main(int argc, const char *argv[])
     ERRCHECK_CLOSE(serverAccWFd)
     ERRCHECK_CLOSE(clientAccRFd)
     
-    DEBPRINT("SECCUSSFUL\n");
+    DEBPRINT("SECCUSSFUL\n")
 
     exit(EXIT_SUCCESS);
 }
 
-/*static int getWDofServerFIFOAccess()
+static int getWDofClientFIFO()
 {
-    /*int ret_fd = open(SERVER_FIFO_ACCESS, O_WRONLY | O_NONBLOCK); // will block till read-end of SFA close 
-    
-    DEBPRINT("After open SERVER_FIFO_ACCESS on write\n");
-   
-    if (ret_fd == -1)
+    int clientWFd = open(clientFifo, O_WRONLY | O_NONBLOCK);
+
+    DEBPRINT("after open CF on W|NB\n");
+
+    if (clientWFd == -1)
     {   
-        DEBPRINT("errno = [%s]\n", strerror(errno))
-        perror("ERROR in open on write server access FIFO");
+        struct timeval waitTime = {};
+        waitTime.tv_sec = 3;
 
-        if (errno == ENXIO || errno == ENOENT) /* other end of FIFO closed */
-        /*{
-            struct timeval waitTime = {};
-            waitTime.tv_sec = 3;
+        fd_set writeFDs = {};
+        FD_ZERO(&writeFDs);
+        FD_SET(getpid(), &writeFDs);
 
-            fd_set writeFDs = {};
-            FD_ZERO(&writeFDs);
-            FD_SET(getpid(), &writeFDs);
+        DEBPRINT("[getting R] do select\n");
 
-            DEBPRINT("[getting W] do select\n");
-            if ( (select(getpid() + 1, NULL, &writeFDs, NULL, &waitTime)) > 0)
-            {
-                DEBPRINT("successful select\n")
-                return open(SERVER_FIFO_ACCESS, O_WRONLY);  //return clientAccWFd; 
-            }
-            else 
-            {
-                DEBPRINT("failed\n");
-                return open(SERVER_FIFO_ACCESS, O_WRONLY);
-            }
-        } */
-
-        /* if (errno != ENOENT)
+        if ( (select(getpid() + 1, NULL, &writeFDs, NULL, &waitTime)) > 0)
         {
-            DEBPRINT("errno = [%s]\n", strerror(errno))
-            perror("ERROR in open on write server access FIFO");
-            exit(EXIT_FAILURE); // add special error-name
-        } */
-
-        /* here errno == ENOENT. It means no such file or dir. So server doesn't exist yet and we must create serverFIFOACCESS it our own*/
-
-        /*createServerFIFOAccess();
-        ret_fd= open(SERVER_FIFO_ACCESS, O_WRONLY); // will block if server died or doesn't exist
-
-        DEBPRINT("\"REAL\" open SERVER_FIFO_ACCESS\n"); */
-
-        /*if ( (clientWFd = open(SERVER_FIFO, O_WRONLY)) == -1 && errno != ENOENT)
+            DEBPRINT("successful select\n")
+            return open(clientFifo, O_WRONLY);
+        }
+        else 
         {
-            perror("ERROR in open on write server FIFO\n");
-            exit(EXIT_FAILURE); // add special error-name
-        }  if error occurs and errno == ENOENT so fifo already created */    
-    /* }
-
-    return ret_fd; 
-}*/
+            perror("TEST");
+            DEBPRINT("select failed\n");
+            return -1;
+        }
+    }
+    else
+    {
+        DEBPRINT("SUCCESSFUL open CF (read-end opened by client)\n");
+        return clientWFd;
+    }
+}
 
 static void checkargv(int argc, const char *argv[])
 {
@@ -322,6 +293,8 @@ static void createClientFIFO()
         }
         /* else all good */
     }   
+
+    DEBPRINT("clientFIFO successfull created\n");
 }
 
 static void createClientAccessFIFO()

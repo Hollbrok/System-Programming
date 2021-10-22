@@ -79,7 +79,6 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     } 
 
-/* writing request on access to transfer data */
 
 /*
 
@@ -95,15 +94,6 @@ int main(int argc, const char *argv[])
 
 */
 
-    if ( (lastByteWrite = write(serverAccWFd, &accReq, sizeof(struct AccReq))) != sizeof(struct AccReq) )
-    {
-        perror("Error in write to SERVER_FIFO_ACCESS");
-        exit(EXIT_FAILURE); 
-    }
-    else
-        DEBPRINT("successful write request to server\n")
-
-
 /* ignore SIGPIPE so we will catch EPIPE if read-end of clientFIFO are closed while writing to clientFIFO instead of SIGPIPE that will end our process */
 
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
@@ -111,6 +101,16 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Can't set ignore to signal SISPIPE.\n");
         exit(SIGPIPE_IGN_ERROR);
     }
+
+/* writing request on access to transfer data */
+
+    if ( (lastByteWrite = write(serverAccWFd, &accReq, sizeof(struct AccReq))) != sizeof(struct AccReq) )
+    {
+        perror("Error in write to SERVER_FIFO_ACCESS");
+        exit(EXIT_FAILURE); 
+    }
+    else
+        DEBPRINT("successful write request to server\n")
 
 /* open CF on write*/
 

@@ -18,4 +18,8 @@ U should to write the next commands
 *  make
 *  ./progName [argument/arguments]
 
-# TODO
+# Progress
+
+| __1st sem__   |       __Test programms__      |   __FIFO__        | __Message Queue__| |    __Shared Memory__   |
+|:------------- |:---------------:              |:---------------:  | :-------------:    | :-------------:        |
+|   status      | __all passed successfully__   | "nearly passed"   |   +                |     __ __              |
