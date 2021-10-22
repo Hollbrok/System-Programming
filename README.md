@@ -20,11 +20,8 @@ U should to write the next commands
 
 # Progress
 
-| __1st sem__   |       __Test programms__      |   __FIFO__        | __Message Queue__| |    __Shared Memory__   |
-|:------------- |:---------------:|:---------------:|:-------------:|:-------------:|
-|   status      | __all passed successfully__   | "nearly passed"   |   +                |     __ __              |
 
 | __1st sem__   |       __Test programms__      |   __FIFO__        | __Message Queue__|   __Shared Memory__    |
 |:------------- |:---------------:|:---------------:|:-------------:|:-------------:|
-|   status      | __all passed successfully__   | "nearly passed"   |   +                |     __ __              |
+|   status      | __all passed successfully__   | "nearly passed"   |   +                |               |
 
