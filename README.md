@@ -7,7 +7,6 @@
     - [X] __Forker__ (need to add error processing after close)
     - [X] __Threader__
     - [X] __Executor__
-- [X] __CSA__ (client-service application), using __FIFO__
 - [X] __FIFO__
 - [X] __Message's queue__
 - [X] __Shared memory__
@@ -16,7 +15,7 @@
 
 U should to write the next commands
 *  make
-*  ./progName [argument/arguments]
+*  ./progName [argument/arguments] or (`if u need to run more than 1 prog`) u should do this in 2 independent consoles
 
 # Progress
 
