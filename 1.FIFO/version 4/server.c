@@ -89,10 +89,23 @@ int main(int argc, const char *argv[])
         {
             DEBPRINT("[%d]\n", lastByteRead);
 
+            /* 1st method */
+            
             for(int j = 0; j < lastByteRead; j++)
                 fprintf(stderr, "%c", req.buffer[j]);
 
-            //fprintf(stderr, "%.*s", lastByteRead, req.buffer);
+            /* or like this [2nd method] */
+
+            /*if (write(STDERR_FILENO, req.buffer, lastByteRead) == -1)
+            {
+                perror("write to stdout");
+                exit(EXIT_FAILURE);
+            }*/
+
+            
+            /* trash method (if the file contains '\0' symbol will not work)
+            fprintf(stderr, "%.*s", lastByteRead, req.buffer);
+            */ 
         }
 
         if (lastByteRead != 0)
