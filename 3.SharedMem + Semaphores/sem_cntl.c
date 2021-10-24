@@ -2,6 +2,7 @@
 
 #include "libs.h"
 #include "common.h"
+#include "debug.h"
 
 /* usingState can be 1(available to use) or 0 (in use)  */
 /* if error returns -1                                  */
@@ -22,14 +23,26 @@ int reserveSem(int semId, int semNum)
                             */
 
     struct sembuf sops = {semNum, -1, 0};
+    struct timespec time = {3, 0};
 
-    while (semop(semId, &sops, 1) == -1)
+    errno = 0;
+
+    while (semtimedop(semId, &sops, 1, &time))//(semop(semId, &sops, 1) == -1)
     {
-        if (errno != EINTR) /* can't break via interrupt */
+        if (errno == EAGAIN)
+        {
+            DEBPRINT("time in semtimedop ended (probably another process terminated)\n")
             return -1;
+        }
+        else if (errno != EINTR) /* can't break via interrupt */
+        {
+            DEBPRINT("errno != EINTR\n")
+            perror("");
+            return -1;
+        }
         else if (errno == EIDRM)
         {
-            DEBPRINT("Another process have deleted the semaphore. Exit\n")
+            DEBPRINT("Another process have deleted the semaphore.Exit\n")
             /* TODO: use semctl here to delete sem */
             exit(EXIT_FAILURE); 
         }

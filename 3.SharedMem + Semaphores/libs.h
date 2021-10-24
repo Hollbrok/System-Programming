@@ -1,7 +1,7 @@
 #ifndef LIBS_H_INC
 #define LIBS_H_INC
 
-
+#define _GNU_SOURCE
 #include <sys/types.h>
 #include <sys/sem.h>
 #include <sys/shm.h>

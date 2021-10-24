@@ -26,21 +26,20 @@ int initSem(int semId, int semNum, enum INIT_SEM usingState);
 int reserveSem(int semId, int semNum);
 int releaseSem(int semId, int semNum);
 
-
+ 
 /* well-known keys for getting shm and sem */
 
 #define SHM_KEY 0xDEAD
-#define SEM_KEY 0x1000
+#define SEM_KEY 0x1007
 
 /* Permissions for our IPC objects */
 
 #define OBJ_PERMS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
 
-/* semaphore sequence numbers */
+/* semaphore sequence numbers in set*/
 
 #define SEM_W 0
 #define SEM_R 1
-
 
 /* size of info part (buf) of shmseg*/
 
@@ -54,29 +53,21 @@ struct ShmSeg
     char buf[BUF_SIZE]; /* data being transferred */
 };
 
-
-#define DEBUG_REGIME 1
-
-#define DEBPRINT(args...)   \
-    if(DEBUG_REGIME)        \
-        fprintf(stderr, args);
-
-#define ERRCHECK_CLOSE(FD)          \
-    do                              \
-    {                               \
-        if (close(FD) != 0)         \
-        {                           \
-            fprintf(stderr, #FD);   \
-            perror("");             \
-        }                           \
-    } while(0);
-
-#define PRINT_INT(number)               \
-    do                                  \
-    {                                   \
-        fprintf(stderr, #number);       \
-        fprintf(stderr, " = %ld",       \
-                (long) number);         \
-    } while (0);
+#define LEAVE_STUFF                                     \
+    if (semctl(semId, 0, IPC_RMID, uselessArg) == -1)   \
+    {                                                   \
+        perror("remove semId");                         \
+        exit(EXIT_FAILURE);                             \
+    }                                                   \
+    if (shmdt(shmSeg) == -1)                            \
+    {                                                   \
+        perror("detach shm");                           \
+        exit(EXIT_FAILURE);                             \
+    }                                                   \
+    if (shmctl(shmId, IPC_RMID, 0) == -1)               \
+    {                                                   \
+        perror("remove shm Seg");                       \
+        exit(EXIT_FAILURE);                             \
+    }                                                   
 
 #endif
