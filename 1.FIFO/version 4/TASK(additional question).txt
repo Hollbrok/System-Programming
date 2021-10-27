@@ -1,11 +1,17 @@
 Critical sections:
 
 guessworks:
-   L   M
-  ( ) (+) 1) File (from which read and if redirection of stream)
+       M
+  (-) (+) 1) File (from which read and if redirection of stream)
   ( ) (+) 2) FD's of fifo's (порядок, в котором открываются они + время, пока идет sleep в server'е и он дает время на открытие пищущего конца FIFO)
-  ( ) (-) 3) mkfifo
 
-//////////////////////// + in (L) === true
+
+  (-) (-) 3) mkfifo
+
+//////////////////////// + in ( ) === true
   (+) (+) FIFO (CLIENT read)
   (+) (+) FIFO (SERVER write)
+
+////////////////
+
+Остается только порядок, в котором клиент получает доступ к write-end!!!!
