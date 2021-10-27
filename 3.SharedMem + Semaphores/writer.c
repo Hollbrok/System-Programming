@@ -65,7 +65,8 @@ int main(int argc, char* argv[])
         ERR_HANDLER("reserve SEM_R_INIT")
     }
 
-    printSem(semId);
+    if (DEBUG_REGIME)
+        printSem(semId);
 
     while (1)
     {     

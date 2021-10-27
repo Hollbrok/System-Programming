@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
         ERR_HANDLER("reserve SEM_W_INIT")
     }
 
-    printSem(semId);
+    if (DEBUG_REGIME)
+        printSem(semId);
 
     //DEBPRINT("TEST: E_VAL = %d\n", getSemVal(semId, SEM_E))
 
@@ -71,8 +72,9 @@ int main(int argc, char* argv[])
             DEBPRINT("BREAK FROM WHILE(1)\n")
             break;
         }
-        fprintf(stderr, "[%.*s][%d]", shmSeg->cnt, shmSeg->buf, shmSeg->cnt);
-
+    
+        fprintf(stderr, "%.*s", shmSeg->cnt, shmSeg->buf);
+        DEBPRINT("[%d]\n", shmSeg->cnt);
 
         if (releaseSem(semId, SEM_W) == -1)
         {

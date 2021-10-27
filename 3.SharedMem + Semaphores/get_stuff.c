@@ -36,7 +36,9 @@ int semGet(enum TYPE typeOfUser)
 
 
         DEBPRINT("BEFORE INIT:\n")
-        printSem(semId);
+
+        if (DEBUG_REGIME)
+            printSem(semId);
 
         /* release == +1*/
 
@@ -92,7 +94,9 @@ int semGet(enum TYPE typeOfUser)
     }
 
     DEBPRINT("AFTER INIT:\n")
-    printSem(semId);
+    
+    if (DEBUG_REGIME)
+        printSem(semId);
 
     return semId;
 }

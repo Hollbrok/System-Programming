@@ -46,6 +46,8 @@ int getSemVal(int semId, int semNum);
 #define SHM_KEY 0xDEAD
 #define SEM_KEY 0xDEAD
 
+//#define SAVE_KEY 0xFFDEAD
+
 /* Permissions for our IPC objects */
 
 #define OBJ_PERMS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
