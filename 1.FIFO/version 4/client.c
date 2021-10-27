@@ -66,7 +66,7 @@ int main(int argc, const char *argv[])
         }
 
         DEBPRINT("\"REAL\" opened SERVER_FIFO_ACCESS on write\n");    
-    }
+    } 
 
 /* open file with data */
 
@@ -85,11 +85,12 @@ int main(int argc, const char *argv[])
     }
 
 /* reading request on access to transfer data */
+    errno = 0;
 
     if ( (lastByteWrite = read(serverAccRFd, &accResp, sizeof(struct AccResp))) != sizeof(struct AccResp) )
     {
         perror("Error in read from SERVER_FIFO_ACCESS");
-        DEBPRINT("LBR = %d\n", lastByteWrite)
+        DEBPRINT("LBR = %d\n", lastByteWrite);
         exit(EXIT_FAILURE); 
     }
     else

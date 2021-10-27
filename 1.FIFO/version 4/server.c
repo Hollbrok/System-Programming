@@ -52,6 +52,8 @@ int main(int argc, const char *argv[])
 
     DEBPRINT("Before while(1)\n")
 
+    int isSuccess = 0;
+
     do /* only 1 iteration */
     {
         DEBPRINT("At the start of while\n");
@@ -78,7 +80,7 @@ int main(int argc, const char *argv[])
 
         int lastByteRead = -1;
         errno = 0;
-
+ 
     //!!!!  Client has 1 sec to open write-end of serverFIFO
     //!!!!
         sleep(1);
@@ -87,25 +89,14 @@ int main(int argc, const char *argv[])
 
         while ( ((lastByteRead = read(serverRFd, &req, BUF_SIZE)) > 0 ) )
         {
-            DEBPRINT("[%d]\n", lastByteRead);
-
-            /* 1st method */
-            
-            for(int j = 0; j < lastByteRead; j++)
-                fprintf(stderr, "%c", req.buffer[j]);
-
-            /* or like this [2nd method] */
-
-            /*if (write(STDERR_FILENO, req.buffer, lastByteRead) == -1)
+            DEBPRINT("[%d]\n", lastByteRead); 
+        
+            if (write(STDERR_FILENO, req.buffer, lastByteRead) == -1)
             {
                 perror("write to stdout");
                 exit(EXIT_FAILURE);
-            }*/
+            }
 
-            
-            /* trash method (if the file contains '\0' symbol will not work)
-            fprintf(stderr, "%.*s", lastByteRead, req.buffer);
-            */ 
         }
 
         if (lastByteRead != 0)
@@ -115,16 +106,18 @@ int main(int argc, const char *argv[])
         }
         else
         {
-            DEBPRINT("Got EOF\n");
+            isSuccess = 1;
+            DEBPRINT("Got EOF (successfull file transfer)\n");
         }
 
         ERRCHECK_CLOSE(serverAccWFd);
-        //ERRCHECK_CLOSE(fixFD);
         ERRCHECK_CLOSE(serverRFd);
 
         DEBPRINT("CLIENT SERVED. LBR = %d\n", lastByteRead);
+
     } while(0);
 
+    fprintf(stdout, "STATUS of transfer: %s\n", isSuccess ? "success" : "failed" ); 
 
     DEBPRINT("SUCCESSFUL COMPLETED")
     exit(EXIT_SUCCESS);
