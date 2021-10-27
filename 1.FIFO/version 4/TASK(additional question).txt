@@ -1,0 +1,11 @@
+Critical sections:
+
+guessworks:
+   L   M
+  ( ) (+) 1) File (from which read and if redirection of stream)
+  ( ) (+) 2) FD's of fifo's
+  ( ) (-) 3) mkfifo
+
+//////////////////////// + in (L) === true
+  (+) (+) FIFO (CLIENT read)
+  (+) (+) FIFO (SERVER write)
