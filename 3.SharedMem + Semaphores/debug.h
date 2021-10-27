@@ -8,7 +8,7 @@
 
 #else
 
-#define DEBUG_REGIME 1
+#define DEBUG_REGIME 0
 
 #endif
 
@@ -24,12 +24,12 @@
         {                                       \
             if (NEED_PID)                       \
                 fprintf(stderr, "\n|[%ld]   ", (long) getpid());    \
-            else                                \
-                fprintf(stderr, "\n|        "); \
+            else                                                    \
+                fprintf(stderr, "\n|        ");                     \
             fprintf(stderr, "LINE: %d\n"                            \
                             "->", __LINE__);                        \
         }                                                           \
-        fprintf(stderr, args);                  \
+        fprintf(stderr, args);                                      \
     }
 
 #define ERRCHECK_CLOSE(FD)      \
@@ -39,12 +39,12 @@
     }    
 
 #define DEB_SLEEP(x, msg)                               \
-    if(NEED_SLEEP)                                    \
+    if(NEED_SLEEP)                                      \
     {                                                   \
         fprintf(stderr, msg);                           \
-        fprintf(stderr, "\n\nbefore test sleep = %d\n", x);   \
-        sleep(x);                                       \
-        fprintf(stderr, "after test sleep = %d\n\n", x);  \
+        fprintf(stderr, "\n\nbefore test sleep = %d\n", x);     \
+        sleep(x);                                               \
+        fprintf(stderr, "after test sleep = %d\n\n", x);        \
     }
 
 #define ERR_HANDLER(msg)    \

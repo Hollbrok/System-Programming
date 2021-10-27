@@ -32,39 +32,7 @@ int main(int argc, char* argv[])
 
     /* get (create) a System V semaphore set identifier and initialize them*/
 
-    if ( (semId = semget(SEM_KEY, 2,  IPC_CREAT | IPC_EXCL | OBJ_PERMS)) == -1) /* if already exists or EXCL creation*/
-    {
-        DEBPRINT("can't create EXCL sem\n")
-
-        if (errno != EEXIST) /* Unexpected error from semget() */
-            ERR_HANDLER("semget")
-
-        semId = semget(SEM_KEY, 0, 0);
-
-        DEBPRINT("semId = %d\n", semId)
-        
-        if (semId == -1)
-            ERR_HANDLER("semget")
-    }
-    else
-    {
-        DEBPRINT("sem created EXCL [id = %d]\n Initialization\n", semId)
-
-        if (initSem(semId, SEM_W, AvailableToUse) == -1)
-        {
-            LEAVE_STUFF
-            ERR_HANDLER("initSem (AVB)")
-        }
-
-        DEBPRINT("after initialization WRITE sem (AVB)\n")
-
-        if (initSem(semId, SEM_R, InUse) == -1)
-        {
-            LEAVE_STUFF
-            ERR_HANDLER("initSem (InUse)")
-        }
-        DEBPRINT("after initialization READ sem (InUse)\n")
-    }
+    semId = semGet(WRITER);
 
     DEBPRINT("after initialization all sems\n")
 
@@ -72,31 +40,7 @@ int main(int argc, char* argv[])
 
     /* allocate a System V shared memory segment and attach it */
 
-    if ( (shmId = shmget(SHM_KEY, sizeof(struct ShmSeg), IPC_CREAT | IPC_EXCL | OBJ_PERMS)) == -1)
-    {
-        DEBPRINT("can't create EXCL shm\n")
-
-        if (errno != EEXIST) /* Unexpected error from semget() */
-        {
-            LEAVE_STUFF
-            ERR_HANDLER("shmget")
-        }
-
-        shmId = shmget(SHM_KEY, 0, 0);
-
-        DEBPRINT("shmId = %d\n", shmId)
-
-        
-        if (shmId == -1)
-        {
-            LEAVE_STUFF
-            ERR_HANDLER("shmget")
-        }
-    }
-    else
-    {
-        DEBPRINT("shm created EXCL\n")
-    }
+    shmId = shmGet();
 
     if ( (shmSeg = shmat(shmId, NULL, 0)) == (void *) -1)
     {
@@ -107,14 +51,21 @@ int main(int argc, char* argv[])
     DEBPRINT("successful shmat\n")
     
 
-    /* so sending data to reader */
-
     if( (fileRd = open(argv[1], O_RDONLY)) == -1)
     {
         LEAVE_STUFF
         ERR_HANDLER("open file source")
     }
 
+    /* so sending data to reader */
+
+    if (reserveSem(semId, SEM_R_INIT) == -1)
+    {
+        LEAVE_STUFF
+        ERR_HANDLER("reserve SEM_R_INIT")
+    }
+
+    printSem(semId);
 
     while (1)
     {     
@@ -132,6 +83,13 @@ int main(int argc, char* argv[])
                 ERR_HANDLER("reserve WRITE sem (errno !=EINTR)")
             }
         } /* now both SEM_W/R are inUse (value is 0)*/
+
+        if (getSemVal(semId, SEM_E) == 1)
+        {
+            LEAVE_STUFF
+            DEBPRINT("READER DEAD!!!!!!!!!!!\n")
+            exit(EXIT_FAILURE);
+        }
 
         if ( (lastByteRead = read(fileRd, shmSeg->buf, BUF_SIZE)) == -1)
         {

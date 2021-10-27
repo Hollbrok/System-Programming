@@ -25,12 +25,26 @@ int initSem(int semId, int semNum, enum INIT_SEM usingState);
 
 int reserveSem(int semId, int semNum);
 int releaseSem(int semId, int semNum);
+int undoChange(int semId, int semNum, int value);
+
+/*  */
+
+enum TYPE
+{
+    WRITER,
+    READER,
+};
+
+int semGet(enum TYPE typeOfUser);
+int shmGet();
+void printSem(int semId);
+int getSemVal(int semId, int semNum);
 
  
 /* well-known keys for getting shm and sem */
 
 #define SHM_KEY 0xDEAD
-#define SEM_KEY 0x1007
+#define SEM_KEY 0xDEAD
 
 /* Permissions for our IPC objects */
 
@@ -38,12 +52,21 @@ int releaseSem(int semId, int semNum);
 
 /* semaphore sequence numbers in set*/
 
+
 #define SEM_W 0
 #define SEM_R 1
 
+#define SEM_E 2
+
+#define SEM_W_INIT 3
+#define SEM_R_INIT 4
+
+#define NO_SEMS 5
+
+
 /* size of info part (buf) of shmseg*/
 
-#define BUF_SIZE 1024
+#define BUF_SIZE 4096
 
 /* structure of shared mem segment */
 
@@ -54,7 +77,7 @@ struct ShmSeg
 };
 
 #define LEAVE_STUFF                                     \
-    if (semctl(semId, 0, IPC_RMID, uselessArg) == -1)   \
+    if (semctl(semId, 0, IPC_RMID, NULL) == -1)   \
     {                                                   \
         perror("remove semId");                         \
         exit(EXIT_FAILURE);                             \
