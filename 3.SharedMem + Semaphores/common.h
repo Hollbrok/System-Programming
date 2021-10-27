@@ -43,8 +43,8 @@ int getSemVal(int semId, int semNum);
  
 /* well-known keys for getting shm and sem */
 
-#define SHM_KEY 0xDEAD
-#define SEM_KEY 0xDEAD
+#define SHM_KEY 0xDEADDEAD
+#define SEM_KEY 0xDEADDEAD
 
 //#define SAVE_KEY 0xFFDEAD
 

@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 
     /* checks if there is a 2nd argument (file name) */
 
-    if (argc != 2)
+    if (argc < 2)
     {
         DEBPRINT("No file arguments provided\n")
         exit(EXIT_FAILURE);
