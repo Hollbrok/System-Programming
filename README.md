@@ -22,5 +22,12 @@ U should to write the next commands
 
 | __1st sem__   |       __Test programms__      |   __FIFO__            | __Message Queue__ |   __Shared Memory__    |  __Signals__          |
 |:------------- |:---------------:              |:--------------------:      |:-------------:    |:-------------:         |   :-------------:     |
-|   status      | __all passed successfully__   | `so close to pass`    |  `+`              |    **waiting to pass** |                       |
+|   status      | __all passed successfully__   | `question remains`    |  `+`              |    __wrote__  |                       |
 
+## TODO
+
+### __SHM + SEMs__
+    [ ] atexit function to rm ipc's
+    [ ] or add 1 more sem to indicate that we remove all successfully__ (val 1 after init and 0 after rm). And after
+    not EXCL create check this!
+    [ ] critical sections
