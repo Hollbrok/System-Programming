@@ -63,7 +63,10 @@ int getSemVal(int semId, int semNum);
 #define SEM_W_INIT 3
 #define SEM_R_INIT 4
 
-#define NO_SEMS 5
+#define BECOME_W 5
+#define BECOME_R 6
+
+#define NO_SEMS 7
 
 
 /* size of info part (buf) of shmseg*/
@@ -79,9 +82,10 @@ struct ShmSeg
 };
 
 #define LEAVE_STUFF                                     \
-    if (semctl(semId, 0, IPC_RMID, NULL) == -1)   \
+    if (semctl(semId, 0, IPC_RMID, NULL) == -1)         \
     {                                                   \
-        perror("remove semId");                         \
+        if(errno != EINVAL)                             \
+            perror("remove semId");                     \
         exit(EXIT_FAILURE);                             \
     }                                                   \
     if (shmdt(shmSeg) == -1)                            \

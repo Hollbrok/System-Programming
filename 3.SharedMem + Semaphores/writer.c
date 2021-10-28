@@ -59,11 +59,15 @@ int main(int argc, char* argv[])
 
     /* so sending data to reader */
 
+    printf("before reserver R_INIT\n");
+
     if (reserveSem(semId, SEM_R_INIT) == -1)
     {
         LEAVE_STUFF
         ERR_HANDLER("reserve SEM_R_INIT")
     }
+
+    printf("after reserve R_INIT\n");
 
     if (DEBUG_REGIME)
         printSem(semId);
@@ -71,6 +75,11 @@ int main(int argc, char* argv[])
     while (1)
     {     
         /* Wait for our turn */
+        //printf("before reserver W_SEM\n");
+
+        if (DEBUG_REGIME)
+            printSem(semId);
+
         if (reserveSem(semId, SEM_W) == -1)
         {
             if (errno == EAGAIN)
@@ -85,10 +94,16 @@ int main(int argc, char* argv[])
             }
         } /* now both SEM_W/R are inUse (value is 0)*/
 
+        //printf("after reserver W_SEM\n");
+
         if (getSemVal(semId, SEM_E) == 1)
         {
+            if (DEBUG_REGIME)
+                printSem(semId);
+
             LEAVE_STUFF
             DEBPRINT("READER DEAD!!!!!!!!!!!\n")
+            
             exit(EXIT_FAILURE);
         }
 

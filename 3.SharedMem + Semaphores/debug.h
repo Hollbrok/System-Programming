@@ -2,7 +2,7 @@
 #define DEBUG_H_INC
 
 
-#ifdef ND
+#ifdef DEB
 
 #define DEBUG_REGIME 1
 
@@ -13,7 +13,7 @@
 #endif
 
 #define NEED_SLEEP   0
-#define NEED_LINE    1
+#define NEED_LINE    0
 #define NEED_PID 0
 
 

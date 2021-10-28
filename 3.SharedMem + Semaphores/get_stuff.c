@@ -29,6 +29,9 @@ int semGet(enum TYPE typeOfUser)
 
         /* NEED to wait while who created to initialize */
 
+        if (undoChange(semId, typeOfUser == WRITER ? BECOME_W : BECOME_R, -1) == -1)
+            ERR_HANDLER("UNDO reserver BECOME")
+
         if (reserveSem(semId, typeOfUser == WRITER ? SEM_R_INIT : SEM_W_INIT) == -1)
             ERR_HANDLER("reserve another INIT")
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_R_INIT : SEM_W_INIT) == -1)
@@ -42,16 +45,18 @@ int semGet(enum TYPE typeOfUser)
 
         /* release == +1*/
 
-
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_R : SEM_W) == -1)
             ERR_HANDLER("release WRITE sem")
 
         if (undoChange(semId, typeOfUser == WRITER ? SEM_R : SEM_W, -1) == -1)
             ERR_HANDLER("UNDO");
 
+        /*  */
+
         if (undoChange(semId, SEM_E, 1) == -1)
             ERR_HANDLER("UNDO");
 
+        /* done initialization */
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_W_INIT : SEM_R_INIT) == -1)
             ERR_HANDLER("release WRITE sem")
     }
@@ -73,6 +78,15 @@ int semGet(enum TYPE typeOfUser)
         
         if (initSem(semId, SEM_R_INIT, 0) == -1)
             ERR_HANDLER("initSem R_INIT(0)")
+        
+        if (initSem(semId, BECOME_W, AvailableToUse) == -1)
+            ERR_HANDLER("initSem HAS_W(1)")
+        
+        if (initSem(semId, BECOME_R, AvailableToUse) == -1)
+            ERR_HANDLER("initSem HAS_R(1)")
+
+        if (undoChange(semId, typeOfUser == WRITER ? BECOME_W : BECOME_R, -1) == -1)
+            ERR_HANDLER("undo reserve HAS")
     
         DEBPRINT("going to UNDO %s\n", typeOfUser == WRITER ? "READ sem" : "WRITE sem")
 
@@ -154,7 +168,7 @@ void printSem(int semId)
     if (semctl(semId, 0, GETALL, arg) == -1)
         ERR_HANDLER("semctl-GETALL");
 
-    char semName[5][10] = { "WRITER", "READER", "ERROR", "W_READY", "R_READY" };
+    char semName[NO_SEMS][10] = { "WRITER", "READER", "ERROR", "W_READY", "R_READY", "BECOME_W", "BECOME_R"};
 
     fprintf(stderr, "Sem # Value    NAME\n");
 

@@ -50,21 +50,58 @@ int main(int argc, char* argv[])
 
     //DEBPRINT("TEST: E_VAL = %d\n", getSemVal(semId, SEM_E))
 
+    int numOfiter = 0;
+    int savedNOI = -1;
+
     while (1)
     {
+
+        //sleep(1);
+
         if (reserveSem(semId, SEM_R) == -1)
         {
             LEAVE_STUFF
-            ERR_HANDLER("reserve READ sem (errno !=EINTR)")
+            ERR_HANDLER("reserve READ sem")
         } 
+
+        //printf("at the start\n");
 
         DEBPRINT("after reserve\n")
 
         if (getSemVal(semId, SEM_E) == 1)
         {
-            LEAVE_STUFF
+            if (DEBUG_REGIME)
+                printSem(semId);
+
             DEBPRINT("WRITER DEAD!!!!!!!!!!!\n")
-            exit(EXIT_FAILURE);
+            //printf("recovering..\n saved = %d\n", numOfiter);
+            /* waiting for new writer */
+        
+            savedNOI = numOfiter;
+            numOfiter = 0;
+
+
+            /* we done with preparing for recovering */
+            if (releaseSem(semId, SEM_R_INIT) == -1)
+            {
+                LEAVE_STUFF
+                ERR_HANDLER("release SEM_R_INIT")
+            }
+
+            //printf("released R\n");
+
+            /* waits new writer */
+            if (reserveSem(semId, SEM_W_INIT) == -1)
+            {
+                LEAVE_STUFF
+                ERR_HANDLER("reserver SEM_W_INIT")
+            }
+
+            //printf("succ recovered\n");
+            continue;
+
+            //LEAVE_STUFF            
+            //exit(EXIT_FAILURE);
         }
 
         if (shmSeg->cnt == 0)
@@ -72,9 +109,15 @@ int main(int argc, char* argv[])
             DEBPRINT("BREAK FROM WHILE(1)\n")
             break;
         }
-    
-        fprintf(stderr, "%.*s", shmSeg->cnt, shmSeg->buf);
-        DEBPRINT("[%d]\n", shmSeg->cnt);
+
+        if (numOfiter >= savedNOI)
+        {
+           // printf("greater [numofIter = %d]\n", numOfiter);
+            fprintf(stderr, "%.*s", shmSeg->cnt, shmSeg->buf);
+            DEBPRINT("[%d]\n", shmSeg->cnt);
+        } 
+            
+        ++numOfiter;
 
         if (releaseSem(semId, SEM_W) == -1)
         {
