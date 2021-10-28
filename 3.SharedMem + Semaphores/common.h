@@ -37,7 +37,7 @@ enum TYPE
 
 int semGet(enum TYPE typeOfUser);
 int shmGet();
-void printSem(int semId);
+void printSem(int semId, const char* msg);
 int getSemVal(int semId, int semNum);
 
  
@@ -66,7 +66,15 @@ int getSemVal(int semId, int semNum);
 #define BECOME_W 5
 #define BECOME_R 6
 
-#define NO_SEMS 7
+#define RECOVERING 7
+
+#define NO_SEMS 8
+#define SEM_NAMES           \
+    "WRITER", "READER",     \
+    "ERROR",                \
+    "W_READY", "R_READY",   \
+    "BECOME_W", "BECOME_R", \
+    "RECOVERING\0"
 
 
 /* size of info part (buf) of shmseg*/

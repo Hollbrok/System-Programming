@@ -16,6 +16,9 @@ int main(int argc, char* argv[])
     struct ShmSeg *shmSeg;
     union semun uselessArg;
 
+    int numOfiter = 0;
+    int savedNOI = -1;
+
     /* get (create) a System V semaphore set identifier and initialize them*/
 
     semId = semGet(READER);
@@ -45,13 +48,9 @@ int main(int argc, char* argv[])
         ERR_HANDLER("reserve SEM_W_INIT")
     }
 
-    if (DEBUG_REGIME)
-        printSem(semId);
+    //if (DEBUG_REGIME)
+    printSem(semId, "befire while()");
 
-    //DEBPRINT("TEST: E_VAL = %d\n", getSemVal(semId, SEM_E))
-
-    int numOfiter = 0;
-    int savedNOI = -1;
 
     while (1)
     {
@@ -64,44 +63,45 @@ int main(int argc, char* argv[])
             ERR_HANDLER("reserve READ sem")
         } 
 
-        //printf("at the start\n");
-
-        DEBPRINT("after reserve\n")
+        
+        /* if another side died */
 
         if (getSemVal(semId, SEM_E) == 1)
         {
-            if (DEBUG_REGIME)
-                printSem(semId);
+            //if (DEBUG_REGIME)
+                printSem(semId, "after death of writer");
 
-            DEBPRINT("WRITER DEAD!!!!!!!!!!!\n")
-            //printf("recovering..\n saved = %d\n", numOfiter);
             /* waiting for new writer */
         
             savedNOI = numOfiter;
             numOfiter = 0;
 
+            if (releaseSem(semId, RECOVERING) == -1)
+            {
+                LEAVE_STUFF
+                ERR_HANDLER("release RECOVERING");
+            }
 
             /* we done with preparing for recovering */
+
             if (releaseSem(semId, SEM_R_INIT) == -1)
             {
                 LEAVE_STUFF
                 ERR_HANDLER("release SEM_R_INIT")
             }
 
-            //printf("released R\n");
 
-            /* waits new writer */
+            /* waits new writer initialization*/
+
             if (reserveSem(semId, SEM_W_INIT) == -1)
             {
                 LEAVE_STUFF
                 ERR_HANDLER("reserver SEM_W_INIT")
             }
 
-            //printf("succ recovered\n");
-            continue;
+            printSem(semId, "after reader initialization");
 
-            //LEAVE_STUFF            
-            //exit(EXIT_FAILURE);
+            continue;
         }
 
         if (shmSeg->cnt == 0)
@@ -112,8 +112,8 @@ int main(int argc, char* argv[])
 
         if (numOfiter >= savedNOI)
         {
-           // printf("greater [numofIter = %d]\n", numOfiter);
-            fprintf(stderr, "%.*s", shmSeg->cnt, shmSeg->buf);
+            write(STDERR_FILENO, shmSeg->buf, shmSeg->cnt);
+            //fprintf(stderr, "%.*s", shmSeg->cnt, shmSeg->buf);
             DEBPRINT("[%d]\n", shmSeg->cnt);
         } 
             
@@ -126,11 +126,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    /*if (shmdt(shmSeg) == -1)
-    {
-        perror("detach shm");
-        exit(EXIT_FAILURE);
-    }*/
 
     /* give turn to writer to use [sem/shm]ctl  and detach shm*/
 

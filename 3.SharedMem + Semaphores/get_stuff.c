@@ -2,7 +2,8 @@
 #include "common.h"
 #include "debug.h"
 
-void printSem(int semId);
+void printSem(int semId, const char* msg);
+
 
 /* creating or getting exclusively sem set */
 /* TYPES of USERs: 
@@ -26,8 +27,12 @@ int semGet(enum TYPE typeOfUser)
             ERR_HANDLER("semget");
         
         DEBPRINT("semId = %d\n", semId)
+        
+        if (DEBUG_REGIME)
+            printSem(semId, "before initialization\n");
 
-        /* NEED to wait while who created to initialize */
+        
+        /* NEED to wait while who created to initialize and if another writer or reader died */
 
         if (undoChange(semId, typeOfUser == WRITER ? BECOME_W : BECOME_R, -1) == -1)
             ERR_HANDLER("UNDO reserver BECOME")
@@ -38,10 +43,17 @@ int semGet(enum TYPE typeOfUser)
             ERR_HANDLER("releave another INIT")
 
 
-        DEBPRINT("BEFORE INIT:\n")
+        /* in recovering available 2 situations : SEM_W[R] can have value 0 or 1 [but we need W=1 and R=0] */
 
-        if (DEBUG_REGIME)
-            printSem(semId);
+        if (getSemVal(semId, RECOVERING) == 1)
+        {
+            if (getSemVal(semId, SEM_W) != 1) /* 0 */
+                if (releaseSem(semId, SEM_W) == -1)
+                    ERR_HANDLER("recovering W")
+            if (getSemVal(semId, SEM_R) == 1) /* 0 */
+                if (releaseSem(semId, SEM_R) == -1)
+                    ERR_HANDLER("recovering R")
+        }
 
         /* release == +1*/
 
@@ -109,13 +121,14 @@ int semGet(enum TYPE typeOfUser)
 
     DEBPRINT("AFTER INIT:\n")
     
-    if (DEBUG_REGIME)
-        printSem(semId);
+    //if (DEBUG_REGIME)
+        printSem(semId, "final values");
 
     return semId;
 }
 
 /* creating or getting exclusively shm  + at */
+
 int shmGet()
 {
     int shmId;
@@ -151,8 +164,11 @@ int shmGet()
 }
 
 /* print info about sem values */
-void printSem(int semId)
+
+void printSem(int semId, const char* msg)
 {
+    printf("%s\n", msg);
+
     struct semid_ds ds;
     union semun arg;
 
@@ -168,12 +184,12 @@ void printSem(int semId)
     if (semctl(semId, 0, GETALL, arg) == -1)
         ERR_HANDLER("semctl-GETALL");
 
-    char semName[NO_SEMS][10] = { "WRITER", "READER", "ERROR", "W_READY", "R_READY", "BECOME_W", "BECOME_R"};
+    char semName[NO_SEMS][20] = { SEM_NAMES };
 
-    fprintf(stderr, "Sem # Value    NAME\n");
+    fprintf(stdout, "Sem # Value    NAME\n");
 
     for (int j = 0; j < ds.sem_nsems; j++)
-        fprintf(stderr, "%3d %5d %s\n", j, arg.array[j], semName[j]);
+        fprintf(stdout, "%3d %5d %s\n", j, arg.array[j], semName[j]);
 
     free(arg.array);
 }
@@ -195,12 +211,6 @@ int getSemVal(int semId, int semNum)
     if (semctl(semId, 0, GETALL, arg) == -1)
         ERR_HANDLER("semctl-GETALL");
 
-    //char semName[5][10] = { "WRITER", "READER", "ERROR", "W_READY", "R_READY" };
-
-    //fprintf(stderr, "Sem # Value    NAME\n");
-
-    //for (int j = 0; j < ds.sem_nsems; j++)
-    //    fprintf(stderr, "%3d %5d %s\n", j, arg.array[j], semName[j]);
     int retval = arg.array[semNum];
     free(arg.array);
 

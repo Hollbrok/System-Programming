@@ -67,18 +67,15 @@ int main(int argc, char* argv[])
         ERR_HANDLER("reserve SEM_R_INIT")
     }
 
-    printf("after reserve R_INIT\n");
-
-    if (DEBUG_REGIME)
-        printSem(semId);
+    //if (DEBUG_REGIME)
+        printSem(semId, "after reserve R_INIT\nBefore while");
 
     while (1)
     {     
         /* Wait for our turn */
-        //printf("before reserver W_SEM\n");
 
         if (DEBUG_REGIME)
-            printSem(semId);
+            printSem(semId, "at the start of while()");
 
         if (reserveSem(semId, SEM_W) == -1)
         {
@@ -94,24 +91,48 @@ int main(int argc, char* argv[])
             }
         } /* now both SEM_W/R are inUse (value is 0)*/
 
-        //printf("after reserver W_SEM\n");
+        /* if another side died */
 
         if (getSemVal(semId, SEM_E) == 1)
         {
-            if (DEBUG_REGIME)
-                printSem(semId);
+            //if (DEBUG_REGIME)
+                printSem(semId, "death of reader");
 
-            LEAVE_STUFF
-            DEBPRINT("READER DEAD!!!!!!!!!!!\n")
-            
-            exit(EXIT_FAILURE);
+            if (releaseSem(semId, RECOVERING) == -1)
+            {
+                LEAVE_STUFF
+                ERR_HANDLER("release RECOVERING");
+            }
+
+            /* we done with preparing for recovering */
+
+            if (releaseSem(semId, SEM_W_INIT) == -1)
+            {
+                LEAVE_STUFF
+                ERR_HANDLER("release SEM_W_INIT")
+            }
+
+            /* waits new reader initialization */
+
+            if (reserveSem(semId, SEM_R_INIT) == -1)
+            {
+                LEAVE_STUFF
+                ERR_HANDLER("reserver SEM_R_INIT")
+            }
+
+            printSem(semId, "after reader initialization");
+
+            continue;
         }
 
+        
         if ( (lastByteRead = read(fileRd, shmSeg->buf, BUF_SIZE)) == -1)
         {
             LEAVE_STUFF
             ERR_HANDLER("read from file")
         }
+
+        //printf("after read from file to shm\n");
 
 
         shmSeg->cnt = lastByteRead;
@@ -146,24 +167,6 @@ int main(int argc, char* argv[])
     }
     
     LEAVE_STUFF
-
-    /*
-    if (semctl(semId, 0, IPC_RMID, uselessArg) == -1)
-    {
-        perror("remove semId");
-        exit(EXIT_FAILURE);
-    }
-    
-    if (shmdt(shmSeg) == -1)
-    {
-        perror("detach shm");
-        exit(EXIT_FAILURE);
-    }
-    if (shmctl(shmId, IPC_RMID, 0) == -1)
-    {
-        perror("remove shm Seg");
-        exit(EXIT_FAILURE);
-    }*/
 
     DEBPRINT("SUCCESS\n");
 
