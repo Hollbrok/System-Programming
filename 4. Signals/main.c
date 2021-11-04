@@ -4,11 +4,24 @@
 
 char klastBit;
 int kchildPid = 0;
+clock_t kcBegin;
+long kfileSize;
+
 
 void exitStuff()
 {
     if (kchildPid)
         kill(kchildPid, SIGKILL);
+
+    if (kchildPid) /* only Parent print info*/
+    {  
+        clock_t cEnd = clock();
+        double timeSec = (double)(cEnd - kcBegin) / CLOCKS_PER_SEC;
+
+        fprintf(stderr, "time = %lg s\n"
+                    "filesize = %ld B\n"
+                    "speed of transmittion = %lg kB/s\n", timeSec, kfileSize, kfileSize / (timeSec * 1000));
+    }
 
     DEBPRINT("TEST exitStuff\n");
 }
@@ -47,7 +60,18 @@ int main(int argc, const char *argv[])
 
     atexit(&exitStuff);
 
+/* file stuff */
+
+    int fileRD;
+    if((fileRD = open(argv[1], O_RDONLY)) == -1)
+        err(EX_OSERR, "open %s", argv[1]);
+
+    kfileSize = lseek(fileRD, 0L, SEEK_END);
+    
+    lseek(fileRD, 0L, SEEK_SET);
+
 /* setting handlers for SIGUSR1/2*/
+
     struct sigaction sa;
 
     sigemptyset(&sa.sa_mask);
@@ -93,6 +117,9 @@ int main(int argc, const char *argv[])
 
 /* send and receive info by bits throw signals */
 
+    kcBegin = clock();
+
+
     if (isParent)
     {
         /* */
@@ -124,10 +151,6 @@ int main(int argc, const char *argv[])
     else /* CHILD */
     {
         int ppid = getppid();
-
-        int fileRD;
-        if((fileRD = open(argv[1], O_RDONLY)) == -1)
-            err(EX_OSERR, "open %s", argv[1]);
     
         unsigned char lastByte;
 

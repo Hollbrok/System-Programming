@@ -10,6 +10,7 @@
 
 #include <sysexits.h>
 #include <err.h>
+#include <time.h>
 
 #include <stdio.h>
 #include <stdlib.h>
