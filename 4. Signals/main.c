@@ -2,10 +2,14 @@
 #include "debug.h"
 #include "common.h"
 
-char klastBit;
+
 int kchildPid = 0;
+char klastBit;
+
 clock_t kcBegin;
 long kfileSize;
+
+int ksuccess = 1;
 
 
 void exitStuff()
@@ -13,14 +17,15 @@ void exitStuff()
     if (kchildPid)
         kill(kchildPid, SIGKILL);
 
-    if (kchildPid) /* only Parent print info*/
+    if (kchildPid) /* only parent print info*/
     {  
         clock_t cEnd = clock();
         double timeSec = (double)(cEnd - kcBegin) / CLOCKS_PER_SEC;
 
-        fprintf(stderr, "time = %lg s\n"
-                    "filesize = %ld B\n"
-                    "speed of transmittion = %lg kB/s\n", timeSec, kfileSize, kfileSize / (timeSec * 1000));
+        //fprintf(stderr, "\nStatus of transmission = %s\n", ksuccess == 1 ? "success" : "failed");
+        fprintf(stderr, "transmission time      = %lg s\n"
+                        "file size              = %ld B\n"
+                        "speed of transmission  = %lg kB/s\n", timeSec, kfileSize, kfileSize / timeSec /  1024);
     }
 
     DEBPRINT("TEST exitStuff\n");
@@ -29,16 +34,18 @@ void exitStuff()
 void handler0(int signum)
 {
     if (kchildPid)
-        DEBPRINT("parent got 0 bit\n");
+        DEBPRINT("parent got 0b0\n");
     else
         DEBPRINT("\t child got response\n");
+
     klastBit = 0;
 }
 
 void handler1(int signum)
 {
     if (kchildPid)
-        DEBPRINT("got 1 bit\n");
+        DEBPRINT("got 0b1\n");
+    
     klastBit = 1;
 }
 
@@ -53,7 +60,7 @@ int main(int argc, const char *argv[])
     if (argc < 2)
         err(EX_USAGE, "program need name-of-file argument");
 
-    fprintf(stderr, "PID = %ld\n", (long) getpid()); /* to know PID */
+    fprintf(stderr, "Parent: %ld\n", (long) getpid()); 
 
     int isParent = 1;
     int parentPid = getpid();
@@ -70,7 +77,7 @@ int main(int argc, const char *argv[])
     
     lseek(fileRD, 0L, SEEK_SET);
 
-/* setting handlers for SIGUSR1/2*/
+/* set handlers for SIGUSR1(2) */
 
     struct sigaction sa;
 
@@ -89,7 +96,7 @@ int main(int argc, const char *argv[])
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
         err(EX_OSERR, "sigaction to SIGCHLD");
         
-/* blockind signal for critical section processing */
+/* block signal for critical section processing */
 
     sigset_t prevMask, blockMask;
     sigfillset(&blockMask);
@@ -98,7 +105,7 @@ int main(int argc, const char *argv[])
         err(EX_OSERR ,"sigprocmast");
     
 
-/* creating child */
+/* create child */
 
     kchildPid = fork();
     switch (kchildPid)
@@ -120,34 +127,30 @@ int main(int argc, const char *argv[])
 
     kcBegin = clock();
 
-
     if (isParent)
     {
-        /* */
-
         unsigned char byte;
 
-        while (1) /* or while != EOF */
+        while (1)
         {
             byte = 0;
-            for(int i = 0; i < 8; ++i)
+            for (int i = 0; i < 8; ++i)
             {      
-                sigsuspend(&prevMask); //pause();
+                sigsuspend(&prevMask);                              /* unblock + get signal (atomically) */
 
                 byte += klastBit << i;
-                //fprintf(stderr, "byte = %d\n", byte);
 
-                if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1)
+                if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1) /* start of critical section so should block signals */
                     err(EX_OSERR ,"sigprocmask");
                 
-                if (kill(kchildPid, SIGUSR1) == -1)
+                if (kill(kchildPid, SIGUSR1) == -1)                 /* answer to child that we are ready */
                     err(EX_OSERR, "kill(child, USR1)");
-                
-                
             }
 
             write(STDOUT_FILENO, &byte, 1);
         }
+
+        fprintf(stderr, "PARENT after while(1)\n");
     }
     else /* CHILD */
     {
@@ -155,11 +158,11 @@ int main(int argc, const char *argv[])
     
         unsigned char lastByte;
 
-        while(read(fileRD, &lastByte, 1) > 0) /* also can transmitt EOF (to indificate the end of transmittion) */
+        while (read(fileRD, &lastByte, 1) > 0) 
         {
-            for(int i = 0; i < 8; ++i) /* оптимизация: если два подряд бита идут разные, то посылать их двое сразу, а потом ждат ответ, а не по-отдельности*/
+            for(int i = 0; i < 8; ++i)
             {
-                if ( ( (unsigned char) (lastByte << (sizeof(unsigned char) * 8 - 1 - i)) ) >> (sizeof(unsigned char) * 8 - 1)) /* bit == 0b1*/
+                if ( ( (unsigned char) (lastByte << (8 - 1 - i)) ) >> (8 - 1)) /* bit == 0b1*/
                 {
                     if (kill(ppid, SIGUSR2) == -1)
                         err(EX_OSERR, "kill(parent, USR2)");
@@ -172,14 +175,13 @@ int main(int argc, const char *argv[])
 
                 /* wait for response */
 
-                sigsuspend(&prevMask);
+                sigsuspend(&prevMask);                              /* unblock + get signal (atomically) */
 
-                if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1)
+                if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1) /* start of critical section so should block signals */
                     err(EX_OSERR ,"sigprocmask");
             }
         }
     }
     
-    DEBPRINT("SUCCESS\n");
     exit(EXIT_SUCCESS);
 }
