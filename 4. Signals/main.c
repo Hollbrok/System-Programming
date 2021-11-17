@@ -53,7 +53,7 @@ int main(int argc, const char *argv[])
     if (argc < 2)
         err(EX_USAGE, "program need name-of-file argument");
 
-    DEBPRINT("PID = %ld\n", (long) getpid()); /* to know PID */
+    fprintf(stderr, "PID = %ld\n", (long) getpid()); /* to know PID */
 
     int isParent = 1;
     int parentPid = getpid();
@@ -108,6 +108,7 @@ int main(int argc, const char *argv[])
         break;
     case 0:
         DEBPRINT("CHILD\n");
+        fprintf(stderr, "Child: %ld\n", (long) getpid());
         isParent = 0;
         break;
     default:
@@ -145,7 +146,7 @@ int main(int argc, const char *argv[])
                 
             }
 
-            fprintf(stdout, "%c", byte, byte);//write(STDOUT_FILENO, &byte, 1);
+            write(STDOUT_FILENO, &byte, 1);
         }
     }
     else /* CHILD */
