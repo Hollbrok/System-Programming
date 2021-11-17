@@ -3,7 +3,7 @@
 #include "common.h"
 
 
-int kchildPid = 0;
+int kchildPid = 0; // 1
 char klastBit;
 
 clock_t kcBegin;
@@ -65,12 +65,12 @@ int main(int argc, const char *argv[])
     int isParent = 1;
     int parentPid = getpid();
 
-    atexit(&exitStuff);
+    //atexit(&exitStuff);
 
-/* file stuff */
+/* file info, needs to test speed */
 
     int fileRD;
-    if((fileRD = open(argv[1], O_RDONLY)) == -1)
+    if ((fileRD = open(argv[1], O_RDONLY)) == -1)
         err(EX_OSERR, "open %s", argv[1]);
 
     kfileSize = lseek(fileRD, 0L, SEEK_END);
@@ -117,6 +117,12 @@ int main(int argc, const char *argv[])
         DEBPRINT("CHILD\n");
         fprintf(stderr, "Child: %ld\n", (long) getpid());
         isParent = 0;
+        
+        //sleep(10);
+
+        if (prctl(PR_SET_PDEATHSIG, SIGHUP) == -1)
+            err(EX_OSERR, "prctl");
+        
         break;
     default:
         DEBPRINT("PARENT\n");
@@ -134,14 +140,14 @@ int main(int argc, const char *argv[])
         while (1)
         {
             byte = 0;
-            for (int i = 0; i < 8; ++i)
+            for (int i = 0; i < __CHAR_BIT__; ++i)
             {      
                 sigsuspend(&prevMask);                              /* unblock + get signal (atomically) */
 
                 byte += klastBit << i;
 
-                if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1) /* start of critical section so should block signals */
-                    err(EX_OSERR ,"sigprocmask");
+                /*if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1)
+                    err(EX_OSERR ,"sigprocmask"); */
                 
                 if (kill(kchildPid, SIGUSR1) == -1)                 /* answer to child that we are ready */
                     err(EX_OSERR, "kill(child, USR1)");
@@ -160,9 +166,9 @@ int main(int argc, const char *argv[])
 
         while (read(fileRD, &lastByte, 1) > 0) 
         {
-            for(int i = 0; i < 8; ++i)
+            for (int i = 0; i < __CHAR_BIT__; ++i)
             {
-                if ( ( (unsigned char) (lastByte << (8 - 1 - i)) ) >> (8 - 1)) /* bit == 0b1*/
+                if (lastByte & (1 << i)) /* bit == 0b1*/   //( ((unsigned char) (lastByte << (8 - 1 - i)) ) >> (8 - 1)) 
                 {
                     if (kill(ppid, SIGUSR2) == -1)
                         err(EX_OSERR, "kill(parent, USR2)");
@@ -177,11 +183,12 @@ int main(int argc, const char *argv[])
 
                 sigsuspend(&prevMask);                              /* unblock + get signal (atomically) */
 
-                if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1) /* start of critical section so should block signals */
-                    err(EX_OSERR ,"sigprocmask");
+                /*if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1)
+                    err(EX_OSERR ,"sigprocmask"); */
             }
         }
     }
-    
+
+
     exit(EXIT_SUCCESS);
 }
