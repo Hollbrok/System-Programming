@@ -55,26 +55,27 @@ int getSemVal(int semId, int semNum);
 /* semaphore sequence numbers in set*/
 
 
-#define SEM_W 0
-#define SEM_R 1
+#define SEM_W 0 /* binary sem that we use like mutex for critical section */
+#define SEM_R 1 /*                          -//-                          */
 
-#define SEM_E 2
+#define SEM_E 2 /* to find out if 1 of processes are terminated */
 
-#define SEM_W_INIT 3
-#define SEM_R_INIT 4
+#define SEM_W_INIT 3    /* to ensure mutual exclusion on initialization */
+#define SEM_R_INIT 4    /*                  -//-                        */
 
-#define BECOME_W 5
-#define BECOME_R 6
+#define BECOME_W 5      /* to ensure there is only one writer */
+#define BECOME_R 6      /* to ensure there is only one reader */
 
-#define RECOVERING 7
+#define EXCL_ALIVE 7   /* to remove ipc in case of unexpected termination */
 
 #define NO_SEMS 8
+
 #define SEM_NAMES           \
     "WRITER", "READER",     \
     "ERROR",                \
     "W_READY", "R_READY",   \
     "BECOME_W", "BECOME_R", \
-    "RECOVERING\0"
+    "EXCL_ALIVE"
 
 
 /* size of info part (buf) of shmseg*/
@@ -90,21 +91,19 @@ struct ShmSeg
 };
 
 #define LEAVE_STUFF                                     \
-    if (semctl(semId, 0, IPC_RMID, NULL) == -1)         \
+        fprintf(stderr, "test\n");
+    
+    /*if (semctl(semId, 0, IPC_RMID, NULL) == -1)         \
     {                                                   \
         if(errno != EINVAL)                             \
-            perror("remove semId");                     \
+            ERR_HANDLER("remove semId");                \
+                                                        \
+        fprintf(stderr, "EINVAL: incorrect semId\n");   \
         exit(EXIT_FAILURE);                             \
     }                                                   \
     if (shmdt(shmSeg) == -1)                            \
-    {                                                   \
-        perror("detach shm");                           \
-        exit(EXIT_FAILURE);                             \
-    }                                                   \
+        ERR_HANDLER("detach shm");                      \
     if (shmctl(shmId, IPC_RMID, 0) == -1)               \
-    {                                                   \
-        perror("remove shm Seg");                       \
-        exit(EXIT_FAILURE);                             \
-    }                                                   
+        ERR_HANDLER("remove shm Seg");    */                                           
 
 #endif

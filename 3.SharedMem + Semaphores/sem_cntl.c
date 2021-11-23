@@ -17,27 +17,18 @@ int initSem(int semId, int semNum, enum INIT_SEM usingState)
 
 int reserveSem(int semId, int semNum)
 {
-    /*  sem_num    = semNum;
-        sem_op     = -1;
-        sem_flg    =  0;  
-                            */
-
-    struct sembuf sops = {semNum, -1, 0};
-    struct timespec time = {3, 0};
+    struct sembuf sops = { 
+        .sem_num = semNum,
+        .sem_op  = -1,
+        .sem_flg = 0     };
 
     errno = 0;
 
     while (semop(semId, &sops, 1) == -1)
     {
-        if (errno == EAGAIN)
-        {
-            DEBPRINT("time in semtimedop ended (probably another process terminated)\n")
-            return -1;
-        }
-        else if (errno == EIDRM)
+        if (errno == EIDRM)
         {
             DEBPRINT("Another process have deleted the semaphore.Exit\n")
-            /* TODO: use semctl here to delete sem */
             exit(EXIT_FAILURE); 
         }
         else if (errno == EINTR) /* can't break via interrupt */
@@ -58,13 +49,12 @@ int reserveSem(int semId, int semNum)
 
 int releaseSem(int semId, int semNum)
 {
-    /*  sem_num    = semNum;
-        sem_op     = +1;
-        sem_flg    =  0;
-                            */
     DEBPRINT("RELEASE semNum = %d\n", semNum)
 
-    struct sembuf sops = {semNum, 1, 0};
+    struct sembuf sops = {
+        .sem_num = semNum,
+        .sem_op  = 1,
+        .sem_flg = 0      };
 
     /* increasing can't be blocked */
 
@@ -73,15 +63,13 @@ int releaseSem(int semId, int semNum)
 
 int undoChange(int semId, int semNum, int value)
 {
-    /*  sem_num    = semNum;
-        sem_op     = -1;
-        sem_flg    =  0;  
-                            */
+    DEBPRINT("UNDO: Id ; semNum; value\n"
+             "      %d     %d      %d \n", semId, semNum, value)
 
-    DEBPRINT("UNDO: Id ; semNum; value = \n"
-             "      %d     %d      %d\n", semId, semNum, value)
-
-    struct sembuf sops = {semNum, value, SEM_UNDO};
+    struct sembuf sops = {
+        .sem_num  = semNum,
+        .sem_op   = value,
+        .sem_flg  = SEM_UNDO };
 
     errno = 0;
 
@@ -90,18 +78,15 @@ int undoChange(int semId, int semNum, int value)
         if (errno == EIDRM)
         {
             DEBPRINT("Another process have deleted the semaphore.Exit\n")
-            /* TODO: use semctl here to delete sem */
             exit(EXIT_FAILURE); 
         }
         else if (errno == EINTR) /* can't break via interrupt */
         {
-            DEBPRINT("errno == EINTR\n")
             perror("semop");
             return -1;
         }
         else
         {
-            DEBPRINT("errno != EINTR\n");
             perror("semop");
             return -1;
         }

@@ -48,7 +48,7 @@
     }
 
 #define ERR_HANDLER(msg)    \
-    do { perror(msg); exit(EXIT_FAILURE); } while(0);
+    do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
 
 #endif

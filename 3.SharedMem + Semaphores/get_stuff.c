@@ -9,56 +9,65 @@ void printSem(int semId, const char* msg);
 /* TYPES of USERs: 
     WRITER = 0;
     READER = 1; */
+
 int semGet(enum TYPE typeOfUser)
 {
     int semId;
     if ( (semId = semget(SEM_KEY, NO_SEMS,  IPC_CREAT | IPC_EXCL | OBJ_PERMS)) == -1) /* if already exists or EXCL creation*/
     {
-        DEBPRINT("can't create EXCL sem\n")
-        
+        DEBPRINT("can't create EXCL sem\n")   
 
-        if (errno != EEXIST) /* Unexpected error from semget() */
-        {
-            //LEAVE_STUFF
-            ERR_HANDLER("semget")
-        }
+        if (errno != EEXIST)        /* Unexpected error from semget() */
+            ERR_HANDLER("semget");
 
         if ( (semId = semget(SEM_KEY, 0, 0)) == -1)
             ERR_HANDLER("semget");
-        
+
         DEBPRINT("semId = %d\n", semId)
-        
+                
         if (DEBUG_REGIME)
-            printSem(semId, "before initialization\n");
+            printSem(semId, "before initialization (already exists sem)\n");
 
         
-        /* NEED to wait while who created to initialize and if another writer or reader died */
+        /* NEED to wait while who created to initialize and if another writer or reader is dead */
 
         if (undoChange(semId, typeOfUser == WRITER ? BECOME_W : BECOME_R, -1) == -1)
-            ERR_HANDLER("UNDO reserver BECOME")
-
+            ERR_HANDLER("UNDO reserver BECOME");
         if (reserveSem(semId, typeOfUser == WRITER ? SEM_R_INIT : SEM_W_INIT) == -1)
-            ERR_HANDLER("reserve another INIT")
+            ERR_HANDLER("reserve another INIT");
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_R_INIT : SEM_W_INIT) == -1)
-            ERR_HANDLER("releave another INIT")
+            ERR_HANDLER("releave another INIT");
 
+        /* restarting semset in incorrect exit at the last time */
 
-        /* in recovering available 2 situations : SEM_W[R] can have value 0 or 1 [but we need W=1 and R=0] */
-
-        if (getSemVal(semId, RECOVERING) == 1)
+        if (getSemVal(semId, EXCL_ALIVE) == 0) /* EXCL is dead */
         {
-            if (getSemVal(semId, SEM_W) != 1) /* 0 */
-                if (releaseSem(semId, SEM_W) == -1)
-                    ERR_HANDLER("recovering W")
-            if (getSemVal(semId, SEM_R) == 1) /* 0 */
-                if (releaseSem(semId, SEM_R) == -1)
-                    ERR_HANDLER("recovering R")
+            fprintf(stderr, "EXCL_ALIVE == 0\n");
+
+            if (semctl(semId, 0, IPC_RMID, NULL) == -1)                               
+            {
+                if(errno != EINVAL)                             
+                    ERR_HANDLER("remove semId"); 
+                
+                fprintf(stderr, "EINVAL: incorrect semId\n");
+                exit(EXIT_FAILURE); 
+            }
+                   
+            /* if last exit was incorrect, so there can be situation with incorrect shm
+               and we should remove shm */
+
+            int shmId = shmget(SHM_KEY, 0, 0);
+
+            if (shmctl(shmId, IPC_RMID, 0) == -1)              
+                ERR_HANDLER("remove shm Seg");    
+
+            return semGet(typeOfUser);
         }
 
         /* release == +1*/
 
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_R : SEM_W) == -1)
-            ERR_HANDLER("release WRITE sem")
+            ERR_HANDLER("release WRITE sem");
 
         if (undoChange(semId, typeOfUser == WRITER ? SEM_R : SEM_W, -1) == -1)
             ERR_HANDLER("UNDO");
@@ -66,62 +75,52 @@ int semGet(enum TYPE typeOfUser)
         /*  */
 
         if (undoChange(semId, SEM_E, 1) == -1)
-            ERR_HANDLER("UNDO");
+            ERR_HANDLER("UNDO E");
 
         /* done initialization */
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_W_INIT : SEM_R_INIT) == -1)
-            ERR_HANDLER("release WRITE sem")
+            ERR_HANDLER("release WRITE sem");
     }
     else
     {
         DEBPRINT("sem created EXCL [id = %d]\n Initialization\n", semId)
-    
-        if (initSem(semId, SEM_W, AvailableToUse) == -1)
-            ERR_HANDLER("initSem  W(1)")
         
-        if (initSem(semId, SEM_R, InUse) == -1)
-            ERR_HANDLER("initSem  R(0)")
-        
-        if (initSem(semId, SEM_E, 0) == -1)
-            ERR_HANDLER("initSem  E(0)")
+        if (undoChange(semId, EXCL_ALIVE, 1) == -1) /*  who created should delete, so if EXCL_ALIVE == 0,
+                                                        and are in unexcl creation semset so we need to "restart" semset */
+            ERR_HANDLER("UNDO EXCL_ALIVE");
 
-        if (initSem(semId, SEM_W_INIT, 0) == -1)
-            ERR_HANDLER("initSem W_INIT(0)")
+        if (DEBUG_REGIME)
+            printSem(semId, "EXCL should be == 1\n");
+
+        if (initSem(semId, SEM_W, 1) == -1)
+            ERR_HANDLER("initSem  W(1)");
         
-        if (initSem(semId, SEM_R_INIT, 0) == -1)
-            ERR_HANDLER("initSem R_INIT(0)")
+        if (initSem(semId, BECOME_W, 1) == -1)
+            ERR_HANDLER("initSem HAS_W(1)");
         
-        if (initSem(semId, BECOME_W, AvailableToUse) == -1)
-            ERR_HANDLER("initSem HAS_W(1)")
-        
-        if (initSem(semId, BECOME_R, AvailableToUse) == -1)
-            ERR_HANDLER("initSem HAS_R(1)")
+        if (initSem(semId, BECOME_R, 1) == -1)
+            ERR_HANDLER("initSem HAS_R(1)");
 
         if (undoChange(semId, typeOfUser == WRITER ? BECOME_W : BECOME_R, -1) == -1)
-            ERR_HANDLER("undo reserve HAS")
-    
-        DEBPRINT("going to UNDO %s\n", typeOfUser == WRITER ? "READ sem" : "WRITE sem")
+            ERR_HANDLER("undo reserve HAS");
 
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_R : SEM_W) == -1)
-            ERR_HANDLER("release WRITE sem")
+            ERR_HANDLER("release WRITE sem");
 
         if (undoChange(semId, typeOfUser == WRITER ? SEM_R : SEM_W, -1) == -1)
             ERR_HANDLER("UNDO");
 
-        DEBPRINT("AFTER UNDO\n")
-
         if (undoChange(semId, SEM_E, 1) == -1)
             ERR_HANDLER("UNDO");
         
-        /* DONE */
+        /* pass initialization, so we need to release INIT sem to give turn to another process */
 
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_W_INIT : SEM_R_INIT) == -1)
             ERR_HANDLER("release INIT sem");
     }
 
-    DEBPRINT("AFTER INIT:\n")
-    
-    //if (DEBUG_REGIME)
+    DEBPRINT("AFTER INIT:\n")  
+    if (DEBUG_REGIME)
         printSem(semId, "final values");
 
     return semId;
@@ -138,36 +137,26 @@ int shmGet()
         DEBPRINT("can't create EXCL shm\n")
 
         if (errno != EEXIST) /* Unexpected error from semget() */
-        {
-            //LEAVE_STUFF
-            ERR_HANDLER("shmget")
-        }
+            ERR_HANDLER("shmget");
 
         shmId = shmget(SHM_KEY, 0, 0);
         
         DEBPRINT("shmId = %d\n", shmId)
 
         if (shmId == -1)
-        {
-            //LEAVE_STUFF
-            ERR_HANDLER("shmget")
-        }
+            ERR_HANDLER("shmget");
     }
     else
-    {
         DEBPRINT("shm created EXCL\n")
-    }
 
     return shmId;
-
-
 }
 
 /* print info about sem values */
 
 void printSem(int semId, const char* msg)
 {
-    printf("%s\n", msg);
+    fprintf(stderr, "%s\n", msg);
 
     struct semid_ds ds;
     union semun arg;
@@ -186,10 +175,10 @@ void printSem(int semId, const char* msg)
 
     char semName[NO_SEMS][20] = { SEM_NAMES };
 
-    fprintf(stdout, "Sem # Value    NAME\n");
+    fprintf(stderr, "Sem # Value    NAME\n");
 
     for (int j = 0; j < ds.sem_nsems; j++)
-        fprintf(stdout, "%3d %5d %s\n", j, arg.array[j], semName[j]);
+        fprintf(stderr, "%3d %5d %s\n", j, arg.array[j], semName[j]);
 
     free(arg.array);
 }
@@ -210,6 +199,8 @@ int getSemVal(int semId, int semNum)
         ERR_HANDLER("calloc");
     if (semctl(semId, 0, GETALL, arg) == -1)
         ERR_HANDLER("semctl-GETALL");
+
+    //fprintf(stderr, "semNum = %d\n", semNum);
 
     int retval = arg.array[semNum];
     free(arg.array);
