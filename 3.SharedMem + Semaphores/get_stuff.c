@@ -10,13 +10,11 @@ void printSem(int semId, const char* msg);
     WRITER = 0;
     READER = 1; */
 
-int semGet(enum TYPE typeOfUser)
+int semGet(enum USER_TYPE typeOfUser)
 {
     int semId;
     if ( (semId = semget(SEM_KEY, NO_SEMS,  IPC_CREAT | IPC_EXCL | OBJ_PERMS)) == -1) /* if already exists or EXCL creation*/
     {
-        DEBPRINT("can't create EXCL sem\n")   
-
         if (errno != EEXIST)        /* Unexpected error from semget() */
             ERR_HANDLER("semget");
 
@@ -27,7 +25,6 @@ int semGet(enum TYPE typeOfUser)
                 
         if (DEBUG_REGIME)
             printSem(semId, "before initialization (already exists sem)\n");
-
         
         /* NEED to wait while who created to initialize and if another writer or reader is dead */
 
@@ -53,8 +50,10 @@ int semGet(enum TYPE typeOfUser)
                 exit(EXIT_FAILURE); 
             }
                    
-            /* if last exit was incorrect, so there can be situation with incorrect shm
-               and we should remove shm */
+            /*  if the last exit was incorrect, there can be situation with
+                incorrect shm and we should remove shm */
+
+            /* вроде как shm сада удаляется, если все процессы отдетачены от нее ??? */
 
             int shmId = shmget(SHM_KEY, 0, 0);
 
@@ -64,7 +63,6 @@ int semGet(enum TYPE typeOfUser)
             return semGet(typeOfUser);
         }
 
-        /* release == +1*/
 
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_R : SEM_W) == -1)
             ERR_HANDLER("release WRITE sem");
@@ -72,12 +70,11 @@ int semGet(enum TYPE typeOfUser)
         if (undoChange(semId, typeOfUser == WRITER ? SEM_R : SEM_W, -1) == -1)
             ERR_HANDLER("UNDO");
 
-        /*  */
-
         if (undoChange(semId, SEM_E, 1) == -1)
             ERR_HANDLER("UNDO E");
 
-        /* done initialization */
+        /* done with initialization */
+
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_W_INIT : SEM_R_INIT) == -1)
             ERR_HANDLER("release WRITE sem");
     }
@@ -85,9 +82,14 @@ int semGet(enum TYPE typeOfUser)
     {
         DEBPRINT("sem created EXCL [id = %d]\n Initialization\n", semId)
         
+        /* general initialization */
+
         if (undoChange(semId, EXCL_ALIVE, 1) == -1) /*  who created should delete, so if EXCL_ALIVE == 0,
                                                         and are in unexcl creation semset so we need to "restart" semset */
             ERR_HANDLER("UNDO EXCL_ALIVE");
+            
+        if (undoChange(semId, SEM_E, 1) == -1)
+            ERR_HANDLER("UNDO SEM_E");
 
         if (DEBUG_REGIME)
             printSem(semId, "EXCL should be == 1\n");
@@ -101,6 +103,8 @@ int semGet(enum TYPE typeOfUser)
         if (initSem(semId, BECOME_R, 1) == -1)
             ERR_HANDLER("initSem HAS_R(1)");
 
+        /* initialization that depends on the type of user (writer/reader) */
+        
         if (undoChange(semId, typeOfUser == WRITER ? BECOME_W : BECOME_R, -1) == -1)
             ERR_HANDLER("undo reserve HAS");
 
@@ -108,18 +112,17 @@ int semGet(enum TYPE typeOfUser)
             ERR_HANDLER("release WRITE sem");
 
         if (undoChange(semId, typeOfUser == WRITER ? SEM_R : SEM_W, -1) == -1)
-            ERR_HANDLER("UNDO");
-
-        if (undoChange(semId, SEM_E, 1) == -1)
-            ERR_HANDLER("UNDO");
+            ERR_HANDLER("UNDO ");
         
-        /* pass initialization, so we need to release INIT sem to give turn to another process */
+        /* done with initialization, so we need to release INIT sem to give a turn to another process */
 
         if (releaseSem(semId, typeOfUser == WRITER ? SEM_W_INIT : SEM_R_INIT) == -1)
             ERR_HANDLER("release INIT sem");
     }
 
+    
     DEBPRINT("AFTER INIT:\n")  
+    
     if (DEBUG_REGIME)
         printSem(semId, "final values");
 

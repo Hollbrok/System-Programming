@@ -29,24 +29,25 @@ int undoChange(int semId, int semNum, int value);
 
 /*  */
 
-enum TYPE
+enum USER_TYPE
 {
     WRITER,
     READER,
 };
 
-int semGet(enum TYPE typeOfUser);
+int semGet(enum USER_TYPE typeOfUser);
+
 int shmGet();
-void printSem(int semId, const char* msg);
+
 int getSemVal(int semId, int semNum);
+
+void printSem(int semId, const char* msg);
 
  
 /* well-known keys for getting shm and sem */
 
 #define SHM_KEY 0xDEADDEAD
 #define SEM_KEY 0xDEADDEAD
-
-//#define SAVE_KEY 0xFFDEAD
 
 /* Permissions for our IPC objects */
 
@@ -89,21 +90,6 @@ struct ShmSeg
     int  cnt;           /* real size of data in buf*/
     char buf[BUF_SIZE]; /* data being transferred */
 };
-
-#define LEAVE_STUFF                                     \
-        fprintf(stderr, "test\n");
-    
-    /*if (semctl(semId, 0, IPC_RMID, NULL) == -1)         \
-    {                                                   \
-        if(errno != EINVAL)                             \
-            ERR_HANDLER("remove semId");                \
-                                                        \
-        fprintf(stderr, "EINVAL: incorrect semId\n");   \
-        exit(EXIT_FAILURE);                             \
-    }                                                   \
-    if (shmdt(shmSeg) == -1)                            \
-        ERR_HANDLER("detach shm");                      \
-    if (shmctl(shmId, IPC_RMID, 0) == -1)               \
-        ERR_HANDLER("remove shm Seg");    */                                           
+                                       
 
 #endif

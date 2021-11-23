@@ -31,15 +31,9 @@ int reserveSem(int semId, int semNum)
             DEBPRINT("Another process have deleted the semaphore.Exit\n")
             exit(EXIT_FAILURE); 
         }
-        else if (errno == EINTR) /* can't break via interrupt */
-        {
-            DEBPRINT("errno == EINTR\n")
-            perror("");
-            return -1;
-        }
         else
         {
-            DEBPRINT("[semop error in reserveSem]: errno == %d\n", errno)
+            perror("reserverSem");
             return -1;
         }
     }
@@ -80,14 +74,9 @@ int undoChange(int semId, int semNum, int value)
             DEBPRINT("Another process have deleted the semaphore.Exit\n")
             exit(EXIT_FAILURE); 
         }
-        else if (errno == EINTR) /* can't break via interrupt */
-        {
-            perror("semop");
-            return -1;
-        }
         else
         {
-            perror("semop");
+            perror("UndoChange");
             return -1;
         }
     }
