@@ -10,6 +10,8 @@
 - [X] __FIFO__
 - [X] __Message's queue__
 - [X] __Shared memory__
+- [X] __Signals__
+- [X] __Pipes (send file between all children via parent)__s
 
 # How to build
 
