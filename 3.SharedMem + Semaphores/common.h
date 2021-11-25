@@ -55,7 +55,7 @@ void printSem(int semId, const char* msg);
 
 /* semaphore sequence numbers in set*/
 
-
+ 
 #define SEM_W 0 /* binary sem that we use like mutex for critical section */
 #define SEM_R 1 /*                          -//-                          */
 
@@ -64,20 +64,21 @@ void printSem(int semId, const char* msg);
 #define SEM_W_INIT 3    /* to ensure mutual exclusion on initialization */
 #define SEM_R_INIT 4    /*                  -//-                        */
 
-#define BECOME_W 5      /* to ensure there is only one writer */
-#define BECOME_R 6      /* to ensure there is only one reader */
+#define SEM_W_ALIVE 5      /* to ensure there is only one writer */
+#define SEM_R_ALIVE 6      /* to ensure there is only one reader */
 
-#define EXCL_ALIVE 7   /* to remove ipc in case of unexpected termination */
 
-#define NO_SEMS 8
+
+
+
+
+#define NO_SEMS 7
 
 #define SEM_NAMES           \
     "WRITER", "READER",     \
     "ERROR",                \
     "W_READY", "R_READY",   \
     "BECOME_W", "BECOME_R", \
-    "EXCL_ALIVE"
-
 
 /* size of info part (buf) of shmseg*/
 

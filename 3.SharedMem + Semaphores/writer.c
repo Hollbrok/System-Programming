@@ -1,13 +1,14 @@
 /* WRITER */
+
+
 #include "libs.h"
 #include "common.h"
 #include "debug.h"
 
-
 int main(int argc, char* argv[])
 {
     /* data section */
-
+ 
     int semId, shmId;           /* IPS stuff                    */
     int fileRd, lastByteRead;   /* file data transfering stuff  */
 
@@ -24,21 +25,71 @@ int main(int argc, char* argv[])
 
     /* get (create) a System V semaphore set identifier and initialize them*/
 
-    semId = semGet(WRITER);
+    if ( (semId = semget(SEM_KEY, NO_SEMS,  IPC_CREAT | OBJ_PERMS)) == -1) /* if already exists or EXCL creation*/
+        ERR_HANDLER("semget");
 
-    DEBPRINT("after initialization all sems\n")
+    DEBPRINT("before init\n")
 
-    errno = 0;
+/* Start of critical section (initialization) */
+
+    struct sembuf StartInitWriter[2] = {
+        {SEM_W_INIT, 0, 0},
+        {SEM_W_INIT, +1, SEM_UNDO}
+    };
+
+    if (semop(semId, StartInitWriter, 2) == -1)
+        ERR_HANDLER("Start critical section of initialization of writer\n");    
+    
+
+    /* the writer waits for the rest of writers to finish their work */
+
+    struct sembuf checkAnotherWriters[2] = {
+        {SEM_W_ALIVE, 0, 0},
+        {SEM_W_ALIVE, +1, SEM_UNDO}
+    };
+
+    if (semop(semId, checkAnotherWriters, 2) == -1)
+        ERR_HANDLER("Start critical section of initialization of writer\n");
+
+    /* after writer die reader won't stay in block */
+
+    struct sembuf undoReleaseR[2] = {
+        {SEM_R, 1, 0},
+        {SEM_R, -1, SEM_UNDO}
+    };
+
+    if (semop(semId, undoReleaseR, 2) == -1)
+        ERR_HANDLER("undo release of reader");
+
+    /* cycle of file tranfering starts from writer */
+
+    struct sembuf releaseW = {SEM_W, 1, SEM_UNDO};
+
+    if (semop(semId, &releaseW, 1) == -1)
+        ERR_HANDLER("release writer sem");
+
+    /* give turn to another processes for init */
+    /*
+    struct sembuf endInit = {SEM_W_INIT, -1, SEM_UNDO};
+
+    if (semop(semId, &endInit, 1) == -1)
+        ERR_HANDLER("end of initialization of writer");*/
+    
+/* end of initialization */
+
+    DEBPRINT("after initialization of all sems\n")
 
     /* allocate a System V shared memory segment and attach it */
 
-    shmId = shmGet();
+    errno = 0;
+
+    if ((shmId = shmget(SHM_KEY, sizeof(struct ShmSeg), IPC_CREAT | OBJ_PERMS)) == -1)
+        ERR_HANDLER("shmget");
 
     if ((shmSeg = shmat(shmId, NULL, 0)) == (void *) -1)
         ERR_HANDLER("shmat");
     
-    DEBPRINT("successful shmat\n")
-    
+    DEBPRINT("successful shmat\n")  
 
     if ((fileRd = open(argv[1], O_RDONLY)) == -1)
         ERR_HANDLER("open file source");
@@ -47,8 +98,11 @@ int main(int argc, char* argv[])
 
     DEBPRINT("before reserver R_INIT\n")
 
-    if (reserveSem(semId, SEM_R_INIT) == -1)
+    struct sembuf waitInitR = {SEM_R_INIT, -1, 0};
+
+    if (semop(semId, &waitInitR, 1) == -1)
         ERR_HANDLER("reserve SEM_R_INIT");
+
 
     if (DEBUG_REGIME)
         printSem(semId, "after reserve R_INIT\n"
@@ -57,9 +111,6 @@ int main(int argc, char* argv[])
     while (1)
     {     
         /* Wait for our turn */
-
-        if (DEBUG_REGIME)
-            printSem(semId, "at the start of while()");
 
         if (reserveSem(semId, SEM_W) == -1)
         {
@@ -72,7 +123,7 @@ int main(int argc, char* argv[])
 
         /* if another side died */
 
-        if (getSemVal(semId, SEM_E) == 1)
+        if (getSemVal(semId, SEM_R_ALIVE) == 0)
         {
             if (DEBUG_REGIME)
                 printSem(semId, "death of reader");
@@ -80,7 +131,6 @@ int main(int argc, char* argv[])
             exit(EXIT_SUCCESS);
         }
 
-        
         if ( (lastByteRead = read(fileRd, shmSeg->buf, BUF_SIZE)) == -1)
             ERR_HANDLER("read from file");
 
@@ -101,19 +151,12 @@ int main(int argc, char* argv[])
         DEBPRINT("done 1 write cicle\n")
     }
 
-    /*  
-        After exiting the loop we must wait till reader will done, then
-        detach the shared memory segment and releases the writer semaphore,
-        so that the writer program can remove the IPC objects.
-    */
+    /*  After exiting the loop we must wait till reader will done */
 
-    if (reserveSem(semId, SEM_W) == -1)
-        ERR_HANDLER("reserver WRITE sem");
-    
-    /* 
-    if (releaseSem(semId, SEM_W) == -1)
-        ERR_HANDLER("release WRITE sem");
-    */
+    struct sembuf reserveW = {SEM_W, -1, SEM_UNDO};
+
+    if (semop(semId, &reserveW, 1) == -1)
+        ERR_HANDLER("release writer sem");
 
     if (semctl(semId, 0, IPC_RMID, NULL) == -1)        
     {                                                  
@@ -131,6 +174,9 @@ int main(int argc, char* argv[])
     }
 
     DEBPRINT("SUCCESS\n");
+
+    fprintf(stderr, "SUCCESS\n");
+
 
     exit(EXIT_SUCCESS);
 }

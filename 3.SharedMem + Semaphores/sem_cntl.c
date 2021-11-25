@@ -14,7 +14,7 @@ int initSem(int semId, int semNum, enum INIT_SEM usingState)
     
     return semctl(semId, semNum, SETVAL, arg);
 }
-
+ 
 int reserveSem(int semId, int semNum)
 {
     struct sembuf sops = { 
@@ -24,23 +24,9 @@ int reserveSem(int semId, int semNum)
 
     errno = 0;
 
-    while (semop(semId, &sops, 1) == -1)
-    {
-        if (errno == EIDRM)
-        {
-            DEBPRINT("Another process have deleted the semaphore.Exit\n")
-            exit(EXIT_FAILURE); 
-        }
-        else
-        {
-            perror("reserverSem");
-            return -1;
-        }
-    }
-
-    return 0;
+    return semop(semId, &sops, 1);
 }
-
+ 
 int releaseSem(int semId, int semNum)
 {
     DEBPRINT("RELEASE semNum = %d\n", semNum)
@@ -65,21 +51,5 @@ int undoChange(int semId, int semNum, int value)
         .sem_op   = value,
         .sem_flg  = SEM_UNDO };
 
-    errno = 0;
-
-    while (semop(semId, &sops, 1) == -1)
-    {
-        if (errno == EIDRM)
-        {
-            DEBPRINT("Another process have deleted the semaphore.Exit\n")
-            exit(EXIT_FAILURE); 
-        }
-        else
-        {
-            perror("UndoChange");
-            return -1;
-        }
-    }
-
-    return 0;
+    return semop(semId, &sops, 1);
 }
