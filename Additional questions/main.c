@@ -21,12 +21,12 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    int fd1 = open(argv[1], 0);
-    int fd2 = open(argv[2], 0);
+    int fd1 = open(argv[1], 0); // IPC_CREATE
+    int fd2 = open(argv[2], 0); // IPC_CREATE
 
     if (fd1 == -1 || fd2 == -1)
         err(EX_OSERR, "error in opens");
-
+    
     printf("FDs are %s\n", fileEq(fd1, fd2) == 1 ? "the same": "different");
 
 
@@ -54,7 +54,7 @@ int fileEq(int fd1, int fd2)
         return -1;
     }
 
-    if (sfd1.st_ino == sfd2.st_ino && sfd1.st_dev == sfd2.st_dev)
+    if (sfd1.st_ino == sfd2.st_ino && sfd1.st_dev == sfd2.st_dev && sfd1.st_size == sfd2.st_size) 
         return 1;
     
     return -1;
