@@ -10,7 +10,7 @@
  
 #include <sysexits.h>
 #include <err.h>
-
+ 
 int fileEq(int fd1, int fd2);
 
 int main(int argc, const char *argv[])
