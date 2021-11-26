@@ -30,16 +30,9 @@ int main(int argc, char* argv[])
 
     DEBPRINT("before init\n")
 
-/* Start of critical section (initialization) */
+    printSem(semId, "before init W");
 
-    struct sembuf StartInitWriter[2] = {
-        {SEM_W_INIT, 0, 0},
-        {SEM_W_INIT, +1, SEM_UNDO}
-    };
-
-    if (semop(semId, StartInitWriter, 2) == -1)
-        ERR_HANDLER("Start critical section of initialization of writer\n");    
-    
+/* Start of critical section (initialization) */    
 
     /* the writer waits for the rest of writers to finish their work */
 
@@ -51,15 +44,12 @@ int main(int argc, char* argv[])
     if (semop(semId, checkAnotherWriters, 2) == -1)
         ERR_HANDLER("Start critical section of initialization of writer\n");
 
-    /* after writer die reader won't stay in block */
+    /* to detect death */
 
-    struct sembuf undoReleaseR[2] = {
-        {SEM_R, 1, 0},
-        {SEM_R, -1, SEM_UNDO}
-    };
+    struct sembuf releaseE = {SEM_E, +1, SEM_UNDO};
 
-    if (semop(semId, undoReleaseR, 2) == -1)
-        ERR_HANDLER("undo release of reader");
+    if (semop(semId, &releaseE, 1) == -1)
+        ERR_HANDLER("release writer sem");
 
     /* cycle of file tranfering starts from writer */
 
@@ -67,15 +57,20 @@ int main(int argc, char* argv[])
 
     if (semop(semId, &releaseW, 1) == -1)
         ERR_HANDLER("release writer sem");
+ 
+    /* end of init, to make it clear to the reader that the writer has finished  initialization */
 
-    /* give turn to another processes for init */
-    /*
-    struct sembuf endInit = {SEM_W_INIT, -1, SEM_UNDO};
+    struct sembuf EndInitWriter[2] = {
+        {SEM_W_INIT, 0, 0},
+        {SEM_W_INIT, +1, SEM_UNDO}
+    };
 
-    if (semop(semId, &endInit, 1) == -1)
-        ERR_HANDLER("end of initialization of writer");*/
-    
+    if (semop(semId, EndInitWriter, 2) == -1)
+        ERR_HANDLER("End critical section of initialization of writer\n");
+
 /* end of initialization */
+
+    fprintf(stderr, "end of init\n");
 
     DEBPRINT("after initialization of all sems\n")
 
@@ -103,14 +98,27 @@ int main(int argc, char* argv[])
     if (semop(semId, &waitInitR, 1) == -1)
         ERR_HANDLER("reserve SEM_R_INIT");
 
+    struct sembuf undoReleaseR[2] = {
+        {SEM_R, 1, 0},
+        {SEM_R, -1, SEM_UNDO},
+    };
+
+    if (semop(semId, undoReleaseR, 2) == -1)
+        ERR_HANDLER("undo release of reader");
 
     if (DEBUG_REGIME)
         printSem(semId, "after reserve R_INIT\n"
                         "Before while");
 
+    int transferErr = 0;
+
+    printSem(semId, "before while(1)");
+
     while (1)
     {     
         /* Wait for our turn */
+
+        //fprintf(stderr, "1");
 
         if (reserveSem(semId, SEM_W) == -1)
         {
@@ -127,8 +135,10 @@ int main(int argc, char* argv[])
         {
             if (DEBUG_REGIME)
                 printSem(semId, "death of reader");
+    
+            transferErr = 1;
 
-            exit(EXIT_SUCCESS);
+            break;
         }
 
         if ( (lastByteRead = read(fileRd, shmSeg->buf, BUF_SIZE)) == -1)
@@ -151,12 +161,14 @@ int main(int argc, char* argv[])
         DEBPRINT("done 1 write cicle\n")
     }
 
+    printSem(semId, "after while(1)");
     /*  After exiting the loop we must wait till reader will done */
 
     struct sembuf reserveW = {SEM_W, -1, SEM_UNDO};
 
     if (semop(semId, &reserveW, 1) == -1)
         ERR_HANDLER("release writer sem");
+
 
     if (semctl(semId, 0, IPC_RMID, NULL) == -1)        
     {                                                  
@@ -175,8 +187,7 @@ int main(int argc, char* argv[])
 
     DEBPRINT("SUCCESS\n");
 
-    fprintf(stderr, "SUCCESS\n");
-
+    fprintf(stderr, "%s\n", transferErr ? "FAILED" : "SUCCESS");
 
     exit(EXIT_SUCCESS);
 }

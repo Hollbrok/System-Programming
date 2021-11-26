@@ -77,8 +77,8 @@ void printSem(int semId, const char* msg);
 #define SEM_NAMES           \
     "WRITER", "READER",     \
     "ERROR",                \
-    "W_READY", "R_READY",   \
-    "BECOME_W", "BECOME_R", \
+    "W_INIT", "R_INIT",   \
+    "W_ALIVE", "R_ALIVE", \
 
 /* size of info part (buf) of shmseg*/
 

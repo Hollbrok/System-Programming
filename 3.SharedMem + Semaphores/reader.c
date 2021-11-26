@@ -21,16 +21,10 @@ int main(int argc, char* argv[])
     if ( (semId = semget(SEM_KEY, NO_SEMS,  IPC_CREAT | OBJ_PERMS)) == -1) /* if already exists or EXCL creation*/
         ERR_HANDLER("semget");
 
+    printSem(semId, "before init R");
+
 /* Start of critical section (initialization) */
-
-    struct sembuf StartInitReader[2] = {
-        {SEM_R_INIT, 0, 0},
-        {SEM_R_INIT, +1, SEM_UNDO}
-    };
-
-    if (semop(semId, StartInitReader, 2) == -1)
-        ERR_HANDLER("Start critical section of initialization of reader\n");    
-    
+       
     /* the reader waits for the rest of readers to finish their work */
 
     struct sembuf checkAnotherReaders[2] = {
@@ -40,6 +34,33 @@ int main(int argc, char* argv[])
 
     if (semop(semId, checkAnotherReaders, 2) == -1)
         ERR_HANDLER("Start critical section of initialization of reader\n");
+
+    /* wait writer init */
+
+    struct sembuf waitInitW[2] = {
+        {SEM_W_INIT, -1, SEM_UNDO},
+        {SEM_W_INIT, +1, 0}
+    };
+
+    if (semop(semId, waitInitW, 2) == -1)
+        ERR_HANDLER("wait writer init\n");
+
+    /* to detect death */
+
+    struct sembuf releaseE = {SEM_E, +1, SEM_UNDO};
+
+    if (semop(semId, &releaseE, 1) == -1)
+        ERR_HANDLER("release writer sem");
+
+    /* end of init, to make it clear to the writer that the reader has finished initialization */
+
+        struct sembuf EndInitReader[2] = {
+        {SEM_R_INIT, 0, 0},
+        {SEM_R_INIT, +1, SEM_UNDO}
+    };
+
+    if (semop(semId, EndInitReader, 2) == -1)
+        ERR_HANDLER("End critical section of initialization of reader\n"); 
 
     /* after reader die reader won't stay in block */
 
@@ -51,14 +72,9 @@ int main(int argc, char* argv[])
     if (semop(semId, undoReleaseW, 2) == -1)
         ERR_HANDLER("undo release of reader");
 
-    /* give turn to another processes for init */
-
-    /*struct sembuf endInit = {SEM_R_INIT, -1, SEM_UNDO};
-
-    if (semop(semId, &endInit, 1) == -1)
-        ERR_HANDLER("end of initialization of reader"); */
-    
 /* end of initialization */
+
+    fprintf(stderr, "after init\n");
 
     DEBPRINT("after initialization of all sems\n")
 
@@ -74,29 +90,35 @@ int main(int argc, char* argv[])
 
     DEBPRINT("before reserver W_INIT\n")
 
-    struct sembuf waitInitW = {SEM_W_INIT, -1, 0};
+    struct sembuf reserveInitW = {SEM_W_INIT, -1, 0};
 
-    if (semop(semId, &waitInitW, 1) == -1)
+    if (semop(semId, &reserveInitW, 1) == -1)
         ERR_HANDLER("reserve SEM_W_INIT");
 
     if (DEBUG_REGIME)
         printSem(semId, "after reserve W_INIT\n"
                         "Before while");
 
+    int transferErr = 0;
+
+    printSem(semId, "before while(1)");
 
     while (1)
     {
+        //fprintf(stderr, "1");
+
         if (reserveSem(semId, SEM_R) == -1)
             ERR_HANDLER("reserve READ sem");
         
         /* if another side is dead */
 
-        if (getSemVal(semId, SEM_E) == 1)
+        if (getSemVal(semId, SEM_W_ALIVE) == 0)
         {
             if (DEBUG_REGIME)
                 printSem(semId, "after death of writer");
 
-            exit(EXIT_SUCCESS);
+            transferErr = 1;
+            break;
         }
 
         if (shmSeg->cnt == 0)
@@ -113,12 +135,21 @@ int main(int argc, char* argv[])
             ERR_HANDLER("release WRITE sem");
     }
 
+    printSem(semId, "after while(1)");
+
 
     /* give turn to writer to use [sem/shm]ctl and detach shm*/
 
-    if (releaseSem(semId, SEM_W) == -1)
-       ERR_HANDLER("release WRITE sem");
+    struct sembuf endStuff[3] = {
+        {SEM_W_INIT, +1, 0},
+        {SEM_W_INIT, -1, SEM_UNDO},
+        {SEM_W, +1, 0}
+    };
 
+    //{SEM_W_INIT, -1, SEM_UNDO},
+
+    if (semop(semId, endStuff, 3) == -1)
+       ERR_HANDLER("semop endStuff");
 
     if (semctl(semId, 0, IPC_RMID, NULL) == -1)        
     {                                                  
@@ -135,7 +166,7 @@ int main(int argc, char* argv[])
             ERR_HANDLER("remove shm Seg");   
     }    
 
-    fprintf(stderr, "SUCCESS\n");
+    fprintf(stderr, "%s\n", transferErr ? "FAILED" : "SUCCESS");
 
     exit(EXIT_SUCCESS);
 }

@@ -15,7 +15,7 @@ static void setSignalsHandler();
 static int fixFifoEof();
 
 static void createServerFIFOAccess();
-
+ 
 static void createServerFifo(char* serverFifo);
 
 static int getWDofFIFOAccess();
@@ -38,7 +38,7 @@ int main(int argc, const char *argv[])
 
 /* Set signals (INT + TERM) handlers [rather for debugging]             */
 
-    setSignalsHandler();
+    setSignalsHandler(); 
 
 /* Creating Access FIFO (only 1 for server to read from all clients)    */
 
@@ -71,7 +71,7 @@ int main(int argc, const char *argv[])
         
         DEBPRINT("writing pid to server ACC FIFO\n")
 
-        if ( write(serverAccWFd, &accResp, sizeof(struct AccResp)) != sizeof(struct AccResp)) /* get SIGPIPE + EPIPE of read end closed */
+        if ( write(serverAccWFd, &accResp, sizeof(struct AccResp)) != sizeof(struct AccResp)) /* get SIGPIPE + EPIPE if read end closed */
         {
             DEBPRINT("read from serverAcc FIFO != sizeof(struct AccResp). LINE = %d\n", __LINE__);
             break;//continue;
@@ -83,7 +83,7 @@ int main(int argc, const char *argv[])
         int lastByteRead = -1;
         errno = 0;
  
-    //!!!!  Client has 1 sec to open write-end of serverFIFO
+    //!!!!  1 sec to open write-end of serverFIFO
     //!!!!
         sleep(1);
     //!!!!

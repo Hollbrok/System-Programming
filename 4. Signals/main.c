@@ -11,26 +11,6 @@ long kfileSize;
 
 int ksuccess = 1;
 
-
-void exitStuff()
-{
-    if (kchildPid)
-        kill(kchildPid, SIGKILL);
-
-    if (kchildPid) /* only parent print info*/
-    {  
-        clock_t cEnd = clock();
-        double timeSec = (double)(cEnd - kcBegin) / CLOCKS_PER_SEC;
-
-        //fprintf(stderr, "\nStatus of transmission = %s\n", ksuccess == 1 ? "success" : "failed");
-        fprintf(stderr, "transmission time      = %lg s\n"
-                        "file size              = %ld B\n"
-                        "speed of transmission  = %lg kB/s\n", timeSec, kfileSize, kfileSize / timeSec /  1024);
-    }
-
-    DEBPRINT("TEST exitStuff\n");
-}
-
 void handler0(int signum)
 {
     if (kchildPid)
@@ -64,8 +44,6 @@ int main(int argc, const char *argv[])
 
     int isParent = 1;
     int parentPid = getpid();
-
-    //atexit(&exitStuff);
 
 /* file info, needs to test speed */
 
@@ -123,6 +101,9 @@ int main(int argc, const char *argv[])
         if (prctl(PR_SET_PDEATHSIG, SIGHUP) == -1)
             err(EX_OSERR, "prctl");
         
+        if (parentPid != getppid())
+            err(EX_OSERR, "err pid");
+        
         break;
     default:
         DEBPRINT("PARENT\n");
@@ -145,9 +126,6 @@ int main(int argc, const char *argv[])
                 sigsuspend(&prevMask);                              /* unblock + get signal (atomically) */
 
                 byte += klastBit << i;
-
-                /*if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1)
-                    err(EX_OSERR ,"sigprocmask"); */
                 
                 if (kill(kchildPid, SIGUSR1) == -1)                 /* answer to child that we are ready */
                     err(EX_OSERR, "kill(child, USR1)");
@@ -182,9 +160,6 @@ int main(int argc, const char *argv[])
                 /* wait for response */
 
                 sigsuspend(&prevMask);                              /* unblock + get signal (atomically) */
-
-                /*if (sigprocmask(SIG_BLOCK, &blockMask, NULL) == -1)
-                    err(EX_OSERR ,"sigprocmask"); */
             }
         }
     }

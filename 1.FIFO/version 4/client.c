@@ -9,7 +9,7 @@ static int NEED_UNLINK_SAFIFO  = 0;
 static void handlerFIFO(int sig);
 
 static void setSignalsHandler();
-
+ 
 static void checkargv(int argc, const char *argv[]);
 
 static void createServerFIFOAccess();
@@ -83,8 +83,9 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Can't set ignore to signal SISPIPE.\n");
         exit(SIGPIPE_IGN_ERROR);
     }
-
+ 
 /* reading request on access to transfer data */
+
     errno = 0;
 
     if ( (lastByteWrite = read(serverAccRFd, &accResp, sizeof(struct AccResp))) != sizeof(struct AccResp) )
