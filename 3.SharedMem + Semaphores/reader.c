@@ -10,11 +10,12 @@ int main(int argc, char* argv[])
 {
     /* data section */
     
-    int semId, shmId;
-    int lastByteRead;
+    int semId = -1, shmId = -1; /* IPS IDs                    */
+    int lastByteRead;   /* file data transfering stuff  */
 
-    struct ShmSeg *shmSeg;
+    struct ShmSeg * shmSeg = NULL;
     union semun uselessArg;
+    int transferErr = 0;
 
     /* get (create) a System V semaphore set identifier and initialize them*/
  
@@ -35,22 +36,26 @@ int main(int argc, char* argv[])
     if (semop(semId, checkAnotherReaders, 2) == -1)
         ERR_HANDLER("Start critical section of initialization of reader\n");
 
-    /* wait writer init */
+    /* wait 0 pairs (0 processes) in executing */
 
-    struct sembuf waitInitW[2] = {
-        {SEM_W_INIT, -1, SEM_UNDO},
-        {SEM_W_INIT, +1, 0}
-    };
+    struct sembuf wait0Proc = {SEM_E, 0, 0};
 
-    if (semop(semId, waitInitW, 2) == -1)
-        ERR_HANDLER("wait writer init\n");
+    if (semop(semId, &wait0Proc, 1) == -1)
+        ERR_HANDLER("wait 0 processes");
 
-    /* to detect death */
+    /* cycle of file tranfering starts from writer, so there are start values of sems */
 
-    struct sembuf releaseE = {SEM_E, +1, SEM_UNDO};
+    union semun arg;
+    arg.val = 2;
+    
+    if (semctl(semId, SEM_W, SETVAL, arg) == -1)
+        ERR_HANDLER("init SEM_W to 2");
 
-    if (semop(semId, &releaseE, 1) == -1)
-        ERR_HANDLER("release writer sem");
+    struct sembuf undoW = {SEM_W, -1, SEM_UNDO};
+
+    if (semop(semId, &undoW, 1) == -1)
+        ERR_HANDLER("undo SEM_W (-1)");
+
 
     /* end of init, to make it clear to the writer that the reader has finished initialization */
 
@@ -62,21 +67,7 @@ int main(int argc, char* argv[])
     if (semop(semId, EndInitReader, 2) == -1)
         ERR_HANDLER("End critical section of initialization of reader\n"); 
 
-    /* after reader die reader won't stay in block */
-
-    struct sembuf undoReleaseW[2] = {
-        {SEM_W, 1, 0},
-        {SEM_W, -1, SEM_UNDO}
-    };
-
-    if (semop(semId, undoReleaseW, 2) == -1)
-        ERR_HANDLER("undo release of reader");
-
 /* end of initialization */
-
-    fprintf(stderr, "after init\n");
-
-    DEBPRINT("after initialization of all sems\n")
 
     /* allocate a System V shared memory segment and attach it */
 
@@ -88,29 +79,34 @@ int main(int argc, char* argv[])
     if ( (shmSeg = shmat(shmId, NULL, 0)) == (void *) -1)
         ERR_HANDLER("shmat");
 
-    DEBPRINT("before reserver W_INIT\n")
+    /* wait for initialization from another side */
 
-    struct sembuf reserveInitW = {SEM_W_INIT, -1, 0};
+    struct sembuf reserveInitW[3] = {
+        {SEM_W_INIT, -1, 0},
+        {SEM_W_INIT, +1, 0},
+        {SEM_E, +1, SEM_UNDO}
+    };
 
-    if (semop(semId, &reserveInitW, 1) == -1)
+    if (semop(semId, reserveInitW, 3) == -1)
         ERR_HANDLER("reserve SEM_W_INIT");
 
     if (DEBUG_REGIME)
         printSem(semId, "after reserve W_INIT\n"
                         "Before while");
+ 
+/* data transfering */
 
-    int transferErr = 0;
+    struct sembuf reserveR = {SEM_R, -1, 0};
+    struct sembuf releaseW = {SEM_W, +1, 0};
 
-    printSem(semId, "before while(1)");
+    errno = 0;
 
     while (1)
     {
-        //fprintf(stderr, "1");
-
-        if (reserveSem(semId, SEM_R) == -1)
+        if (semop(semId, &reserveR, 1) == -1)
             ERR_HANDLER("reserve READ sem");
         
-        /* if another side is dead */
+        /* if another side has already died */
 
         if (getSemVal(semId, SEM_W_ALIVE) == 0)
         {
@@ -129,26 +125,21 @@ int main(int argc, char* argv[])
 
         write(STDOUT_FILENO, shmSeg->buf, shmSeg->cnt);
         
-        DEBPRINT("%d\n", shmSeg->cnt);   
-
-        if (releaseSem(semId, SEM_W) == -1)
+        if (semop(semId, &releaseW, 1) == -1)
             ERR_HANDLER("release WRITE sem");
     }
 
-    printSem(semId, "after while(1)");
-
-
     /* give turn to writer to use [sem/shm]ctl and detach shm*/
 
-    struct sembuf endStuff[3] = {
-        {SEM_W_INIT, +1, 0},
-        {SEM_W_INIT, -1, SEM_UNDO},
-        {SEM_W, +1, 0}
+    struct sembuf endStuff[4] = {
+        {SEM_W,       +1, SEM_UNDO},            /* give turn (sign) to writer that we've finished
+                                                   and he can RM shm, sem, etc.*/
+        {SEM_R_INIT,  -1, SEM_UNDO},
+        {SEM_R_ALIVE, -1, SEM_UNDO},
+        {SEM_E,       -1, SEM_UNDO},
     };
 
-    //{SEM_W_INIT, -1, SEM_UNDO},
-
-    if (semop(semId, endStuff, 3) == -1)
+    if (semop(semId, endStuff, 4) == -1)
        ERR_HANDLER("semop endStuff");
 
     if (semctl(semId, 0, IPC_RMID, NULL) == -1)        
@@ -166,7 +157,7 @@ int main(int argc, char* argv[])
             ERR_HANDLER("remove shm Seg");   
     }    
 
-    fprintf(stderr, "%s\n", transferErr ? "FAILED" : "SUCCESS");
+    fprintf(stderr, "Status of transmission: %s\n", transferErr ? "FAILED" : "SUCCESS");
 
     exit(EXIT_SUCCESS);
 }
