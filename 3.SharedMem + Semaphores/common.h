@@ -59,16 +59,13 @@ void printSem(int semId, const char* msg);
 #define SEM_W 0 /* binary sem that we use like mutex for critical section */
 #define SEM_R 1 /*                          -//-                          */
 
-#define SEM_E 2 /* to find out if 1 of processes are terminated */
+#define SEM_E 2 /* to find out if 1 of processes are terminated (equal to Number of processes) */
 
 #define SEM_W_INIT 3    /* to ensure mutual exclusion on initialization */
 #define SEM_R_INIT 4    /*                  -//-                        */
 
 #define SEM_W_ALIVE 5      /* to ensure there is only one writer */
 #define SEM_R_ALIVE 6      /* to ensure there is only one reader */
-
-
-
 
 
 
