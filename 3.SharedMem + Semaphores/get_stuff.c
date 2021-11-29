@@ -54,8 +54,6 @@ int getSemVal(int semId, int semNum)
     if (semctl(semId, 0, GETALL, arg) == -1)
         ERR_HANDLER("semctl-GETALL");
 
-    //fprintf(stderr, "semNum = %d\n", semNum);
-
     int retval = arg.array[semNum];
     free(arg.array);
 
