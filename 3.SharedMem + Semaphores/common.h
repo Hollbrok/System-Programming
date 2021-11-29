@@ -64,8 +64,8 @@ void printSem(int semId, const char* msg);
 #define SEM_W_INIT 3    /* to ensure mutual exclusion on initialization */
 #define SEM_R_INIT 4    /*                  -//-                        */
 
-#define SEM_W_ALIVE 5      /* to ensure there is only one writer */
-#define SEM_R_ALIVE 6      /* to ensure there is only one reader */
+#define SEM_W_ALIVE 5   /* to ensure there is only one writer */
+#define SEM_R_ALIVE 6   /* to ensure there is only one reader */
 
 
 
