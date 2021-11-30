@@ -8,7 +8,7 @@
 
 #else
 
-#define DEBUG_REGIME 0
+#define DEBUG_REGIME 1
 
 #endif
 
@@ -18,19 +18,14 @@
 
 
 #define DEBPRINT(args...)                       \
-    do{ if(DEBUG_REGIME)                            \
-        {                                           \
-        if (NEED_LINE)                          \
+    do                                          \
+    {                                           \
+        if(DEBUG_REGIME)                        \
         {                                       \
-            if (NEED_PID)                       \
-                fprintf(stderr, "\n|[%ld]   ", (long) getpid());    \
-            else                                                    \
-                fprintf(stderr, "\n|        ");                     \
-            fprintf(stderr, "LINE: %d\n"                            \
-                            "->", __LINE__);                        \
-        }                                                           \
-        fprintf(stderr, args);                                      \
-        } } while(0)
+            fprintf(stderr, "\n(%ld): ", (long) getpid());\
+            fprintf(stderr, args);              \
+        }                                       \
+    } while(0)
 
 #define ERRCHECK_CLOSE(FD)      \
     if (close(FD) != 0)         \
