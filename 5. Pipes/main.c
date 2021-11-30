@@ -48,11 +48,14 @@ int main(int argc, const char *argv[])
         if (pipe2(FDs[i], O_NONBLOCK) == -1)
             err(EX_OSERR, "pipe2");
 
+    fprintf(stderr, "\n");
+
     errno = 0;
 
     for (int curChild = 0; curChild < nOfChilds; ++curChild)
     {
         /* preparing */
+
 
         /*  */
 
@@ -89,19 +92,23 @@ int main(int argc, const char *argv[])
 
                 if ((fdR = open(argv[2], O_RDONLY)) == -1)
                     err(EX_OSERR, "open file on read");
+
                 fdW = FDs[0][PIPE_W];
             }
             /* last child*/
 
             else if (curChild == nOfChilds - 1)
             {
+                fprintf(stderr, "\n\t%ld: Last Child\n"
+                                "check FD = %d\n", (long)getpid(), (nOfChilds - 1) * 2 - 1);
+
                 if (close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_W]) == -1)
                     err(EX_OSERR, "close last-child write-end");
 
                 for (int i = 0; i < (nOfChilds - 1) * 2 - 1; ++i)
                     if (close(FDs[i][PIPE_R]) == -1 || close(FDs[i][PIPE_W]) == -1)
                         err(EX_OSERR, "close pipe fds for end-child");
-            
+
                 fdR = FDs[(nOfChilds - 1) * 2 - 1][PIPE_R];
                 fdW = STDOUT_FILENO;
             }
@@ -149,7 +156,7 @@ int main(int argc, const char *argv[])
             if (close(fdR) == -1 || close(fdW) == -1)
                 err(EX_OSERR, "close fdR/fdW");
 
-            fprintf(stderr, "%ld: Success\n", (long)getpid());
+            fprintf(stderr, "\n\t%ld: Success\n", (long)getpid());
             exit(EXIT_SUCCESS);
             break;
         }
@@ -181,6 +188,9 @@ int main(int argc, const char *argv[])
         if (buffer == NULL)
             err(EX_OSERR, "can't calloc");
 
+        DEBPRINT("calloc buffer size[i = %d] = %d\n", iTransm, bufferSize);
+
+
         /*fd_set rFds, wFds;
         
         FD_ZERO(&rFds);
@@ -189,16 +199,13 @@ int main(int argc, const char *argv[])
         FD_SET(FDs[2 * iTransm][PIPE_R], &rFds);
         FD_SET(FDs[2 * iTransm + 1][PIPE_W], &wFds); */
 
-        
-
-        DEBPRINT("calloc buffer size[i = %d] = %d\n", iTransm, bufferSize);
-
+    
         free(buffer);
     } 
 
     /* */
 
-    fprintf(stderr, "(P) %ld: SUCCESS\n", (long)getpid());
+    fprintf(stderr, "\n\t(P) %ld: SUCCESS\n", (long)getpid());
     exit(EXIT_SUCCESS);
 }
 
