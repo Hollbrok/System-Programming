@@ -56,7 +56,6 @@ int main(int argc, const char *argv[])
     {
         /* preparing */
 
-
         /*  */
 
         switch (isParent = fork())
@@ -67,9 +66,7 @@ int main(int argc, const char *argv[])
         case 0:     /*   CHILD   */
         {
         
-            //fprintf(stderr, "Child %ld\n", (long)getpid());
-
-            if (prctl(PR_SET_PDEATHSIG, SIGHUP) == -1)
+            if (prctl(PR_SET_PDEATHSIG, SIGKILL) == -1)
                 err(EX_OSERR, "prctl");
         
             if (parentPid != getppid())
@@ -99,9 +96,6 @@ int main(int argc, const char *argv[])
 
             else if (curChild == nOfChilds - 1)
             {
-                fprintf(stderr, "\n\t%ld: Last Child\n"
-                                "check FD = %d\n", (long)getpid(), (nOfChilds - 1) * 2 - 1);
-
                 if (close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_W]) == -1)
                     err(EX_OSERR, "close last-child write-end");
 
@@ -141,6 +135,7 @@ int main(int argc, const char *argv[])
                  fcntl(fdR, F_SETFL, O_RDONLY) == -1 )
                 err(EX_OSERR, "~O_NONBLOCK");
 
+            DEBPRINT("\n\t Child before R/W\n");
             
             while (lastRead != 0)
             {
@@ -149,7 +144,7 @@ int main(int argc, const char *argv[])
                 if (write(fdW, buffer, lastRead) == -1)
                     err(EX_OSERR, "C: write");
 
-                DEBPRINT("C: after read-write [lbr = %d]\n", lastRead);
+                DEBPRINT("after read-write [lbr = %d]\n", lastRead);
             }
             
 
@@ -167,6 +162,7 @@ int main(int argc, const char *argv[])
 
     }
 
+
     /* close unused FDs */
 
     if (close(FDs[0][PIPE_W]) == -1 || close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_R]) == -1)
@@ -178,11 +174,19 @@ int main(int argc, const char *argv[])
             err(EX_OSERR, "P: close R/W of pipes");
     }
 
+
     /* data transmission (Parent) */
+
+    sleep(2);
 
     for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
     {
+        DEBPRINT("Lets do transm #%d\n", iTransm);
+
         int bufferSize = pow(3, nOfChilds - iTransm + 4) < (1 << 17) ? pow(3, nOfChilds - iTransm + 4) : (1 << 17);
+
+        int readSize   = bufferSize < PIPE_BUF ? bufferSize : PIPE_BUF;
+        int lastRead   = -1;
 
         char *buffer = (char*) calloc(bufferSize, sizeof(char));
         if (buffer == NULL)
@@ -190,22 +194,94 @@ int main(int argc, const char *argv[])
 
         DEBPRINT("calloc buffer size[i = %d] = %d\n", iTransm, bufferSize);
 
-
-        /*fd_set rFds, wFds;
+        fd_set rFds, wFds;
         
         FD_ZERO(&rFds);
         FD_ZERO(&wFds);
 
         FD_SET(FDs[2 * iTransm][PIPE_R], &rFds);
-        FD_SET(FDs[2 * iTransm + 1][PIPE_W], &wFds); */
+        FD_SET(FDs[2 * iTransm + 1][PIPE_W], &wFds);
 
-    
+        errno = 0;
+
+        while (1) // lastRead != 0
+        {
+            //read
+
+            DEBPRINT("before select R (%d)\n", FDs[2 * iTransm][PIPE_R]);
+
+            while (select(FDs[2 * iTransm][PIPE_R] + 1, &rFds, NULL, NULL, NULL) == 0) // last NULL ===> &{0}
+            {fprintf(stderr, "1");}
+
+            fprintf(stderr, "\n");
+
+            DEBPRINT("after select R\n");
+
+
+            if (errno != 0)
+                err(EX_OSERR, "P: select read");
+        
+            if (FD_ISSET(FDs[2 * iTransm][PIPE_R], &rFds))
+                if ((lastRead = read(FDs[2 * iTransm][PIPE_R], buffer, readSize)) == -1)
+                    err(EX_OSERR, "P: read in cycle");
+
+            if (lastRead == 0)
+            {
+                DEBPRINT("find EOF, let's new transm\n");
+
+                if (close(FDs[2 * iTransm][PIPE_R]) == -1 || close(FDs[2 * iTransm + 1][PIPE_W]) == -1)
+                    err(EX_OSERR, "P: close PROCESSES FDs");
+
+                break;
+            }
+            // write
+
+            DEBPRINT("before select W\n");
+
+
+            while (select(FDs[2 * iTransm + 1][PIPE_W] + 1, NULL, &wFds, NULL, NULL) == 0) // last NULL ===> &{0}
+            {fprintf(stderr, "2");}
+
+            fprintf(stderr, "\n");
+
+            DEBPRINT("after select W\n");
+
+
+            if (errno != 0)
+                err(EX_OSERR, "P: select write");
+        
+            if (FD_ISSET(FDs[2 * iTransm + 1][PIPE_W], &wFds))
+                if (write(FDs[2 * iTransm + 1][PIPE_W], buffer, lastRead) != lastRead)
+                    err(EX_OSERR, "P: write in cycle");
+
+            fprintf(stderr, "\n\t PARENT TRANS: %dbyte to %d child\n", lastRead, iTransm + 1);
+        }
+
         free(buffer);
     } 
 
-    /* */
+    /* close all another FDs to find EOF*/
 
-    fprintf(stderr, "\n\t(P) %ld: SUCCESS\n", (long)getpid());
+    if (close(FDs[0][PIPE_R]) == -1 || close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_W]) == -1)
+        err(EX_OSERR, "P: close R/W 0/end-child at the end of transmission");
+
+    for (int iChild = 1; iChild < nOfChilds - 1; ++iChild)
+    {
+        if (close(FDs[iChild * 2 - 1][PIPE_W]) == -1 || close(FDs[iChild * 2][PIPE_R]) == -1)
+            err(EX_OSERR, "P: close W/R of pipes at the end of transmission");
+    }
+    
+    /* waiting for end */
+
+    DEBPRINT("\n\tSuccess, waiting all childs...\n");
+
+    while (wait(NULL) != -1)
+    {
+
+    }
+
+    DEBPRINT("\n\tAll childs have finished\n");
+
     exit(EXIT_SUCCESS);
 }
 
