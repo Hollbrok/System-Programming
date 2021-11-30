@@ -23,4 +23,6 @@
 
 #include <sys/prctl.h>
 
+#include <math.h>
+
 #endif
