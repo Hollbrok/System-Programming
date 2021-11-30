@@ -12,9 +12,6 @@
 
 #endif
 
-#define NEED_SLEEP   0
-#define NEED_LINE    0
-#define NEED_PID     1
 
 
 #define DEBPRINT(args...)                       \
