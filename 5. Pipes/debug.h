@@ -8,7 +8,7 @@
 
 #else
 
-#define DEBUG_REGIME 1
+#define DEBUG_REGIME 0
 
 #endif
 
@@ -22,7 +22,7 @@
     {                                           \
         if(DEBUG_REGIME)                        \
         {                                       \
-            fprintf(stderr, "\n(%ld): ", (long) getpid());\
+            fprintf(stderr, "\n(%ld): ", (long) getpid() - (long) getppid() - 1);\
             fprintf(stderr, args);              \
         }                                       \
     } while(0)

@@ -188,10 +188,10 @@ int main(int argc, const char *argv[])
 
             int bufferSize = pow(3, nOfChilds - iTransm + 4) < (1 << 17) ? pow(3, nOfChilds - iTransm + 4) : (1 << 17);
 
-            int readSize   = pow(3, 6);//bufferSize < PIPE_BUF ? bufferSize : PIPE_BUF;
+            int readSize   = pow(3, 7);//bufferSize < PIPE_BUF ? bufferSize : PIPE_BUF;
             int lastRead   = -1;
 
-            char *buffer = (char*) calloc(bufferSize, sizeof(char));
+            char *buffer = (char*) calloc(readSize, sizeof(char));
             if (buffer == NULL)
                 err(EX_OSERR, "can't calloc");
 

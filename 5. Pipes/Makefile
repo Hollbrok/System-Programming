@@ -4,4 +4,4 @@ all: MAIN
 
 
 MAIN: main.c
-			gcc -o a main.c -lm
+			gcc -o piper main.c -lm
