@@ -1,6 +1,5 @@
 #include "libs.h"
 #include "debug.h"
-#include "common.h"
 
 /* Read[0] <- [#####] <- Write[1] */
 
@@ -174,13 +173,25 @@ int main(int argc, const char *argv[])
 
     /* data transmission (Parent) */
 
-    for (int iChild = 0; iChild < nOfChilds; ++iChild)
+    for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
     {
-        char *buffer = (char*) calloc(pow(3, nOfChilds - iChild + 4), sizeof(char));
+        int bufferSize = pow(3, nOfChilds - iTransm + 4) < (1 << 17) ? pow(3, nOfChilds - iTransm + 4) : (1 << 17);
+
+        char *buffer = (char*) calloc(bufferSize, sizeof(char));
         if (buffer == NULL)
             err(EX_OSERR, "can't calloc");
 
-        DEBPRINT("calloc buffer size[i = %d] = %lg\n", iChild, pow(3, nOfChilds - iChild + 4));
+        /*fd_set rFds, wFds;
+        
+        FD_ZERO(&rFds);
+        FD_ZERO(&wFds);
+
+        FD_SET(FDs[2 * iTransm][PIPE_R], &rFds);
+        FD_SET(FDs[2 * iTransm + 1][PIPE_W], &wFds); */
+
+        
+
+        DEBPRINT("calloc buffer size[i = %d] = %d\n", iTransm, bufferSize);
 
         free(buffer);
     } 
