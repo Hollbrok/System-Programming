@@ -59,13 +59,13 @@ int main(int argc, char* argv[])
 
     /* end of init, to make it clear to the writer that the reader has finished initialization */
 
-        struct sembuf EndInitReader[2] = {
-        {SEM_R_INIT, 0, 0},
+        struct sembuf EndInitReader[1] = {
+        //{SEM_R_INIT, 0, 0},
         {SEM_R_INIT, +1, SEM_UNDO}
     };
 
-    if (semop(semId, EndInitReader, 2) == -1)
-        ERR_HANDLER("End critical section of initialization of reader\n"); 
+    if (semop(semId, EndInitReader, 1) == -1)
+        ERR_HANDLER("The end of critical section of initialization of reader\n"); 
 
 /* end of initialization */
 
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 
     errno = 0;
 
-    while (1)
+    while (1) 
     {
         if (semop(semId, &reserveR, 1) == -1)
             ERR_HANDLER("reserve READ sem");
