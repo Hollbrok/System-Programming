@@ -4,7 +4,7 @@
 
 void printSem(int semId, const char* msg);
 
-/* creating or getting exclusively shm  + at */
+int getSemVal(int semId, int semNum);
 
 /* print info about sem values */
 
