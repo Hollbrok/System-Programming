@@ -6,7 +6,7 @@
 #include "debug.h"
 
 int main(int argc, char* argv[])
-{
+{ 
     /* data section */
  
     int semId = -1, shmId = -1; /* IPS IDs                    */
@@ -15,7 +15,6 @@ int main(int argc, char* argv[])
     struct ShmSeg * shmSeg = NULL;
     union semun uselessArg;
     int transferErr = 0;
-
 
     /* checks if there is the 2nd argument (file name) */
 
@@ -51,7 +50,7 @@ int main(int argc, char* argv[])
     if (semop(semId, &wait0Proc, 1) == -1)
         ERR_HANDLER("wait 0 processes");
 
-    /* cycle of file tranfering starts from writer */
+    /* cycle of file tranfering starts from writer and if writer dies reader should know about that */
 
     union semun arg;
     arg.val = 1;
@@ -67,14 +66,14 @@ int main(int argc, char* argv[])
     /* end of init, to make it clear to the reader that the writer has finished  initialization */
 
 
-// скорее всего нужна только вторая операция, т.к. SEM_W_INIT всегда 0, после того, как мы дождались 0 процессов 
-    struct sembuf EndInitWriter[2] = {
-        {SEM_W_INIT, 0, 0},
+    // скорее всего нужна только вторая операция, т.к. SEM_W_INIT всегда 0, после того, как мы дождались 0 процессов 
+    struct sembuf EndInitWriter[1] = {
+        //{SEM_W_INIT, 0, 0},
         {SEM_W_INIT, +1, SEM_UNDO}
     };
 
-    if (semop(semId, EndInitWriter, 2) == -1)
-        ERR_HANDLER("End critical section of initialization of writer\n");
+    if (semop(semId, EndInitWriter, 1) == -1)
+        ERR_HANDLER("The end of critical section of initialization of writer\n");
 
 /* end of initialization */
 
@@ -117,17 +116,26 @@ int main(int argc, char* argv[])
 
     while (1)
     {     
+        //fprintf(stderr, "1");
+
         if (semop(semId, &reserveW, 1) == -1)
             ERR_HANDLER("reserve WRITE sem");
 
+        //fprintf(stderr, "2");
         /* if another side has already died  */
 
         if (getSemVal(semId, SEM_R_ALIVE) == 0)
         {
+            fprintf(stderr, "3");
             if (DEBUG_REGIME)
                 printSem(semId, "death of reader");
     
             transferErr = 1;
+
+            struct sembuf releaseW = {SEM_W, +1, 0};
+            if (semop(semId, &releaseW, 1) == -1)
+                ERR_HANDLER("release WRITE sem in death-situation");
+
             break;
         }
 
