@@ -135,7 +135,7 @@ int main(int argc, const char *argv[])
                  fcntl(fdR, F_SETFL, O_RDONLY) == -1 )
                 err(EX_OSERR, "~O_NONBLOCK");
 
-            DEBPRINT("\n\t Child before R/W\n");
+            //DEBPRINT("\n\t Child before R/W\n");
             
             while (lastRead != 0)
             {
@@ -144,14 +144,14 @@ int main(int argc, const char *argv[])
                 if (write(fdW, buffer, lastRead) == -1)
                     err(EX_OSERR, "C: write");
 
-                DEBPRINT("after read-write [lbr = %d]\n", lastRead);
+                //DEBPRINT("after read-write [lbr = %d]\n", lastRead);
             }
             
 
             if (close(fdR) == -1 || close(fdW) == -1)
                 err(EX_OSERR, "close fdR/fdW");
 
-            fprintf(stderr, "\n\t%ld: Success\n", (long)getpid());
+            DEBPRINT("\tSuccess\n");
             exit(EXIT_SUCCESS);
             break;
         }
@@ -161,7 +161,6 @@ int main(int argc, const char *argv[])
         }
 
     }
-
 
     /* close unused FDs */
 
@@ -177,9 +176,91 @@ int main(int argc, const char *argv[])
 
     /* data transmission (Parent) */
 
-    sleep(2);
+    int endOfTransm = 0;
 
-    for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
+    while (1)
+    {
+        fd_set rFds, wFds;
+        
+        for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
+        {
+            //DEBPRINT("Lets do transm #%d\n", iTransm);
+
+            int bufferSize = pow(3, nOfChilds - iTransm + 4) < (1 << 17) ? pow(3, nOfChilds - iTransm + 4) : (1 << 17);
+
+            int readSize   = pow(3, 6);//bufferSize < PIPE_BUF ? bufferSize : PIPE_BUF;
+            int lastRead   = -1;
+
+            char *buffer = (char*) calloc(bufferSize, sizeof(char));
+            if (buffer == NULL)
+                err(EX_OSERR, "can't calloc");
+
+            FD_ZERO(&rFds);
+            FD_ZERO(&wFds);
+
+            FD_SET(FDs[2 * iTransm][PIPE_R], &rFds);
+            FD_SET(FDs[2 * iTransm + 1][PIPE_W], &wFds);
+
+            //read
+
+            //DEBPRINT("before select R (%d)\n", FDs[2 * iTransm][PIPE_R]);
+
+            while (select(FDs[2 * iTransm][PIPE_R] + 1, &rFds, NULL, NULL, NULL) == 0) // last NULL ===> &{0}
+            {}
+
+            //DEBPRINT("after select R\n");
+
+            if (errno != 0)
+                err(EX_OSERR, "P: select read");
+        
+            if (FD_ISSET(FDs[2 * iTransm][PIPE_R], &rFds))
+                if ((lastRead = read(FDs[2 * iTransm][PIPE_R], buffer, readSize)) == -1)
+                    err(EX_OSERR, "P: read in cycle");
+
+            if (lastRead == 0)
+            {
+                DEBPRINT("find EOF, let's new transm\n");
+
+                /*if (close(FDs[2 * iTransm][PIPE_R]) == -1 || close(FDs[2 * iTransm + 1][PIPE_W]) == -1)
+                    err(EX_OSERR, "P: close PROCESSES FDs"); */
+                
+                endOfTransm = 1;
+                
+                break;
+            }
+
+            // write
+
+            //DEBPRINT("before select W\n");
+
+            while (select(FDs[2 * iTransm + 1][PIPE_W] + 1, NULL, &wFds, NULL, NULL) == 0) // last NULL ===> &{0}
+            {}
+
+            //DEBPRINT("after select W\n");
+
+
+            if (errno != 0)
+                err(EX_OSERR, "P: select write");
+        
+            if (FD_ISSET(FDs[2 * iTransm + 1][PIPE_W], &wFds))
+                if (write(FDs[2 * iTransm + 1][PIPE_W], buffer, lastRead) != lastRead)
+                    err(EX_OSERR, "P: write in cycle");
+
+            DEBPRINT("\n\t PARENT TRANSM: %dbyte to %d child\n", lastRead, iTransm + 1); 
+        }
+    
+        if (endOfTransm)
+        {
+            for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
+                if (close(FDs[2 * iTransm][PIPE_R]) == -1 || close(FDs[2 * iTransm + 1][PIPE_W]) == -1)
+                    err(EX_OSERR, "P: close PROCESSES FDs");
+
+            DEBPRINT("END OF TRANSM\n");
+            break;
+        }
+    }
+
+    /*for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
     {
         DEBPRINT("Lets do transm #%d\n", iTransm);
 
@@ -211,12 +292,9 @@ int main(int argc, const char *argv[])
             DEBPRINT("before select R (%d)\n", FDs[2 * iTransm][PIPE_R]);
 
             while (select(FDs[2 * iTransm][PIPE_R] + 1, &rFds, NULL, NULL, NULL) == 0) // last NULL ===> &{0}
-            {fprintf(stderr, "1");}
-
-            fprintf(stderr, "\n");
+            {}
 
             DEBPRINT("after select R\n");
-
 
             if (errno != 0)
                 err(EX_OSERR, "P: select read");
@@ -234,16 +312,13 @@ int main(int argc, const char *argv[])
 
                 break;
             }
-            
+
             // write
 
             DEBPRINT("before select W\n");
 
-
             while (select(FDs[2 * iTransm + 1][PIPE_W] + 1, NULL, &wFds, NULL, NULL) == 0) // last NULL ===> &{0}
-            {fprintf(stderr, "2");}
-
-            fprintf(stderr, "\n");
+            {}
 
             DEBPRINT("after select W\n");
 
@@ -255,31 +330,18 @@ int main(int argc, const char *argv[])
                 if (write(FDs[2 * iTransm + 1][PIPE_W], buffer, lastRead) != lastRead)
                     err(EX_OSERR, "P: write in cycle");
 
-            fprintf(stderr, "\n\t PARENT TRANS: %dbyte to %d child\n", lastRead, iTransm + 1);
+            fprintf(stderr, "\n\t PARENT TRANSM: %dbyte to %d child\n", lastRead, iTransm + 1);
         }
 
         free(buffer);
-    } 
-
-    /* close all another FDs to find EOF*/
-
-    if (close(FDs[0][PIPE_R]) == -1 || close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_W]) == -1)
-        err(EX_OSERR, "P: close R/W 0/end-child at the end of transmission");
-
-    for (int iChild = 1; iChild < nOfChilds - 1; ++iChild)
-    {
-        if (close(FDs[iChild * 2 - 1][PIPE_W]) == -1 || close(FDs[iChild * 2][PIPE_R]) == -1)
-            err(EX_OSERR, "P: close W/R of pipes at the end of transmission");
-    }
+    } */
     
     /* waiting for end */
 
     DEBPRINT("\n\tSuccess, waiting all childs...\n");
 
     while (wait(NULL) != -1)
-    {
-
-    }
+    {}
 
     DEBPRINT("\n\tAll childs have finished\n");
 
