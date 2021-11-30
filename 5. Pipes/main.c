@@ -16,8 +16,8 @@ long getNumber(const char *numString, int *errorState);
 
 int main(int argc, const char *argv[])
 {
-    if (argc < 2)
-        err(EX_USAGE, "program needs number argument");
+    if (argc != 3)
+        err(EX_USAGE, "program needs number and file argument");
 
     int errorNumber = -1;
     int nOfChilds = getNumber(argv[1], &errorNumber);
@@ -40,11 +40,8 @@ int main(int argc, const char *argv[])
     fprintf(stderr, "Number of pipes: %d\n", 2 * (nOfChilds - 1));
 
     for (int i = 0; i < (nOfChilds - 1) * 2; ++i)
-    {
         if (pipe2(FDs[i], O_NONBLOCK) == -1)
             err(EX_OSERR, "pipe2");
-    }
-
 
     errno = 0;
 
@@ -67,9 +64,11 @@ int main(int argc, const char *argv[])
                 err(EX_OSERR, "prctl");
         
             if (parentPid != getppid())
-                err(EX_OSERR, "err pid");
+                err(EX_OSERR, "err ppid");
 
         /* close not interesting for this child FDs*/
+
+            int fdR = -1, fdW = -1;
 
             /* 0-child */
 
@@ -81,6 +80,10 @@ int main(int argc, const char *argv[])
                 for (int i = 1; i < (nOfChilds - 1) * 2; ++i)
                     if (close(FDs[i][PIPE_R]) == -1 || close(FDs[i][PIPE_W]) == -1)
                         err(EX_OSERR, "close pipe fds for 0-child");
+
+                if ((fdR = open(argv[2], O_RDONLY)) == -1)
+                    err(EX_OSERR, "open file on read");
+                fdW = FDs[0][PIPE_W];
             }
             /* last child*/
 
@@ -92,6 +95,9 @@ int main(int argc, const char *argv[])
                 for (int i = 0; i < (nOfChilds - 1) * 2 - 1; ++i)
                     if (close(FDs[i][PIPE_R]) == -1 || close(FDs[i][PIPE_W]) == -1)
                         err(EX_OSERR, "close pipe fds for end-child");
+            
+                fdR = FDs[(nOfChilds - 1) * 2 - 1][PIPE_R];
+                fdW = STDOUT_FILENO;
             }
 
             /* anothers */
@@ -107,9 +113,27 @@ int main(int argc, const char *argv[])
                     else if (close(FDs[i][PIPE_R]) == -1 || close(FDs[i][PIPE_W]) == -1)
                         err(EX_OSERR, "close pipe fds for 0-child");
 
+                fdR = FDs[curChild * 2 - 1][PIPE_R];
+                fdW = FDs[curChild * 2][PIPE_W];
             }
+
             /* end of close FDs that we are not interested in */
   
+            /* data transfer */
+
+            int lastRead  = -1;
+            char buffer[PIPE_BUF] = {};
+
+            if (curChild == 0)
+                while (lastRead != 0)
+                {
+                    if ((lastRead = read(fdR, buffer, PIPE_BUF)) == -1)
+                        err(EX_OSERR, "read from file");
+                    if (write(STDOUT_FILENO, buffer, lastRead) == -1)
+                        err(EX_OSERR, "write to STDOUT");
+                }
+            
+
             fprintf(stderr, "%ld: SUCCESS\n", (long)getpid());
             exit(EXIT_SUCCESS);
             break;
@@ -124,8 +148,9 @@ int main(int argc, const char *argv[])
 
 
 
+    /*  */
 
-    fprintf(stderr, "%ld: SUCCESS\n", (long)getpid());
+    fprintf(stderr, "(P) %ld: SUCCESS\n", (long)getpid());
     exit(EXIT_SUCCESS);
 }
 
