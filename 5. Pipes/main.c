@@ -234,6 +234,7 @@ int main(int argc, const char *argv[])
 
                 break;
             }
+            
             // write
 
             DEBPRINT("before select W\n");
