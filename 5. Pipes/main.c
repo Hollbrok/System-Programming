@@ -30,6 +30,12 @@ int main(int argc, const char *argv[])
 
     /* fork initialization (with creating pipes, closing FDs, etc.) */
 
+    /* */
+
+    // SIGCHILD
+
+    /* */
+
     int isParent = -1;
     int parentPid = getpid();
 
@@ -57,6 +63,7 @@ int main(int argc, const char *argv[])
             err(EX_OSERR, "fork");
             break;
         case 0:     /*   CHILD   */
+        {
         
             //fprintf(stderr, "Child %ld\n", (long)getpid());
 
@@ -66,7 +73,7 @@ int main(int argc, const char *argv[])
             if (parentPid != getppid())
                 err(EX_OSERR, "err ppid");
 
-        /* close not interesting for this child FDs*/
+            /* close FDs that we are not interested in*/
 
             int fdR = -1, fdW = -1;
 
@@ -124,19 +131,29 @@ int main(int argc, const char *argv[])
             int lastRead  = -1;
             char buffer[PIPE_BUF] = {};
 
-            if (curChild == 0)
-                while (lastRead != 0)
-                {
-                    if ((lastRead = read(fdR, buffer, PIPE_BUF)) == -1)
-                        err(EX_OSERR, "read from file");
-                    if (write(STDOUT_FILENO, buffer, lastRead) == -1)
-                        err(EX_OSERR, "write to STDOUT");
-                }
+            if ( fcntl(fdW, F_SETFL, O_WRONLY) == -1 ||
+                 fcntl(fdR, F_SETFL, O_RDONLY) == -1 )
+                err(EX_OSERR, "~O_NONBLOCK");
+
+            
+            while (lastRead != 0)
+            {
+                if ((lastRead = read(fdR, buffer, PIPE_BUF)) == -1)
+                    err(EX_OSERR, "C: read");
+                if (write(fdW, buffer, lastRead) == -1)
+                    err(EX_OSERR, "C: write");
+
+                DEBPRINT("C: after read-write [lbr = %d]\n", lastRead);
+            }
             
 
-            fprintf(stderr, "%ld: SUCCESS\n", (long)getpid());
+            if (close(fdR) == -1 || close(fdW) == -1)
+                err(EX_OSERR, "close fdR/fdW");
+
+            fprintf(stderr, "%ld: Success\n", (long)getpid());
             exit(EXIT_SUCCESS);
             break;
+        }
         default:    /*   PARENT  */
 
             break;
@@ -144,11 +161,31 @@ int main(int argc, const char *argv[])
 
     }
 
-    /* data transmission  */
+    /* close unused FDs */
 
+    if (close(FDs[0][PIPE_W]) == -1 || close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_R]) == -1)
+        err(EX_OSERR, "P: close W/R 0/end-child");
 
+    for (int iChild = 1; iChild < nOfChilds - 1; ++iChild)
+    {
+        if (close(FDs[iChild * 2 - 1][PIPE_R]) == -1 || close(FDs[iChild * 2][PIPE_W]) == -1)
+            err(EX_OSERR, "P: close R/W of pipes");
+    }
 
-    /*  */
+    /* data transmission (Parent) */
+
+    for (int iChild = 0; iChild < nOfChilds; ++iChild)
+    {
+        char *buffer = (char*) calloc(pow(3, nOfChilds - iChild + 4), sizeof(char));
+        if (buffer == NULL)
+            err(EX_OSERR, "can't calloc");
+
+        DEBPRINT("calloc buffer size[i = %d] = %lg\n", iChild, pow(3, nOfChilds - iChild + 4));
+
+        free(buffer);
+    } 
+
+    /* */
 
     fprintf(stderr, "(P) %ld: SUCCESS\n", (long)getpid());
     exit(EXIT_SUCCESS);
