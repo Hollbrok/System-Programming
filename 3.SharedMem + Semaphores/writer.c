@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 /* Start of critical section (initialization) */    
 
     /* the writer waits for the rest of writers to finish their work */
-
+ 
     struct sembuf checkAnotherWriters[2] = {
         {SEM_W_ALIVE, 0, 0},
         {SEM_W_ALIVE, +1, SEM_UNDO}
@@ -45,9 +45,9 @@ int main(int argc, char* argv[])
 
     /* wait 0 pairs (0 processes) in executing */
 
-    struct sembuf wait0Proc = {SEM_E, 0, 0};
+    struct sembuf wait0Proc[1] = {SEM_E, 0, 0};
 
-    if (semop(semId, &wait0Proc, 1) == -1)
+    if (semop(semId, wait0Proc, 1) == -1)
         ERR_HANDLER("wait 0 processes");
 
     /* cycle of file tranfering starts from writer and if writer dies reader should know about that */
@@ -58,17 +58,14 @@ int main(int argc, char* argv[])
     if (semctl(semId, SEM_R, SETVAL, arg) == -1)
         ERR_HANDLER("init SEM_R to 1");
 
-    struct sembuf undoR = {SEM_R, -1, SEM_UNDO};
+    struct sembuf undoR[1] = {SEM_R, -1, SEM_UNDO};
 
-    if (semop(semId, &undoR, 1) == -1)
+    if (semop(semId, undoR, 1) == -1)
         ERR_HANDLER("undo SEM_R (-1)");
  
-    /* end of init, to make it clear to the reader that the writer has finished  initialization */
+    /* end of init, to make it clear to the reader that the writer has finished initialization */
 
-
-    // скорее всего нужна только вторая операция, т.к. SEM_W_INIT всегда 0, после того, как мы дождались 0 процессов 
     struct sembuf EndInitWriter[1] = {
-        //{SEM_W_INIT, 0, 0},
         {SEM_W_INIT, +1, SEM_UNDO}
     };
 
