@@ -38,9 +38,9 @@ int main(int argc, char* argv[])
 
     /* wait 0 pairs (0 processes) in executing */
 
-    struct sembuf wait0Proc = {SEM_E, 0, 0};
+    struct sembuf wait0Proc[1] = {SEM_E, 0, 0};
 
-    if (semop(semId, &wait0Proc, 1) == -1)
+    if (semop(semId, wait0Proc, 1) == -1)
         ERR_HANDLER("wait 0 processes");
 
     /* cycle of file tranfering starts from writer, so there are start values of sems */
@@ -51,16 +51,15 @@ int main(int argc, char* argv[])
     if (semctl(semId, SEM_W, SETVAL, arg) == -1)
         ERR_HANDLER("init SEM_W to 2");
 
-    struct sembuf undoW = {SEM_W, -1, SEM_UNDO};
+    struct sembuf undoW[1] = {SEM_W, -1, SEM_UNDO};
 
-    if (semop(semId, &undoW, 1) == -1)
+    if (semop(semId, undoW, 1) == -1)
         ERR_HANDLER("undo SEM_W (-1)");
 
 
     /* end of init, to make it clear to the writer that the reader has finished initialization */
 
         struct sembuf EndInitReader[1] = {
-        //{SEM_R_INIT, 0, 0},
         {SEM_R_INIT, +1, SEM_UNDO}
     };
 
