@@ -21,3 +21,7 @@ make
 ```
 
 There is __3__ -- number of frames allocated to the process.
+
+So there you can see example of output:
+
+![output](https://github.com/Hollbrok/System-Programming/tree/master/Page%20Fault%20counter/out_example.png)
