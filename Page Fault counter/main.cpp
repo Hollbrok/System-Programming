@@ -172,11 +172,11 @@ int pageFaultsFIFO(int pages[], int n, int capacity)
         frame[i]= -1;
 
     j = 0;
-    printf("\tref string\t page frames\t PF?\n");
+    printf("P:     \t\t      page frames\t\tPF status\n");
 
     for (i = 0; i < n; i++)
     {
-        printf("%d\t\t",pages[i]);
+        printf("%3d\t\t",pages[i]);
         avail = 0;
         for (k = 0; k < capacity; k++)
             if (frame[k] == pages[i])
@@ -190,7 +190,7 @@ int pageFaultsFIFO(int pages[], int n, int capacity)
         }
 
         for (k = 0; k < capacity; k++)
-            printf("%d\t",frame[k]);
+            printf("%3d\t",frame[k]);
         
         if (avail == 0) // no PF
         {
@@ -330,9 +330,9 @@ void pageFaults(int* ref, int len, int frame_size, int ctime)
 
     for (int j = 0; j < len; ++j)
         if (table[frame_size][j] == 0) 
-            cout << setw(2) << "- ";
+            cout << setw(3) << "- ";
         else
-            cout << setw(2) << "+ ";
+            cout << setw(3) << "+ ";
 
     cout << endl;
 }
