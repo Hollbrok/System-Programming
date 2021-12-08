@@ -181,6 +181,10 @@ int main(int argc, const char *argv[])
     while (1)
     {
         fd_set rFds, wFds;
+
+        char *buffer = (char*) calloc(pow(3, 7), sizeof(char));
+            if (buffer == NULL)
+                err(EX_OSERR, "can't calloc");
         
         for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
         {
@@ -191,9 +195,10 @@ int main(int argc, const char *argv[])
             int readSize   = pow(3, 7);//bufferSize < PIPE_BUF ? bufferSize : PIPE_BUF;
             int lastRead   = -1;
 
-            char *buffer = (char*) calloc(readSize, sizeof(char));
+            /*char *buffer = (char*) calloc(readSize, sizeof(char));
             if (buffer == NULL)
                 err(EX_OSERR, "can't calloc");
+            */
 
             FD_ZERO(&rFds);
             FD_ZERO(&wFds);
@@ -226,6 +231,8 @@ int main(int argc, const char *argv[])
                 
                 endOfTransm = 1;
                 
+                //free(buffer);
+
                 break;
             }
 
@@ -246,9 +253,14 @@ int main(int argc, const char *argv[])
                 if (write(FDs[2 * iTransm + 1][PIPE_W], buffer, lastRead) != lastRead)
                     err(EX_OSERR, "P: write in cycle");
 
+            //free(buffer);
+
             DEBPRINT("\n\t PARENT TRANSM: %dbyte to %d child\n", lastRead, iTransm + 1); 
+
         }
     
+        free(buffer);
+
         if (endOfTransm)
         {
             for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
