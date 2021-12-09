@@ -3,8 +3,29 @@
 
 /* Read[0] <- [#####] <- Write[1] */
 
-#define PIPE_R 0
-#define PIPE_W 1
+#define PIPE_R 0 /* constant for more convenient access to pipe read FD*/
+#define PIPE_W 1 /* constant for more convenient access to pipe write FD*/
+
+#define B128Kb (1 << 17) /* just constant for designate 128Kb */
+
+volatile sig_atomic_t k_numberOfExitedChilds = 0;
+int k_OfChilds;
+
+
+/* contains all the information you need for convenient transfer */
+struct TransInfo
+{
+    char *buffer;       /* pointer to allocated bufSize bytes.                                                                          */
+    char *read_from;    /* pointer in the buffer where the read to (child) pipe should come from.                                       */
+    char *write_to;     /* pointer in the buffer where the write from (child) to buffer should take place.                              */
+
+    size_t bufSize;     /* size of transmittion buffer                                                                                  */
+    size_t filled;      /* amount of bytes, that are available to be read from us to the 2nd child.                                     */
+    size_t empty;       /* (bufSize - filled); So amount of bytes, that are available to be written to us from the 1st child.           */
+    
+    int RFd;            /* FDs[2 * iTransm][PIPE_R]                                                                                     */
+    int Wfd;            /* FDs[2 * iTransm + 1][PIPE_W]                                                                                 */
+};
 
 /* */
 
@@ -19,7 +40,7 @@ int main(int argc, const char *argv[])
         err(EX_USAGE, "program needs number and file argument");
 
     int errorNumber = -1;
-    int nOfChilds = getNumber(argv[1], &errorNumber);
+    int nOfChilds   = k_OfChilds = getNumber(argv[1], &errorNumber);
 
     if (errorNumber == -1)
         err(EX_USAGE, "not-a-number in argument");
@@ -27,11 +48,16 @@ int main(int argc, const char *argv[])
     if (2 > nOfChilds || nOfChilds > 10000)
         err(EX_USAGE, "number should be from 2 to 10000");  
 
-    /* fork initialization (with creating pipes, closing FDs, etc.) */
+    /* fork initialization (with creating pipes, setting signal handlers, closing FDs, etc.) */
 
-    /* */
+    struct sigaction sa;
 
-    // SIGCHILD
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    sa.sa_handler = handlerSigChld;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1)
+        err(EX_OSERR, "sigaction to SIGCHLD");
 
     /* */
 
@@ -39,6 +65,9 @@ int main(int argc, const char *argv[])
     int parentPid = getpid();
 
     fprintf(stderr, "Parent PID: %ld\n", (long)getpid());
+
+
+    /* create pipes with O_NONBLOCK! */
 
     int FDs[2 * (nOfChilds - 1)][2];
 
@@ -56,6 +85,8 @@ int main(int argc, const char *argv[])
     {
         /* preparing */
 
+        // можно динамически от ребенка к ребенку создавать pipe, а закрывать соответственно все предыдущие.
+
         /*  */
 
         switch (isParent = fork())
@@ -66,7 +97,7 @@ int main(int argc, const char *argv[])
         case 0:     /*   CHILD   */
         {
         
-            if (prctl(PR_SET_PDEATHSIG, SIGKILL) == -1)
+            if (prctl(PR_SET_PDEATHSIG, SIGHUP) == -1)
                 err(EX_OSERR, "prctl");
         
             if (parentPid != getppid())
@@ -162,7 +193,7 @@ int main(int argc, const char *argv[])
 
     }
 
-    /* close unused FDs */
+    /* close FDs that won't be used */
 
     if (close(FDs[0][PIPE_W]) == -1 || close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_R]) == -1)
         err(EX_OSERR, "P: close W/R 0/end-child");
@@ -173,6 +204,32 @@ int main(int argc, const char *argv[])
             err(EX_OSERR, "P: close R/W of pipes");
     }
 
+    /* allocate transmission structres */
+
+    int nOfTI = nOfChilds - 1;
+
+    struct TransInfo *TI = (struct TransInfo*) (calloc(nOfTI, sizeof(struct TransInfo)));
+    if (TI == NULL)
+        err(EX_OSERR, "Can't calloc info for TransInfo structure");
+    
+    /* allocate space for TI buffers (+ calculate the bufSize)*/
+
+    for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
+    {
+        TI[iTransm].bufSize = pow(3, nOfChilds - iTransm + 4) > B128Kb ? B128Kb : pow(3, nOfChilds - iTransm + 4);
+        
+        if ((TI[iTransm].buffer = (char*) calloc(TI[iTransm].bufSize, sizeof(char))) == NULL )
+            err(EX_OSERR, "can't calloc memory for buffer");
+
+        TI[iTransm].filled    = 0;
+        TI[iTransm].empty     = TI[iTransm].bufSize;
+        
+        TI[iTransm].write_to  = TI[iTransm].buffer;
+        TI[iTransm].read_from = TI[iTransm].buffer;
+
+        TI[iTransm].RFd = FDs[2 * iTransm][PIPE_R];
+        TI[iTransm].Wfd = FDs[2 * iTransm + 1][PIPE_W];
+    }
 
     /* data transmission (Parent) */
 
@@ -182,68 +239,67 @@ int main(int argc, const char *argv[])
     {
         fd_set rFds, wFds;
 
-        char *buffer = (char*) calloc(pow(3, 7), sizeof(char));
-            if (buffer == NULL)
-                err(EX_OSERR, "can't calloc");
+        FD_ZERO(&rFds);
+        FD_ZERO(&wFds);
+
+        /* select stuff */
         
+        int maxRFd = -1;
+        int maxWFd = -1;
+
+        for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
+        {
+            FD_SET(TI[iTransm].RFd, &rFds);
+            FD_SET(TI[iTransm].Wfd, &wFds);
+        
+            maxRFd = TI[iTransm].RFd > maxRFd ? TI[iTransm].RFd : maxRFd;
+            maxWFd = TI[iTransm].Wfd > maxWFd ? TI[iTransm].Wfd : maxWFd;
+        }
+
+        int retSelect = -1;
+
+        errno = 0;
+
+        if ((retSelect = select(maxRFd + 1, &rFds, NULL, NULL, NULL)) == -1)
+            err(EX_OSERR, "select (R FDs)");
+        
+        if (errno != 0)
+            err(EX_OSERR, "P: select read");
+
+        if (retSelect == 0)
+        {
+            fprintf(stderr, "Test: (retSelect == 0)\n");
+            continue;
+        }
+
+        for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
+        {
+            if (FD_ISSET(TI[iTransm].RFd, &rFds)) /* read from this FD is available */
+            {
+                // write to buffer from (child) pipe
+
+            }
+
+        }
+
+
         for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
         {
-            //DEBPRINT("Lets do transm #%d\n", iTransm);
+            int lastRead = -1;
 
-            int bufferSize = pow(3, nOfChilds - iTransm + 4) < (1 << 17) ? pow(3, nOfChilds - iTransm + 4) : (1 << 17);
-
-            int readSize   = pow(3, 7);//bufferSize < PIPE_BUF ? bufferSize : PIPE_BUF;
-            int lastRead   = -1;
-
-            /*char *buffer = (char*) calloc(readSize, sizeof(char));
-            if (buffer == NULL)
-                err(EX_OSERR, "can't calloc");
-            */
-
-            FD_ZERO(&rFds);
-            FD_ZERO(&wFds);
-
-            FD_SET(FDs[2 * iTransm][PIPE_R], &rFds);
-            FD_SET(FDs[2 * iTransm + 1][PIPE_W], &wFds);
-
-            //read
-
-            //DEBPRINT("before select R (%d)\n", FDs[2 * iTransm][PIPE_R]);
-
-            while (select(FDs[2 * iTransm][PIPE_R] + 1, &rFds, NULL, NULL, NULL) == 0) // last NULL ===> &{0}
-            {}
-
-            //DEBPRINT("after select R\n");
-
-            if (errno != 0)
-                err(EX_OSERR, "P: select read");
-        
             if (FD_ISSET(FDs[2 * iTransm][PIPE_R], &rFds))
                 if ((lastRead = read(FDs[2 * iTransm][PIPE_R], buffer, readSize)) == -1)
                     err(EX_OSERR, "P: read in cycle");
 
-            if (lastRead == 0)
+            if (lastRead == 0) /* most probably unnecessary check */
             {
                 DEBPRINT("find EOF, let's new transm\n");
-
-                /*if (close(FDs[2 * iTransm][PIPE_R]) == -1 || close(FDs[2 * iTransm + 1][PIPE_W]) == -1)
-                    err(EX_OSERR, "P: close PROCESSES FDs"); */
-                
                 endOfTransm = 1;
-                
-                //free(buffer);
-
                 break;
             }
 
-            // write
-
-            //DEBPRINT("before select W\n");
-
             while (select(FDs[2 * iTransm + 1][PIPE_W] + 1, NULL, &wFds, NULL, NULL) == 0) // last NULL ===> &{0}
             {}
-
-            //DEBPRINT("after select W\n");
 
 
             if (errno != 0)
@@ -259,8 +315,6 @@ int main(int argc, const char *argv[])
 
         }
     
-        free(buffer);
-
         if (endOfTransm)
         {
             for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
@@ -392,5 +446,30 @@ long getNumber(const char *numString, int *errorState)
     }
     
     return gNumber;
+}
 
+
+void handlerSigChld(int signum)
+{
+    DEBPRINT("One of the children died\n");
+
+    int status = -1;
+
+    wait(&status);
+
+    if (WIFEXITED(status) && (WEXITSTATUS(status) == EXIT_SUCCESS) )
+    {
+        DEBPRINT("\t some child exited with EXIT_SUCCESS\n");
+        
+        k_numberOfExitedChilds++;
+
+        if (k_numberOfExitedChilds == k_OfChilds)
+            exit(EXIT_SUCCESS);
+        
+        return;
+    }
+
+    DEBPRINT("\t some child didn't exit or exited, but with no EXIT_SUCCESS\n");
+
+    exit(EXIT_FAILURE);
 }
