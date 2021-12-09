@@ -178,19 +178,29 @@ int main(int argc, const char *argv[])
 
             //DEBPRINT("\n\t Child before R/W\n");
 
-            while (1) // splice
-            {                
-                int retWrite = 1;
+            int retSplice = -1;
+
+            while (retSplice != 0) // splice
+            {       
+                if ((retSplice = splice(fdR, NULL, fdW, NULL, PIPE_BUF, SPLICE_F_MOVE)) == -1)
+                    err(EX_OSERR, "splice");
+
+                fprintf(stderr, "(%d)child: transfer %dB\n", getpid(), retSplice);
+
+                /* int retWrite = 1;
 
                 fprintf(stderr, "(%d)child: before read\n", getpid());
 
                 if ((lastRead = read(fdR, buffer, PIPE_BUF)) == -1)
+                {
+                    fprintf(stderr, "(%d)child: END-OF-FILE\n", getpid());
                     err(EX_OSERR, "C: read");
+                }
 
                 if (lastRead == 0)
                     break;
 
-                fprintf(stderr, "(%d)child: after read %d B;before write\n", lastRead, getpid());
+                fprintf(stderr, "(%d)child: after read %d B;before write\n", getpid(), lastRead);
 
                 char *tmpBuffer = buffer;
 
@@ -204,9 +214,10 @@ int main(int argc, const char *argv[])
 
                     fprintf(stderr, "(%d)child: after write\n", getpid());
 
-                }
+                } */
             }
             
+            fprintf(stderr, "(%d)child: end of splice\n", getpid());
 
             if (close(fdR) == -1 || close(fdW) == -1)
                 err(EX_OSERR, "close fdR/fdW");
@@ -409,9 +420,9 @@ int main(int argc, const char *argv[])
 
                 DEBPRINT("read from child pipe %d bytes\n", retRead);
 
-                fprintf(stderr, "old writeToBuf = %ld\n", TI[iTransm].writeTo);
+                //fprintf(stderr, "old writeToBuf = %ld\n", TI[iTransm].writeTo);
                 TI[iTransm].writeTo += retRead;
-                fprintf(stderr, "new writeToBuf = %ld(trans = %d)\n", TI[iTransm].writeTo, iTransm);
+                //fprintf(stderr, "new writeToBuf = %ld(trans = %d)\n", TI[iTransm].writeTo, iTransm);
 
 
                 TI[iTransm].filled  += retRead; /* the invariant (filled + empty = bufSize) */
@@ -488,10 +499,25 @@ int main(int argc, const char *argv[])
                         continue;
                     }
 
-                    readSize = MIN(PIPE_BUF, TI[iTransm].writeTo - TI[iTransm].readFrom + TI[iTransm].filled);
+                    if ((TI[iTransm].writeTo == TI[iTransm].readFrom) && (TI[iTransm].filled == TI[iTransm].bufSize)) // full filled
+                    {
+                        fprintf(stderr, "F1\n");
+                        readSize = MIN(PIPE_BUF, TI[iTransm].endOfBuffer - TI[iTransm].readFrom);
+                    }
+                    else if (TI[iTransm].writeTo > TI[iTransm].readFrom)
+                    {
+                        fprintf(stderr, "F2\n");
+                        readSize = MIN(PIPE_BUF, TI[iTransm].writeTo - TI[iTransm].readFrom);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "LOGIC ERROR #2\n");
+                        exit(EXIT_FAILURE);
+                    }
+
                     fprintf(stderr, "1. readSize = %d\n", readSize);
                     //fprintf(stderr, "filled = %d", TI[iTransm].filled);
-                    fprintf(stderr, "(trans = %d):filled = %d\nwriteToBuf - readFromBuf = %ld\n", iTransm, TI[iTransm].filled, TI[iTransm].writeTo - TI[iTransm].readFrom);
+                    fprintf(stderr, "(trans = %d):filled = %d(bufSize = %d)\nwriteToBuf - readFromBuf = %ld\n", iTransm, TI[iTransm].filled, TI[iTransm].bufSize, TI[iTransm].writeTo - TI[iTransm].readFrom);
                 }
                 else /* writeTo < readFrom */
                 {
@@ -503,7 +529,11 @@ int main(int argc, const char *argv[])
                     
                     readSize = MIN(PIPE_BUF, TI[iTransm].endOfBuffer - TI[iTransm].readFrom);
                     fprintf(stderr, "2. readSize = %d\n", readSize);
+                    fprintf(stderr, "(trans = %d): buffer_size = %ld, endBuffer = %ld, readFrom = %ld \n", iTransm, TI[iTransm].bufSize, TI[iTransm].endOfBuffer - TI[iTransm].buffer, TI[iTransm].readFrom - TI[iTransm].buffer);
+
                 }
+
+                fprintf(stderr, "ReadF before write %d\n", TI[iTransm].readFrom - TI[iTransm].buffer);
 
                 if ((retWrite = write(writeToPipe, TI[iTransm].readFrom, readSize)) == -1)
                     err(EX_OSERR, "write to pipe from transmission buffer");
@@ -519,9 +549,9 @@ int main(int argc, const char *argv[])
 
                 fprintf(stderr, "write to child pipe %d bytes\n", retWrite);
 
-                fprintf(stderr, "old readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
+                //fprintf(stderr, "old readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
                 TI[iTransm].readFrom += retWrite;
-                fprintf(stderr, "new readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
+                //fprintf(stderr, "new readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
 
 
                 TI[iTransm].filled   -= retWrite; /* the invariant (filled + empty = bufSize) */
@@ -531,6 +561,12 @@ int main(int argc, const char *argv[])
                 {
                     fprintf(stderr, "readFrom == end (transfer it to the beginning of buffer)\n");
                     TI[iTransm].readFrom = TI[iTransm].buffer;
+                }
+
+                if (TI[iTransm].readFrom > TI[iTransm].endOfBuffer)
+                {
+                    fprintf(stderr, "LOGIC ERROR, OUT OF BUFFER\nreadFrom - endBuffer = %d\n", TI[iTransm].readFrom - TI[iTransm].endOfBuffer);
+                    exit(EXIT_FAILURE);
                 }
 
                 if (TI[iTransm].finished && TI[iTransm].filled == 0)
