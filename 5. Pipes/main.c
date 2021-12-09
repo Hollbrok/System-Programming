@@ -8,6 +8,8 @@
 
 #define B128Kb (1 << 17) /* just constant for designate 128Kb */
 
+#define MIN(a,b) (a) < (b) ? (a) : (b)
+
 volatile sig_atomic_t k_numberOfExitedChilds = 0;
 int k_OfChilds;
 
@@ -15,21 +17,26 @@ int k_OfChilds;
 /* contains all the information you need for convenient transfer */
 struct TransInfo
 {
-    char *buffer;       /* pointer to allocated bufSize bytes.                                                                          */
-    char *read_from;    /* pointer in the buffer where the read to (child) pipe should come from.                                       */
-    char *write_to;     /* pointer in the buffer where the write from (child) to buffer should take place.                              */
+    char *buffer;      /* pointer to allocated bufSize bytes.                                                                           */
+    char *endOfBuffer; /* pointer to the 1st byte after buffer                                                                          */ 
+    char *readFrom;    /* pointer to the buffer where the read to (child) pipe should come from.                                        */
+    char *writeTo;     /* pointer to the buffer where the write from (child) to buffer should take place.                               */
 
     size_t bufSize;     /* size of transmittion buffer                                                                                  */
     size_t filled;      /* amount of bytes, that are available to be read from us to the 2nd child.                                     */
     size_t empty;       /* (bufSize - filled); So amount of bytes, that are available to be written to us from the 1st child.           */
     
-    int RFd;            /* FDs[2 * iTransm][PIPE_R]                                                                                     */
-    int Wfd;            /* FDs[2 * iTransm + 1][PIPE_W]                                                                                 */
+    int RFd;            /* read from pipe to transmission buffer  ; FDs[2 * iTransm][PIPE_R]                                            */
+    int WFd;            /* write from transmission buffer to pipe ; FDs[2 * iTransm + 1][PIPE_W]                                        */
+
+    int finished;       /* state of transmission; if finished == 1 => we can close R FD 
+                           and if (finished == 1) and filled == 0 => we can close W FD   */
 };
 
 /* */
 
 long getNumber(const char *numString, int *errorState);
+void handlerSigChld(int signum);
 
 /*  argv[1] -- number of childs 
     argv[2] -- file-name        */
@@ -45,7 +52,7 @@ int main(int argc, const char *argv[])
     if (errorNumber == -1)
         err(EX_USAGE, "not-a-number in argument");
 
-    if (2 > nOfChilds || nOfChilds > 10000)
+    if (nOfChilds < 2 || nOfChilds > 10000)
         err(EX_USAGE, "number should be from 2 to 10000");  
 
     /* fork initialization (with creating pipes, setting signal handlers, closing FDs, etc.) */
@@ -127,6 +134,7 @@ int main(int argc, const char *argv[])
 
             else if (curChild == nOfChilds - 1)
             {
+                DEBPRINT("LC:\n");
                 if (close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_W]) == -1)
                     err(EX_OSERR, "close last-child write-end");
 
@@ -136,6 +144,8 @@ int main(int argc, const char *argv[])
 
                 fdR = FDs[(nOfChilds - 1) * 2 - 1][PIPE_R];
                 fdW = STDOUT_FILENO;
+
+                DEBPRINT("LC: R FD = %d\n", fdR);
             }
 
             /* anothers */
@@ -167,13 +177,24 @@ int main(int argc, const char *argv[])
                 err(EX_OSERR, "~O_NONBLOCK");
 
             //DEBPRINT("\n\t Child before R/W\n");
-            
+            int retWrite = -1;
+
             while (lastRead != 0)
             {
+                if (curChild == nOfChilds - 1)
+                    DEBPRINT("LC: before R\n");
+
                 if ((lastRead = read(fdR, buffer, PIPE_BUF)) == -1)
                     err(EX_OSERR, "C: read");
-                if (write(fdW, buffer, lastRead) == -1)
+
+                if (curChild == nOfChilds - 1)
+                    DEBPRINT("LC: after R (%d)\n", lastRead);
+            
+                if ((retWrite = write(fdW, buffer, lastRead)) == -1)
                     err(EX_OSERR, "C: write");
+
+                if (curChild == nOfChilds - 1)
+                    DEBPRINT("LC: after W (%d)\n", retWrite);
 
                 //DEBPRINT("after read-write [lbr = %d]\n", lastRead);
             }
@@ -216,7 +237,7 @@ int main(int argc, const char *argv[])
 
     for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
     {
-        TI[iTransm].bufSize = pow(3, nOfChilds - iTransm + 4) > B128Kb ? B128Kb : pow(3, nOfChilds - iTransm + 4);
+        TI[iTransm].bufSize = MIN(pow(3, nOfChilds - iTransm + 4), B128Kb); //pow(3, nOfChilds - iTransm + 4) > B128Kb ? B128Kb : pow(3, nOfChilds - iTransm + 4);
         
         if ((TI[iTransm].buffer = (char*) calloc(TI[iTransm].bufSize, sizeof(char))) == NULL )
             err(EX_OSERR, "can't calloc memory for buffer");
@@ -224,12 +245,18 @@ int main(int argc, const char *argv[])
         TI[iTransm].filled    = 0;
         TI[iTransm].empty     = TI[iTransm].bufSize;
         
-        TI[iTransm].write_to  = TI[iTransm].buffer;
-        TI[iTransm].read_from = TI[iTransm].buffer;
+        TI[iTransm].endOfBuffer = TI[iTransm].buffer + TI[iTransm].bufSize;
+
+        TI[iTransm].writeTo  = TI[iTransm].buffer;
+        TI[iTransm].readFrom = TI[iTransm].buffer;
 
         TI[iTransm].RFd = FDs[2 * iTransm][PIPE_R];
-        TI[iTransm].Wfd = FDs[2 * iTransm + 1][PIPE_W];
+        TI[iTransm].WFd = FDs[2 * iTransm + 1][PIPE_W];
+
+        TI[iTransm].finished = 0;
     }
+
+    DEBPRINT("P: LAST W FD = %d\n", TI[nOfTI - 1].WFd);
 
     /* data transmission (Parent) */
 
@@ -244,16 +271,24 @@ int main(int argc, const char *argv[])
 
         /* select stuff */
         
-        int maxRFd = -1;
-        int maxWFd = -1;
+        int maxRFd = -1; /* or just TI[nOfTI - 1].RFd + 1 */
+        int maxWFd = -1; /* or just TI[nOfTI - 1].WFd + 1 */
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
-            FD_SET(TI[iTransm].RFd, &rFds);
-            FD_SET(TI[iTransm].Wfd, &wFds);
-        
-            maxRFd = TI[iTransm].RFd > maxRFd ? TI[iTransm].RFd : maxRFd;
-            maxWFd = TI[iTransm].Wfd > maxWFd ? TI[iTransm].Wfd : maxWFd;
+            if (!TI[iTransm].finished)
+            {
+                FD_SET(TI[iTransm].RFd, &rFds);
+                FD_SET(TI[iTransm].WFd, &wFds);
+                maxRFd = TI[iTransm].RFd > maxRFd ? TI[iTransm].RFd : maxRFd;
+                maxWFd = TI[iTransm].WFd > maxWFd ? TI[iTransm].WFd : maxWFd;
+            }
+            else /* has finished => need to check value of filled*/ 
+                if (TI[iTransm].filled != 0)
+                {
+                    FD_SET(TI[iTransm].WFd, &wFds);
+                    maxWFd = TI[iTransm].WFd > maxWFd ? TI[iTransm].WFd : maxWFd;
+                }
         }
 
         int retSelect = -1;
@@ -268,139 +303,182 @@ int main(int argc, const char *argv[])
 
         if (retSelect == 0)
         {
-            fprintf(stderr, "Test: (retSelect == 0)\n");
+            fprintf(stderr, "Test: (retSelect == 0) (R)\n");
             continue;
         }
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
-            if (FD_ISSET(TI[iTransm].RFd, &rFds)) /* read from this FD is available */
+            char *writeToBuf  = TI[iTransm].writeTo;
+            char *readFromBuf = TI[iTransm].readFrom;
+            char *endOfBuf    = TI[iTransm].endOfBuffer;
+
+            int readFromPipe  = TI[iTransm].RFd;
+
+            if (FD_ISSET(TI[iTransm].RFd, &rFds)) /* read to us is available for this FD*/
             {
-                // write to buffer from (child) pipe
+                DEBPRINT("R: iTransm = %d, FD = %d\n", iTransm, TI[iTransm].RFd);
 
+                /* write to buffer from (child) pipe */
+
+                int retRead = -1;
+                int writeSize = -1; /* write from pipe to buffer */
+                
+                /* determine the current state of transmission */
+
+                if (writeToBuf >= readFromBuf)
+                {
+                                        //  pointer on write to buf --------------\
+                                        //                                        V
+                                        //      buffer:     [ | | | | | | | | ... | | | ] => we can write up to min(endOfBuf - writeToBuf, PIPE_BUF)
+                                        //                             /\
+                                        //  pointer on read from buf --/
+
+                    if ((writeToBuf == readFromBuf) && (TI[iTransm].filled == TI[iTransm].bufSize))
+                    {
+                        /* there are 2 possible situations: filled = 0 or filled = bufSize */
+                        /* so if we are filled => can't write to buffer yet                */
+                        //DEBPRINT("buffer are fully filled\n");
+                        continue;
+                    }
+
+                    writeSize = MIN(PIPE_BUF, endOfBuf - writeToBuf);
+                }
+                else /* writeTo < readFrom */
+                {
+                                        //  pointer on write to buf ----\
+                                        //                              V
+                                        //      buffer:     [ | | | | | | | | ... | | | ] => we can write up to min(readFromBuf - writeToBuf, PIPE_BUF)
+                                        //                                        /\
+                                        //  pointer on read from buf -------------/
+                    
+                    writeSize = MIN(PIPE_BUF, readFromBuf - writeToBuf);
+                }
+
+
+                if ((retRead = read(readFromPipe, writeToBuf, writeSize)) == -1)
+                    err(EX_OSERR, "read from pipe to transmission buffer");
+                
+                if (retRead == 0) /* current child has finished transmission*/
+                {
+                    DEBPRINT("Close R of %d transm\n", iTransm);
+                    /* just close unnecessary anymore file descriptor */
+                    if (close(TI[iTransm].RFd) == -1)
+                        err(EX_OSERR, "close R FD of some child");
+                    
+                    TI[iTransm].finished = 1;
+                    continue;
+                }
+
+                /* update transmission info */
+
+                DEBPRINT("read from child pipe %d bytes\n", retRead);
+
+
+                TI[iTransm].writeTo += retRead;
+
+                TI[iTransm].filled  += retRead; /* the invariant (filled + empty = bufSize) */
+                TI[iTransm].empty   -= retRead; /*              is preserved                */
+                
+                if (TI[iTransm].writeTo == TI[iTransm].endOfBuffer)
+                    TI[iTransm].writeTo = TI[iTransm].buffer;                
             }
-
         }
 
+        errno = 0;
 
-        for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
-        {
-            int lastRead = -1;
-
-            if (FD_ISSET(FDs[2 * iTransm][PIPE_R], &rFds))
-                if ((lastRead = read(FDs[2 * iTransm][PIPE_R], buffer, readSize)) == -1)
-                    err(EX_OSERR, "P: read in cycle");
-
-            if (lastRead == 0) /* most probably unnecessary check */
-            {
-                DEBPRINT("find EOF, let's new transm\n");
-                endOfTransm = 1;
-                break;
-            }
-
-            while (select(FDs[2 * iTransm + 1][PIPE_W] + 1, NULL, &wFds, NULL, NULL) == 0) // last NULL ===> &{0}
-            {}
-
-
-            if (errno != 0)
-                err(EX_OSERR, "P: select write");
+        if ((retSelect = select(maxWFd + 1, NULL, &wFds, NULL, NULL)) == -1)
+            err(EX_OSERR, "select (W FDs)");
         
-            if (FD_ISSET(FDs[2 * iTransm + 1][PIPE_W], &wFds))
-                if (write(FDs[2 * iTransm + 1][PIPE_W], buffer, lastRead) != lastRead)
-                    err(EX_OSERR, "P: write in cycle");
+        if (errno != 0)
+            err(EX_OSERR, "P: select write");
 
-            //free(buffer);
+        if (retSelect == 0)
+        {
+            fprintf(stderr, "Test: (retSelect == 0) (W)\n");
+            continue;
+        }
 
-            DEBPRINT("\n\t PARENT TRANSM: %dbyte to %d child\n", lastRead, iTransm + 1); 
+        for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
+        {
+            char *writeToBuf  = TI[iTransm].writeTo;
+            char *readFromBuf = TI[iTransm].readFrom;
+            char *endOfBuf    = TI[iTransm].endOfBuffer;
 
+            int writeToPipe   = TI[iTransm].WFd;
+
+            if (FD_ISSET(TI[iTransm].WFd, &wFds)) /* write from us to child is available for this FD */
+            {
+                DEBPRINT("W: iTransm = %d, FD = %d\n", iTransm, TI[iTransm].WFd);
+
+                int retWrite = -1;
+                int readSize = -1; /* read from buffer to pipe */
+
+                /* determine the current state of transmission */
+
+                if (writeToBuf >= readFromBuf)
+                {
+                                        //  pointer on write to buf --------------\
+                                        //                                        V
+                                        //      buffer:     [ | | | | | | | | ... | | | ] => we can write up to min(writeToBuf - readFromBuf, PIPE_BUF)
+                                        //                             /\
+                                        //  pointer on read from buf --/
+
+                    if ((writeToBuf == readFromBuf) && (TI[iTransm].filled == 0))
+                    {
+                        /* there are 2 possible situations: filled = 0 or filled = bufSize */
+                        /* so if we are empty => can't write to buffer yet                */
+                        //DEBPRINT("buffer are empty\n");
+                        continue;
+                    }
+
+                    readSize = MIN(PIPE_BUF, writeToBuf - readFromBuf);
+                }
+                else /* writeTo < readFrom */
+                {
+                                        //  pointer on write to buf ----\
+                                        //                              V
+                                        //      buffer:     [ | | | | | | | | ... | | | ] => we can write up to min(endOfBuf - readFromBuf, PIPE_BUF)
+                                        //                                        /\
+                                        //  pointer on read from buf -------------/
+                    
+                    readSize = MIN(PIPE_BUF, endOfBuf - readFromBuf);
+                }
+
+                if ((retWrite = write(writeToPipe, writeToBuf, readSize)) == -1)
+                    err(EX_OSERR, "write to pipe from transmission buffer");
+                
+                /*if (retWrite == 0)
+                {
+                    DEBPRINT("\t LOGIC ERROR in write from buf to child pipe\n");
+                    perror("");
+                    exit(EXIT_FAILURE);
+                }*/
+
+                /* update transmission info */
+
+                DEBPRINT("write to child pipe %d bytes\n", retWrite);
+
+                TI[iTransm].readFrom += retWrite;
+
+                TI[iTransm].filled   -= retWrite; /* the invariant (filled + empty = bufSize) */
+                TI[iTransm].empty    += retWrite; /*              is preserved                */
+                
+                if (TI[iTransm].readFrom == TI[iTransm].endOfBuffer)
+                    TI[iTransm].readFrom = TI[iTransm].buffer;
+
+                if (TI[iTransm].finished && TI[iTransm].filled == 0)
+                    if (close(TI[iTransm].WFd) == -1)
+                        err(EX_OSERR, "close W FD of some child");
+            }
         }
     
         if (endOfTransm)
         {
-            for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
-                if (close(FDs[2 * iTransm][PIPE_R]) == -1 || close(FDs[2 * iTransm + 1][PIPE_W]) == -1)
-                    err(EX_OSERR, "P: close PROCESSES FDs");
-
             DEBPRINT("END OF TRANSM\n");
             break;
         }
     }
-
-    /*for (int iTransm = 0; iTransm < nOfChilds - 1; ++iTransm)
-    {
-        DEBPRINT("Lets do transm #%d\n", iTransm);
-
-        int bufferSize = pow(3, nOfChilds - iTransm + 4) < (1 << 17) ? pow(3, nOfChilds - iTransm + 4) : (1 << 17);
-
-        int readSize   = bufferSize < PIPE_BUF ? bufferSize : PIPE_BUF;
-        int lastRead   = -1;
-
-        char *buffer = (char*) calloc(bufferSize, sizeof(char));
-        if (buffer == NULL)
-            err(EX_OSERR, "can't calloc");
-
-        DEBPRINT("calloc buffer size[i = %d] = %d\n", iTransm, bufferSize);
-
-        fd_set rFds, wFds;
-        
-        FD_ZERO(&rFds);
-        FD_ZERO(&wFds);
-
-        FD_SET(FDs[2 * iTransm][PIPE_R], &rFds);
-        FD_SET(FDs[2 * iTransm + 1][PIPE_W], &wFds);
-
-        errno = 0;
-
-        while (1) // lastRead != 0
-        {
-            //read
-
-            DEBPRINT("before select R (%d)\n", FDs[2 * iTransm][PIPE_R]);
-
-            while (select(FDs[2 * iTransm][PIPE_R] + 1, &rFds, NULL, NULL, NULL) == 0) // last NULL ===> &{0}
-            {}
-
-            DEBPRINT("after select R\n");
-
-            if (errno != 0)
-                err(EX_OSERR, "P: select read");
-        
-            if (FD_ISSET(FDs[2 * iTransm][PIPE_R], &rFds))
-                if ((lastRead = read(FDs[2 * iTransm][PIPE_R], buffer, readSize)) == -1)
-                    err(EX_OSERR, "P: read in cycle");
-
-            if (lastRead == 0)
-            {
-                DEBPRINT("find EOF, let's new transm\n");
-
-                if (close(FDs[2 * iTransm][PIPE_R]) == -1 || close(FDs[2 * iTransm + 1][PIPE_W]) == -1)
-                    err(EX_OSERR, "P: close PROCESSES FDs");
-
-                break;
-            }
-
-            // write
-
-            DEBPRINT("before select W\n");
-
-            while (select(FDs[2 * iTransm + 1][PIPE_W] + 1, NULL, &wFds, NULL, NULL) == 0) // last NULL ===> &{0}
-            {}
-
-            DEBPRINT("after select W\n");
-
-
-            if (errno != 0)
-                err(EX_OSERR, "P: select write");
-        
-            if (FD_ISSET(FDs[2 * iTransm + 1][PIPE_W], &wFds))
-                if (write(FDs[2 * iTransm + 1][PIPE_W], buffer, lastRead) != lastRead)
-                    err(EX_OSERR, "P: write in cycle");
-
-            fprintf(stderr, "\n\t PARENT TRANSM: %dbyte to %d child\n", lastRead, iTransm + 1);
-        }
-
-        free(buffer);
-    } */
     
     /* waiting for end */
 
