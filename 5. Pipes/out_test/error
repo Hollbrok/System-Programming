@@ -1,0 +1,550 @@
+00:48:40 execve("./piper", ["./piper", "3", "test/1"], 0x7fff32a5da10 /* 69 vars */) = 0
+00:48:40 brk(NULL)                      = 0x560f25291000
+00:48:40 arch_prctl(0x3001 /* ARCH_??? */, 0x7fffebb9f400) = -1 EINVAL (Недопустимый аргумент)
+00:48:40 access("/etc/ld.so.preload", R_OK) = -1 ENOENT (Нет такого файла или каталога)
+00:48:40 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+00:48:40 newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=170580, ...}, AT_EMPTY_PATH) = 0
+00:48:40 mmap(NULL, 170580, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f51bba2c000
+00:48:40 close(3)                       = 0
+00:48:40 openat(AT_FDCWD, "/usr/lib/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+00:48:40 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\260\363\0\0\0\0\0\0"..., 832) = 832
+00:48:40 newfstatat(3, "", {st_mode=S_IFREG|0755, st_size=1323472, ...}, AT_EMPTY_PATH) = 0
+00:48:40 mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f51bba2a000
+00:48:40 mmap(NULL, 1323032, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f51bb8e6000
+00:48:40 mprotect(0x7f51bb8f5000, 1257472, PROT_NONE) = 0
+00:48:40 mmap(0x7f51bb8f5000, 630784, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xf000) = 0x7f51bb8f5000
+00:48:40 mmap(0x7f51bb98f000, 622592, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xa9000) = 0x7f51bb98f000
+00:48:40 mmap(0x7f51bba28000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x141000) = 0x7f51bba28000
+00:48:40 close(3)                       = 0
+00:48:40 openat(AT_FDCWD, "/usr/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+00:48:40 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0`|\2\0\0\0\0\0"..., 832) = 832
+00:48:40 pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+00:48:40 pread64(3, "\4\0\0\0@\0\0\0\5\0\0\0GNU\0\2\0\0\300\4\0\0\0\3\0\0\0\0\0\0\0"..., 80, 848) = 80
+00:48:40 pread64(3, "\4\0\0\0\24\0\0\0\3\0\0\0GNU\0K@g7\5w\10\300\344\306B4Zp<G"..., 68, 928) = 68
+00:48:40 newfstatat(3, "", {st_mode=S_IFREG|0755, st_size=2150424, ...}, AT_EMPTY_PATH) = 0
+00:48:40 pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+00:48:40 mmap(NULL, 1880536, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f51bb71a000
+00:48:40 mmap(0x7f51bb740000, 1355776, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x26000) = 0x7f51bb740000
+00:48:40 mmap(0x7f51bb88b000, 311296, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x171000) = 0x7f51bb88b000
+00:48:40 mmap(0x7f51bb8d7000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1bc000) = 0x7f51bb8d7000
+00:48:40 mmap(0x7f51bb8dd000, 33240, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f51bb8dd000
+00:48:40 close(3)                       = 0
+00:48:40 mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f51bb717000
+00:48:40 arch_prctl(ARCH_SET_FS, 0x7f51bb717740) = 0
+00:48:40 mprotect(0x7f51bb8d7000, 12288, PROT_READ) = 0
+00:48:40 mprotect(0x7f51bba28000, 4096, PROT_READ) = 0
+00:48:40 mprotect(0x560f25138000, 4096, PROT_READ) = 0
+00:48:40 mprotect(0x7f51bba84000, 8192, PROT_READ) = 0
+00:48:40 munmap(0x7f51bba2c000, 170580) = 0
+00:48:40 rt_sigaction(SIGCHLD, {sa_handler=SIG_IGN, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f51bb756da0}, NULL, 8) = 0
+00:48:40 getpid()                       = 41051
+00:48:40 getpid()                       = 41051
+00:48:40 write(2, "Parent PID: 41051\n", 18Parent PID: 41051
+) = 18
+00:48:40 write(2, "Number of pipes: 4\n", 19Number of pipes: 4
+) = 19
+00:48:40 pipe2([3, 4], O_NONBLOCK)      = 0
+00:48:40 pipe2([5, 6], O_NONBLOCK)      = 0
+00:48:40 pipe2([7, 8], O_NONBLOCK)      = 0
+00:48:40 pipe2([9, 10], O_NONBLOCK)     = 0
+00:48:40 write(2, "\n", 1
+)              = 1
+00:48:40 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLDstrace: Process 41052 attached
+, child_tidptr=0x7f51bb717a10) = 41052
+[pid 41051] 00:48:40 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD <unfinished ...>
+[pid 41052] 00:48:40 prctl(PR_SET_PDEATHSIG, SIGHUP) = 0
+strace: Process 41053 attached
+[pid 41051] 00:48:40 <... clone resumed>, child_tidptr=0x7f51bb717a10) = 41053
+[pid 41052] 00:48:40 getppid( <unfinished ...>
+[pid 41051] 00:48:40 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD <unfinished ...>
+[pid 41053] 00:48:40 prctl(PR_SET_PDEATHSIG, SIGHUP <unfinished ...>
+[pid 41052] 00:48:40 <... getppid resumed>) = 41051
+strace: Process 41054 attached
+[pid 41053] 00:48:40 <... prctl resumed>) = 0
+[pid 41052] 00:48:40 close(3 <unfinished ...>
+[pid 41051] 00:48:40 <... clone resumed>, child_tidptr=0x7f51bb717a10) = 41054
+[pid 41054] 00:48:40 prctl(PR_SET_PDEATHSIG, SIGHUP <unfinished ...>
+[pid 41053] 00:48:40 getppid( <unfinished ...>
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 close(4 <unfinished ...>
+[pid 41054] 00:48:40 <... prctl resumed>) = 0
+[pid 41053] 00:48:40 <... getppid resumed>) = 41051
+[pid 41052] 00:48:40 close(5 <unfinished ...>
+[pid 41051] 00:48:40 <... close resumed>) = 0
+[pid 41054] 00:48:40 getppid( <unfinished ...>
+[pid 41053] 00:48:40 close(6 <unfinished ...>
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 close(9 <unfinished ...>
+[pid 41054] 00:48:40 <... getppid resumed>) = 41051
+[pid 41053] 00:48:40 <... close resumed>) = 0
+[pid 41052] 00:48:40 close(6 <unfinished ...>
+[pid 41051] 00:48:40 <... close resumed>) = 0
+[pid 41054] 00:48:40 close(10 <unfinished ...>
+[pid 41053] 00:48:40 close(7 <unfinished ...>
+[pid 41051] 00:48:40 close(5 <unfinished ...>
+[pid 41054] 00:48:40 <... close resumed>) = 0
+[pid 41053] 00:48:40 <... close resumed>) = 0
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 <... close resumed>) = 0
+[pid 41054] 00:48:40 close(3 <unfinished ...>
+[pid 41053] 00:48:40 close(3 <unfinished ...>
+[pid 41051] 00:48:40 close(8 <unfinished ...>
+[pid 41054] 00:48:40 <... close resumed>) = 0
+[pid 41052] 00:48:40 close(7 <unfinished ...>
+[pid 41051] 00:48:40 <... close resumed>) = 0
+[pid 41054] 00:48:40 close(4 <unfinished ...>
+[pid 41053] 00:48:40 <... close resumed>) = 0
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 brk(NULL <unfinished ...>
+[pid 41054] 00:48:40 <... close resumed>) = 0
+[pid 41053] 00:48:40 close(4 <unfinished ...>
+[pid 41052] 00:48:40 close(8 <unfinished ...>
+[pid 41051] 00:48:40 <... brk resumed>) = 0x560f25291000
+[pid 41054] 00:48:40 close(5 <unfinished ...>
+[pid 41053] 00:48:40 <... close resumed>) = 0
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 brk(0x560f252b2000 <unfinished ...>
+[pid 41054] 00:48:40 <... close resumed>) = 0
+[pid 41053] 00:48:40 close(9 <unfinished ...>
+[pid 41052] 00:48:40 close(9 <unfinished ...>
+[pid 41051] 00:48:40 <... brk resumed>) = 0x560f252b2000
+[pid 41054] 00:48:40 close(6 <unfinished ...>
+[pid 41053] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 write(2, "P: LAST W FD = 10\n", 18P: LAST W FD = 10
+ <unfinished ...>
+[pid 41054] 00:48:40 <... close resumed>) = 0
+[pid 41053] 00:48:40 close(10 <unfinished ...>
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 <... write resumed>) = 18
+[pid 41054] 00:48:40 close(7 <unfinished ...>
+[pid 41053] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+ <unfinished ...>
+[pid 41054] 00:48:40 <... close resumed>) = 0
+[pid 41052] 00:48:40 close(10 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41054] 00:48:40 close(8 <unfinished ...>
+[pid 41053] 00:48:40 fcntl(8, F_SETFL, O_WRONLY <unfinished ...>
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32 <unfinished ...>
+totalSet == 2, served = 0 (of 2)[pid 41054] 00:48:40 <... close resumed>) = 0
+[pid 41053] 00:48:40 <... fcntl resumed>) = 0
+[pid 41051] 00:48:40 <... write resumed>) = 32
+[pid 41054] 00:48:40 fcntl(1, F_SETFL, O_WRONLY <unfinished ...>
+[pid 41052] 00:48:40 openat(AT_FDCWD, "test/1", O_RDONLY <unfinished ...>
+[pid 41051] 00:48:40 pselect6(8, [3 7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL <unfinished ...>
+[pid 41054] 00:48:40 <... fcntl resumed>) = 0
+[pid 41053] 00:48:40 fcntl(5, F_SETFL, O_RDONLY <unfinished ...>
+[pid 41051] 00:48:40 <... pselect6 resumed>) = 0 (Timeout)
+[pid 41054] 00:48:40 fcntl(9, F_SETFL, O_RDONLY <unfinished ...>
+[pid 41052] 00:48:40 <... openat resumed>) = 3
+[pid 41051] 00:48:40 write(2, "maxWfd == -1\n", 13maxWfd == -1
+ <unfinished ...>
+[pid 41054] 00:48:40 <... fcntl resumed>) = 0
+[pid 41053] 00:48:40 <... fcntl resumed>) = 0
+[pid 41051] 00:48:40 <... write resumed>) = 13
+[pid 41054] 00:48:40 getpid( <unfinished ...>
+[pid 41052] 00:48:40 fcntl(4, F_SETFL, O_WRONLY <unfinished ...>
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+ <unfinished ...>
+[pid 41054] 00:48:40 <... getpid resumed>) = 41054
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41052] 00:48:40 <... fcntl resumed>) = 0
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41054] 00:48:40 write(2, "(41054)child: before read\n", 26(41054)child: before read
+ <unfinished ...>
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41052] 00:48:40 fcntl(3, F_SETFL, O_RDONLY <unfinished ...>
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32 <unfinished ...>
+totalSet == 2, served = 0 (of 2)[pid 41054] 00:48:40 <... write resumed>) = 26
+[pid 41053] 00:48:40 write(2, "(41053)child: before read\n", 26 <unfinished ...>
+(41053)child: before read
+[pid 41052] 00:48:40 <... fcntl resumed>) = 0
+[pid 41051] 00:48:40 <... write resumed>) = 32
+[pid 41054] 00:48:40 read(9,  <unfinished ...>
+[pid 41053] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 pselect6(8, [3 7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL <unfinished ...>
+[pid 41052] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... pselect6 resumed>) = 0 (Timeout)
+[pid 41053] 00:48:40 read(5,  <unfinished ...>
+[pid 41052] 00:48:40 <... getpid resumed>) = 41052
+[pid 41051] 00:48:40 write(2, "maxWfd == -1\n", 13maxWfd == -1
+ <unfinished ...>
+[pid 41052] 00:48:40 write(2, "(41052)child: before read\n", 26(41052)child: before read
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 13
+[pid 41052] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+ <unfinished ...>
+[pid 41052] 00:48:40 read(3,  <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41052] 00:48:40 <... read resumed>"\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 4096) = 4096
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32 <unfinished ...>
+totalSet == 2, served = 0 (of 2)[pid 41052] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 32
+[pid 41052] 00:48:40 <... getpid resumed>) = 41052
+[pid 41051] 00:48:40 pselect6(8, [3 7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL <unfinished ...>
+[pid 41052] 00:48:40 write(2, "(4096)child: after read 41052 B;"..., 45 <unfinished ...>
+(4096)child: after read 41052 B;before write
+[pid 41051] 00:48:40 <... pselect6 resumed>) = 0 (Timeout)
+[pid 41052] 00:48:40 <... write resumed>) = 45
+[pid 41051] 00:48:40 write(2, "maxWfd == -1\n", 13maxWfd == -1
+ <unfinished ...>
+[pid 41052] 00:48:40 write(4, "\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 4096 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 13
+[pid 41052] 00:48:40 <... write resumed>) = 4096
+[pid 41051] 00:48:40 write(2, "while1\n", 7 <unfinished ...>
+while1
+[pid 41052] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41052] 00:48:40 <... getpid resumed>) = 41052
+[pid 41052] 00:48:40 write(2, "(41052)child: after write\n", 26(41052)child: after write
+) = 26
+[pid 41052] 00:48:40 getpid()           = 41052
+[pid 41052] 00:48:40 write(2, "(41052)child: before read\n", 26(41052)child: before read
+) = 26
+[pid 41052] 00:48:40 read(3,  <unfinished ...>
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32 <unfinished ...>
+totalSet == 2, served = 0 (of 2)[pid 41052] 00:48:40 <... read resumed>"s\nf'dsfa\nf,a';fasda\ndasd\nsaf,mkl"..., 4096) = 2390
+[pid 41051] 00:48:40 <... write resumed>) = 32
+[pid 41052] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 pselect6(8, [3 7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=0})
+[pid 41051] 00:48:40 write(2, "R: CHECK: iTransm = 0\n", 22R: CHECK: iTransm = 0
+) = 22
+[pid 41051] 00:48:40 read(3, "\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 2187) = 2187
+[pid 41051] 00:48:40 write(2, "old writeToBuf = 94623047947072\n", 32old writeToBuf = 94623047947072
+) = 32
+[pid 41052] 00:48:40 <... getpid resumed>) = 41052
+[pid 41051] 00:48:40 write(2, "new writeToBuf = 94623047949259("..., 43new writeToBuf = 94623047949259(trans = 0)
+ <unfinished ...>
+[pid 41052] 00:48:40 write(2, "(2390)child: after read 41052 B;"..., 45(2390)child: after read 41052 B;before write
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 43
+[pid 41052] 00:48:40 <... write resumed>) = 45
+[pid 41051] 00:48:40 write(2, "maxWfd == -1\n", 13maxWfd == -1
+ <unfinished ...>
+[pid 41052] 00:48:40 write(4, "s\nf'dsfa\nf,a';fasda\ndasd\nsaf,mkl"..., 2390 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 13
+[pid 41052] 00:48:40 <... write resumed>) = 2390
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+ <unfinished ...>
+[pid 41052] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41052] 00:48:40 <... getpid resumed>) = 41052
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32totalSet == 2, served = 0 (of 2) <unfinished ...>
+[pid 41052] 00:48:40 write(2, "(41052)child: after write\n", 26(41052)child: after write
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 32
+[pid 41052] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 pselect6(8, [7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL <unfinished ...>
+[pid 41052] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... pselect6 resumed>) = 0 (Timeout)
+[pid 41052] 00:48:40 <... getpid resumed>) = 41052
+[pid 41051] 00:48:40 pselect6(7, NULL, [6], NULL, {tv_sec=0, tv_nsec=0}, NULL <unfinished ...>
+[pid 41052] 00:48:40 write(2, "(41052)child: before read\n", 26(41052)child: before read
+ <unfinished ...>
+[pid 41051] 00:48:40 <... pselect6 resumed>) = 1 (out [6], left {tv_sec=0, tv_nsec=0})
+[pid 41052] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 write(2, "W: CHECK: iTransm = 0\n", 22W: CHECK: iTransm = 0
+ <unfinished ...>
+[pid 41052] 00:48:40 read(3,  <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 22
+[pid 41052] 00:48:40 <... read resumed>"", 4096) = 0
+[pid 41051] 00:48:40 write(2, "1. readSize = 2187\n", 191. readSize = 2187
+ <unfinished ...>
+[pid 41052] 00:48:40 close(3 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 19
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 write(2, "(trans = 0):filled = 2187\nwriteT"..., 55(trans = 0):filled = 2187
+writeToBuf - readFromBuf = 0
+ <unfinished ...>
+[pid 41052] 00:48:40 close(4 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 55
+[pid 41052] 00:48:40 <... close resumed>) = 0
+[pid 41051] 00:48:40 write(6, "\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 2187 <unfinished ...>
+[pid 41052] 00:48:40 exit_group(0 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 2187
+[pid 41053] 00:48:40 <... read resumed>"\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 4096) = 2187
+[pid 41051] 00:48:40 write(2, "write to child pipe 2187 bytes\n", 31 <unfinished ...>
+write to child pipe 2187 bytes
+[pid 41052] 00:48:40 <... exit_group resumed>) = ?
+[pid 41051] 00:48:40 <... write resumed>) = 31
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 write(2, "old readFrom = 0\n", 17 <unfinished ...>
+old readFrom = 0
+[pid 41052] 00:48:40 +++ exited with 0 +++
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 <... write resumed>) = 17
+[pid 41053] 00:48:40 write(2, "(2187)child: after read 41053 B;"..., 45(2187)child: after read 41053 B;before write
+ <unfinished ...>
+[pid 41051] 00:48:40 write(2, "new readFrom = 2187\n", 20new readFrom = 2187
+ <unfinished ...>
+[pid 41053] 00:48:40 <... write resumed>) = 45
+[pid 41051] 00:48:40 <... write resumed>) = 20
+[pid 41053] 00:48:40 write(8, "\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 2187 <unfinished ...>
+[pid 41051] 00:48:40 write(2, "readFrom == end (transfer it to "..., 57readFrom == end (transfer it to the beginning of buffer)
+ <unfinished ...>
+[pid 41053] 00:48:40 <... write resumed>) = 2187
+[pid 41051] 00:48:40 <... write resumed>) = 57
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+ <unfinished ...>
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41053] 00:48:40 write(2, "(41053)child: after write\n", 26(41053)child: after write
+ <unfinished ...>
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32totalSet == 2, served = 0 (of 2) <unfinished ...>
+[pid 41053] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 <... write resumed>) = 32
+[pid 41051] 00:48:40 pselect6(8, [3 7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL <unfinished ...>
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... pselect6 resumed>) = 2 (in [3 7], left {tv_sec=0, tv_nsec=0})
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 write(2, "R: CHECK: iTransm = 0\n", 22R: CHECK: iTransm = 0
+ <unfinished ...>
+[pid 41053] 00:48:40 write(2, "(41053)child: before read\n", 26 <unfinished ...>
+(41053)child: before read
+[pid 41051] 00:48:40 <... write resumed>) = 22
+[pid 41053] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 read(3,  <unfinished ...>
+[pid 41053] 00:48:40 read(5,  <unfinished ...>
+[pid 41051] 00:48:40 <... read resumed>"a';fasda\ndasd\nsaf,mklasas,;Das\nf"..., 2187) = 2187
+[pid 41051] 00:48:40 write(2, "old writeToBuf = 94623047947072\n", 32old writeToBuf = 94623047947072
+) = 32
+[pid 41051] 00:48:40 write(2, "new writeToBuf = 94623047949259("..., 43new writeToBuf = 94623047949259(trans = 0)
+) = 43
+[pid 41051] 00:48:40 write(2, "R: CHECK: iTransm = 1\n", 22R: CHECK: iTransm = 1
+) = 22
+[pid 41051] 00:48:40 read(7, "\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 729) = 729
+[pid 41051] 00:48:40 write(2, "old writeToBuf = 94623047949280\n", 32old writeToBuf = 94623047949280
+) = 32
+[pid 41051] 00:48:40 write(2, "new writeToBuf = 94623047950009("..., 43new writeToBuf = 94623047950009(trans = 1)
+) = 43
+[pid 41051] 00:48:40 write(2, "maxWfd == -1\n", 13maxWfd == -1
+) = 13
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+) = 7
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32totalSet == 2, served = 0 (of 2)) = 32
+[pid 41051] 00:48:40 pselect6(0, 0x7fffebb9e2a0, NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL) = 0 (Timeout)
+[pid 41051] 00:48:40 pselect6(11, NULL, [6 10], NULL, {tv_sec=0, tv_nsec=0}, NULL) = 2 (out [6 10], left {tv_sec=0, tv_nsec=0})
+[pid 41051] 00:48:40 write(2, "W: CHECK: iTransm = 0\n", 22W: CHECK: iTransm = 0
+) = 22
+[pid 41051] 00:48:40 write(2, "1. readSize = 2187\n", 191. readSize = 2187
+) = 19
+[pid 41051] 00:48:40 write(2, "(trans = 0):filled = 2187\nwriteT"..., 55(trans = 0):filled = 2187
+writeToBuf - readFromBuf = 0
+) = 55
+[pid 41051] 00:48:40 write(6, "a';fasda\ndasd\nsaf,mklasas,;Das\nf"..., 2187) = 2187
+[pid 41053] 00:48:40 <... read resumed>"a';fasda\ndasd\nsaf,mklasas,;Das\nf"..., 4096) = 2187
+[pid 41051] 00:48:40 write(2, "write to child pipe 2187 bytes\n", 31write to child pipe 2187 bytes
+ <unfinished ...>
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 31
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 write(2, "old readFrom = 0\n", 17old readFrom = 0
+ <unfinished ...>
+[pid 41053] 00:48:40 write(2, "(2187)child: after read 41053 B;"..., 45(2187)child: after read 41053 B;before write
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 17
+[pid 41053] 00:48:40 <... write resumed>) = 45
+[pid 41051] 00:48:40 write(2, "new readFrom = 2187\n", 20new readFrom = 2187
+ <unfinished ...>
+[pid 41053] 00:48:40 write(8, "a';fasda\ndasd\nsaf,mklasas,;Das\nf"..., 2187 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 20
+[pid 41053] 00:48:40 <... write resumed>) = 2187
+[pid 41051] 00:48:40 write(2, "readFrom == end (transfer it to "..., 57readFrom == end (transfer it to the beginning of buffer)
+ <unfinished ...>
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 57
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 write(2, "W: CHECK: iTransm = 1\n", 22W: CHECK: iTransm = 1
+ <unfinished ...>
+[pid 41053] 00:48:40 write(2, "(41053)child: after write\n", 26(41053)child: after write
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 22
+[pid 41053] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 write(2, "1. readSize = 729\n", 181. readSize = 729
+ <unfinished ...>
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 18
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 write(2, "(trans = 1):filled = 729\nwriteTo"..., 54(trans = 1):filled = 729
+writeToBuf - readFromBuf = 0
+ <unfinished ...>
+[pid 41053] 00:48:40 write(2, "(41053)child: before read\n", 26(41053)child: before read
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 54
+[pid 41053] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 write(10, "\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 729 <unfinished ...>
+[pid 41053] 00:48:40 read(5,  <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 729
+[pid 41054] 00:48:40 <... read resumed>"\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 4096) = 729
+[pid 41051] 00:48:40 write(2, "write to child pipe 729 bytes\n", 30write to child pipe 729 bytes
+ <unfinished ...>
+[pid 41054] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 30
+[pid 41054] 00:48:40 <... getpid resumed>) = 41054
+[pid 41051] 00:48:40 write(2, "old readFrom = 0\n", 17old readFrom = 0
+ <unfinished ...>
+[pid 41054] 00:48:40 write(2, "(729)child: after read 41054 B;b"..., 44 <unfinished ...>
+(729)child: after read 41054 B;before write
+[pid 41051] 00:48:40 <... write resumed>) = 17
+[pid 41054] 00:48:40 <... write resumed>) = 44
+[pid 41051] 00:48:40 write(2, "new readFrom = 729\n", 19new readFrom = 729
+ <unfinished ...>
+[pid 41054] 00:48:40 write(1, "\nsaf,mklasas,;Das\nf'dsfa\nf,a';fa"..., 729 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 19
+[pid 41054] 00:48:40 <... write resumed>) = 729
+[pid 41051] 00:48:40 write(2, "readFrom == end (transfer it to "..., 57readFrom == end (transfer it to the beginning of buffer)
+ <unfinished ...>
+[pid 41054] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 57
+[pid 41054] 00:48:40 <... getpid resumed>) = 41054
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+ <unfinished ...>
+[pid 41054] 00:48:40 write(2, "(41054)child: after write\n", 26 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32totalSet == 2, served = 0 (of 2)) = 32
+(41054)child: after write
+[pid 41051] 00:48:40 pselect6(8, [3 7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL <unfinished ...>
+[pid 41054] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 <... pselect6 resumed>) = 2 (in [3 7], left {tv_sec=0, tv_nsec=0})
+[pid 41054] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 write(2, "R: CHECK: iTransm = 0\n", 22R: CHECK: iTransm = 0
+ <unfinished ...>
+[pid 41054] 00:48:40 <... getpid resumed>) = 41054
+[pid 41051] 00:48:40 <... write resumed>) = 22
+[pid 41054] 00:48:40 write(2, "(41054)child: before read\n", 26(41054)child: before read
+ <unfinished ...>
+[pid 41051] 00:48:40 read(3,  <unfinished ...>
+[pid 41054] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 <... read resumed>"Das\nf'dsfa\nf,a';fasda\ndasd\nsaf,m"..., 2187) = 2112
+[pid 41054] 00:48:40 read(9,  <unfinished ...>
+[pid 41051] 00:48:40 write(2, "old writeToBuf = 94623047947072\n", 32old writeToBuf = 94623047947072
+) = 32
+[pid 41051] 00:48:40 write(2, "new writeToBuf = 94623047949184("..., 43new writeToBuf = 94623047949184(trans = 0)
+) = 43
+[pid 41051] 00:48:40 write(2, "R: CHECK: iTransm = 1\n", 22R: CHECK: iTransm = 1
+) = 22
+[pid 41051] 00:48:40 read(7, "sas,;Das\nf'dsfa\nf,a';fasda\ndasd\n"..., 729) = 729
+[pid 41051] 00:48:40 write(2, "old writeToBuf = 94623047949280\n", 32old writeToBuf = 94623047949280
+) = 32
+[pid 41051] 00:48:40 write(2, "new writeToBuf = 94623047950009("..., 43new writeToBuf = 94623047950009(trans = 1)
+) = 43
+[pid 41051] 00:48:40 write(2, "maxWfd == -1\n", 13maxWfd == -1
+) = 13
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+) = 7
+[pid 41051] 00:48:40 write(2, "totalSet == 3, served = 0 (of 2)", 32totalSet == 3, served = 0 (of 2)) = 32
+[pid 41051] 00:48:40 pselect6(4, [3], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=0})
+[pid 41051] 00:48:40 write(2, "R: CHECK: iTransm = 0\n", 22R: CHECK: iTransm = 0
+) = 22
+[pid 41051] 00:48:40 read(3, "", 75)    = 0
+[pid 41051] 00:48:40 close(3)           = 0
+[pid 41051] 00:48:40 pselect6(11, NULL, [6 10], NULL, {tv_sec=0, tv_nsec=0}, NULL) = 2 (out [6 10], left {tv_sec=0, tv_nsec=0})
+[pid 41051] 00:48:40 write(2, "W: CHECK: iTransm = 0\n", 22W: CHECK: iTransm = 0
+) = 22
+[pid 41051] 00:48:40 write(2, "1. readSize = 4096\n", 191. readSize = 4096
+) = 19
+[pid 41051] 00:48:40 write(2, "(trans = 0):filled = 2112\nwriteT"..., 58(trans = 0):filled = 2112
+writeToBuf - readFromBuf = 2112
+) = 58
+[pid 41051] 00:48:40 write(6, "Das\nf'dsfa\nf,a';fasda\ndasd\nsaf,m"..., 4096) = 4096
+[pid 41053] 00:48:40 <... read resumed>"Das\nf'dsfa\nf,a';fasda\ndasd\nsaf,m"..., 4096) = 4096
+[pid 41051] 00:48:40 write(2, "write to child pipe 4096 bytes\n", 31write to child pipe 4096 bytes
+ <unfinished ...>
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 31
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 write(2, "old readFrom = 0\n", 17old readFrom = 0
+ <unfinished ...>
+[pid 41053] 00:48:40 write(2, "(4096)child: after read 41053 B;"..., 45(4096)child: after read 41053 B;before write
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 17
+[pid 41053] 00:48:40 <... write resumed>) = 45
+[pid 41051] 00:48:40 write(2, "new readFrom = 4096\n", 20new readFrom = 4096
+ <unfinished ...>
+[pid 41053] 00:48:40 write(8, "Das\nf'dsfa\nf,a';fasda\ndasd\nsaf,m"..., 4096 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 20
+[pid 41053] 00:48:40 <... write resumed>) = 4096
+[pid 41051] 00:48:40 write(2, "W: CHECK: iTransm = 1\n", 22W: CHECK: iTransm = 1
+ <unfinished ...>
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 22
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 write(2, "1. readSize = 729\n", 181. readSize = 729
+ <unfinished ...>
+[pid 41053] 00:48:40 write(2, "(41053)child: after write\n", 26(41053)child: after write
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 18
+[pid 41053] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 write(2, "(trans = 1):filled = 729\nwriteTo"..., 54(trans = 1):filled = 729
+writeToBuf - readFromBuf = 0
+ <unfinished ...>
+[pid 41053] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 54
+[pid 41053] 00:48:40 <... getpid resumed>) = 41053
+[pid 41051] 00:48:40 write(10, "sas,;Das\nf'dsfa\nf,a';fasda\ndasd\n"..., 729 <unfinished ...>
+[pid 41053] 00:48:40 write(2, "(41053)child: before read\n", 26(41053)child: before read
+ <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 729
+[pid 41054] 00:48:40 <... read resumed>"sas,;Das\nf'dsfa\nf,a';fasda\ndasd\n"..., 4096) = 729
+[pid 41051] 00:48:40 write(2, "write to child pipe 729 bytes\n", 30 <unfinished ...>
+write to child pipe 729 bytes
+[pid 41053] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 <... write resumed>) = 30
+[pid 41054] 00:48:40 getpid( <unfinished ...>
+[pid 41051] 00:48:40 write(2, "old readFrom = 0\n", 17 <unfinished ...>
+old readFrom = 0
+[pid 41053] 00:48:40 read(5,  <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 17
+[pid 41054] 00:48:40 <... getpid resumed>) = 41054
+[pid 41051] 00:48:40 write(2, "new readFrom = 729\n", 19new readFrom = 729
+ <unfinished ...>
+[pid 41054] 00:48:40 write(2, "(729)child: after read 41054 B;b"..., 44 <unfinished ...>
+(729)child: after read 41054 B;before write
+[pid 41051] 00:48:40 <... write resumed>) = 19
+[pid 41054] 00:48:40 <... write resumed>) = 44
+[pid 41051] 00:48:40 write(2, "readFrom == end (transfer it to "..., 57readFrom == end (transfer it to the beginning of buffer)
+ <unfinished ...>
+[pid 41054] 00:48:40 write(1, "sas,;Das\nf'dsfa\nf,a';fasda\ndasd\n"..., 729 <unfinished ...>
+[pid 41051] 00:48:40 <... write resumed>) = 57
+[pid 41054] 00:48:40 <... write resumed>) = 729
+[pid 41054] 00:48:40 getpid()           = 41054
+[pid 41054] 00:48:40 write(2, "(41054)child: after write\n", 26(41054)child: after write
+) = 26
+[pid 41054] 00:48:40 getpid()           = 41054
+[pid 41054] 00:48:40 write(2, "(41054)child: before read\n", 26(41054)child: before read
+ <unfinished ...>
+[pid 41051] 00:48:40 write(2, "while1\n", 7while1
+ <unfinished ...>
+[pid 41054] 00:48:40 <... write resumed>) = 26
+[pid 41051] 00:48:40 <... write resumed>) = 7
+[pid 41054] 00:48:40 read(9,  <unfinished ...>
+[pid 41051] 00:48:40 write(2, "totalSet == 2, served = 0 (of 2)", 32totalSet == 2, served = 0 (of 2)) = 32
+[pid 41051] 00:48:40 pselect6(8, [7], NULL, NULL, {tv_sec=0, tv_nsec=0}, NULL) = 1 (in [7], left {tv_sec=0, tv_nsec=0})
+[pid 41051] 00:48:40 write(2, "R: CHECK: iTransm = 1\n", 22R: CHECK: iTransm = 1
+) = 22
+[pid 41051] 00:48:40 read(7, "f'dsfa\nf,a';fasda\ndasd\nsaf,mklas"..., 729) = 729
+[pid 41051] 00:48:40 write(2, "old writeToBuf = 94623047949280\n", 32old writeToBuf = 94623047949280
+) = 32
+[pid 41051] 00:48:40 write(2, "new writeToBuf = 94623047950009("..., 43new writeToBuf = 94623047950009(trans = 1)
+) = 43
+[pid 41051] 00:48:40 pselect6(7, NULL, [6], NULL, {tv_sec=0, tv_nsec=0}, NULL) = 1 (out [6], left {tv_sec=0, tv_nsec=0})
+[pid 41051] 00:48:40 write(2, "W: CHECK: iTransm = 0\n", 22W: CHECK: iTransm = 0
+) = 22
+[pid 41051] 00:48:40 write(2, "2. readSize = -1909\n", 202. readSize = -1909
+) = 20
+[pid 41051] 00:48:40 write(6, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 18446744073709549707) = -1 EFAULT (Неправильный адрес)
+[pid 41051] 00:48:40 write(2, "piper: ", 7piper: ) = 7
+[pid 41051] 00:48:40 write(2, "write to pipe from transmission "..., 38write to pipe from transmission buffer) = 38
+[pid 41051] 00:48:40 write(2, ": Bad address\n", 14: Bad address
+) = 14
+[pid 41051] 00:48:40 exit_group(71)     = ?
+[pid 41054] 00:48:40 <... read resumed>"", 4096) = 0
+[pid 41051] 00:48:40 +++ exited with 71 +++
+[pid 41054] 00:48:40 --- SIGHUP {si_signo=SIGHUP, si_code=SI_USER, si_pid=41051, si_uid=1000} ---
+[pid 41053] 00:48:40 <... read resumed>"", 4096) = 0
+[pid 41053] 00:48:40 --- SIGHUP {si_signo=SIGHUP, si_code=SI_USER, si_pid=41051, si_uid=1000} ---
+[pid 41054] 00:48:40 +++ killed by SIGHUP +++
+00:48:40 +++ killed by SIGHUP +++

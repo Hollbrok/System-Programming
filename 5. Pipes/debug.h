@@ -12,14 +12,13 @@
 
 #endif
 
-
+//            fprintf(stderr, "\n(%ld): ", (long) getpid() - (long) getppid() - 1);
 
 #define DEBPRINT(args...)                       \
     do                                          \
     {                                           \
         if(DEBUG_REGIME)                        \
         {                                       \
-            fprintf(stderr, "\n(%ld): ", (long) getpid() - (long) getppid() - 1);\
             fprintf(stderr, args);              \
         }                                       \
     } while(0)

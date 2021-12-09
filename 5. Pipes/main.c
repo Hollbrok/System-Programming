@@ -62,7 +62,7 @@ int main(int argc, const char *argv[])
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
-    sa.sa_handler = handlerSigChld;
+    sa.sa_handler = SIG_IGN;
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
         err(EX_OSERR, "sigaction to SIGCHLD");
 
@@ -177,26 +177,34 @@ int main(int argc, const char *argv[])
                 err(EX_OSERR, "~O_NONBLOCK");
 
             //DEBPRINT("\n\t Child before R/W\n");
-            int retWrite = -1;
 
-            while (lastRead != 0)
-            {
-                if (curChild == nOfChilds - 1)
-                    DEBPRINT("LC: before R\n");
+            while (1) // splice
+            {                
+                int retWrite = 1;
+
+                fprintf(stderr, "(%d)child: before read\n", getpid());
 
                 if ((lastRead = read(fdR, buffer, PIPE_BUF)) == -1)
                     err(EX_OSERR, "C: read");
 
-                if (curChild == nOfChilds - 1)
-                    DEBPRINT("LC: after R (%d)\n", lastRead);
-            
-                if ((retWrite = write(fdW, buffer, lastRead)) == -1)
-                    err(EX_OSERR, "C: write");
+                if (lastRead == 0)
+                    break;
 
-                if (curChild == nOfChilds - 1)
-                    DEBPRINT("LC: after W (%d)\n", retWrite);
+                fprintf(stderr, "(%d)child: after read %d B;before write\n", lastRead, getpid());
 
-                //DEBPRINT("after read-write [lbr = %d]\n", lastRead);
+                char *tmpBuffer = buffer;
+
+                while (lastRead > 0)
+                {
+                    if ((retWrite = write(fdW, tmpBuffer, lastRead)) == -1)
+                        err(EX_OSERR, "C: write");
+
+                    lastRead  -= retWrite;
+                    tmpBuffer += retWrite;
+
+                    fprintf(stderr, "(%d)child: after write\n", getpid());
+
+                }
             }
             
 
@@ -256,14 +264,17 @@ int main(int argc, const char *argv[])
         TI[iTransm].finished = 0;
     }
 
-    DEBPRINT("P: LAST W FD = %d\n", TI[nOfTI - 1].WFd);
+    fprintf(stderr, "P: LAST W FD = %d\n", TI[nOfTI - 1].WFd);
 
     /* data transmission (Parent) */
 
     int endOfTransm = 0;
 
-    while (1)
+    int totalServed = 0;
+
+    while (totalServed != nOfTI)
     {
+        fprintf(stderr, "while1\n");
         fd_set rFds, wFds;
 
         FD_ZERO(&rFds);
@@ -274,50 +285,73 @@ int main(int argc, const char *argv[])
         int maxRFd = -1; /* or just TI[nOfTI - 1].RFd + 1 */
         int maxWFd = -1; /* or just TI[nOfTI - 1].WFd + 1 */
 
+        int totalSet = 0;
+
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
-            if (!TI[iTransm].finished)
+            if (!TI[iTransm].finished && TI[iTransm].empty != 0)
             {
+                DEBPRINT("add to R mask: %d\n", iTransm);
                 FD_SET(TI[iTransm].RFd, &rFds);
-                FD_SET(TI[iTransm].WFd, &wFds);
+                totalSet++;
                 maxRFd = TI[iTransm].RFd > maxRFd ? TI[iTransm].RFd : maxRFd;
+            }
+
+            if (TI[iTransm].filled != 0)
+            {
+                DEBPRINT("add to W mask: %d\n", iTransm);
+                FD_SET(TI[iTransm].WFd, &wFds);
+                totalSet++;
                 maxWFd = TI[iTransm].WFd > maxWFd ? TI[iTransm].WFd : maxWFd;
             }
-            else /* has finished => need to check value of filled*/ 
-                if (TI[iTransm].filled != 0)
-                {
-                    FD_SET(TI[iTransm].WFd, &wFds);
-                    maxWFd = TI[iTransm].WFd > maxWFd ? TI[iTransm].WFd : maxWFd;
-                }
         }
+
+        if (totalSet == 0)
+        {
+            fprintf(stderr, "totalSet == 0, served = %d (of %d)", totalServed, nOfTI);
+            continue;
+        }
+        else
+            fprintf(stderr, "totalSet == %d, served = %d (of %d)", totalSet, totalServed, nOfTI);
 
         int retSelect = -1;
 
         errno = 0;
 
-        if ((retSelect = select(maxRFd + 1, &rFds, NULL, NULL, NULL)) == -1)
-            err(EX_OSERR, "select (R FDs)");
+        //if (maxRFd == -1)
+        //    continue;
+
+        struct timeval zeroT = {0};
+
+        if ((retSelect = select(maxRFd + 1, &rFds, NULL, NULL, &zeroT)) == -1)
+        {
+            if (errno == EINTR)
+            {
+                fprintf(stderr, "EINTR\n");
+                continue;
+            }   
+            else
+                err(EX_OSERR, "select (R FDs)");
+        }   
         
         if (errno != 0)
             err(EX_OSERR, "P: select read");
 
-        if (retSelect == 0)
+        /*if (retSelect == 0)
         {
             fprintf(stderr, "Test: (retSelect == 0) (R)\n");
             continue;
-        }
+        }*/
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
-            char *writeToBuf  = TI[iTransm].writeTo;
-            char *readFromBuf = TI[iTransm].readFrom;
-            char *endOfBuf    = TI[iTransm].endOfBuffer;
-
             int readFromPipe  = TI[iTransm].RFd;
 
             if (FD_ISSET(TI[iTransm].RFd, &rFds)) /* read to us is available for this FD*/
             {
                 DEBPRINT("R: iTransm = %d, FD = %d\n", iTransm, TI[iTransm].RFd);
+
+                fprintf(stderr, "R: CHECK: iTransm = %d\n", iTransm);
 
                 /* write to buffer from (child) pipe */
 
@@ -326,7 +360,7 @@ int main(int argc, const char *argv[])
                 
                 /* determine the current state of transmission */
 
-                if (writeToBuf >= readFromBuf)
+                if (TI[iTransm].writeTo >= TI[iTransm].readFrom)
                 {
                                         //  pointer on write to buf --------------\
                                         //                                        V
@@ -334,15 +368,16 @@ int main(int argc, const char *argv[])
                                         //                             /\
                                         //  pointer on read from buf --/
 
-                    if ((writeToBuf == readFromBuf) && (TI[iTransm].filled == TI[iTransm].bufSize))
+                    if ((TI[iTransm].writeTo == TI[iTransm].readFrom) && (TI[iTransm].filled == TI[iTransm].bufSize))
                     {
                         /* there are 2 possible situations: filled = 0 or filled = bufSize */
                         /* so if we are filled => can't write to buffer yet                */
                         //DEBPRINT("buffer are fully filled\n");
+                        fprintf(stderr, "fully filled\n");
                         continue;
                     }
 
-                    writeSize = MIN(PIPE_BUF, endOfBuf - writeToBuf);
+                    writeSize = MIN(PIPE_BUF, TI[iTransm].endOfBuffer - TI[iTransm].writeTo);
                 }
                 else /* writeTo < readFrom */
                 {
@@ -352,11 +387,11 @@ int main(int argc, const char *argv[])
                                         //                                        /\
                                         //  pointer on read from buf -------------/
                     
-                    writeSize = MIN(PIPE_BUF, readFromBuf - writeToBuf);
+                    writeSize = MIN(PIPE_BUF, TI[iTransm].readFrom - TI[iTransm].writeTo);
                 }
 
 
-                if ((retRead = read(readFromPipe, writeToBuf, writeSize)) == -1)
+                if ((retRead = read(readFromPipe, TI[iTransm].writeTo, writeSize)) == -1)
                     err(EX_OSERR, "read from pipe to transmission buffer");
                 
                 if (retRead == 0) /* current child has finished transmission*/
@@ -374,10 +409,15 @@ int main(int argc, const char *argv[])
 
                 DEBPRINT("read from child pipe %d bytes\n", retRead);
 
-
+                fprintf(stderr, "old writeToBuf = %ld\n", TI[iTransm].writeTo);
                 TI[iTransm].writeTo += retRead;
+                fprintf(stderr, "new writeToBuf = %ld(trans = %d)\n", TI[iTransm].writeTo, iTransm);
+
 
                 TI[iTransm].filled  += retRead; /* the invariant (filled + empty = bufSize) */
+
+                DEBPRINT("new filled = %d\n", TI[iTransm].filled);
+
                 TI[iTransm].empty   -= retRead; /*              is preserved                */
                 
                 if (TI[iTransm].writeTo == TI[iTransm].endOfBuffer)
@@ -387,9 +427,24 @@ int main(int argc, const char *argv[])
 
         errno = 0;
 
-        if ((retSelect = select(maxWFd + 1, NULL, &wFds, NULL, NULL)) == -1)
-            err(EX_OSERR, "select (W FDs)");
-        
+        DEBPRINT("\tB1\n");
+
+        if (maxWFd == -1)
+        {
+            fprintf(stderr, "maxWfd == -1\n");
+            continue;
+        }
+
+        if ((retSelect = select(maxWFd + 1, NULL, &wFds, NULL, &zeroT)) == -1)
+        {
+            if (errno == EINTR)
+            {
+                fprintf(stderr, "EINTR\n");
+                continue;
+            }   
+            else
+                err(EX_OSERR, "select (W FDs)");
+        }
         if (errno != 0)
             err(EX_OSERR, "P: select write");
 
@@ -398,25 +453,25 @@ int main(int argc, const char *argv[])
             fprintf(stderr, "Test: (retSelect == 0) (W)\n");
             continue;
         }
+        
+        DEBPRINT("\tB2\n");
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
-            char *writeToBuf  = TI[iTransm].writeTo;
-            char *readFromBuf = TI[iTransm].readFrom;
-            char *endOfBuf    = TI[iTransm].endOfBuffer;
-
             int writeToPipe   = TI[iTransm].WFd;
 
             if (FD_ISSET(TI[iTransm].WFd, &wFds)) /* write from us to child is available for this FD */
             {
                 DEBPRINT("W: iTransm = %d, FD = %d\n", iTransm, TI[iTransm].WFd);
 
+                fprintf(stderr, "W: CHECK: iTransm = %d\n", iTransm);
+
                 int retWrite = -1;
                 int readSize = -1; /* read from buffer to pipe */
 
                 /* determine the current state of transmission */
 
-                if (writeToBuf >= readFromBuf)
+                if (TI[iTransm].writeTo >= TI[iTransm].readFrom)
                 {
                                         //  pointer on write to buf --------------\
                                         //                                        V
@@ -424,15 +479,19 @@ int main(int argc, const char *argv[])
                                         //                             /\
                                         //  pointer on read from buf --/
 
-                    if ((writeToBuf == readFromBuf) && (TI[iTransm].filled == 0))
+                    if ((TI[iTransm].writeTo == TI[iTransm].readFrom) && (TI[iTransm].filled == 0))
                     {
+                        DEBPRINT("TEST: filled == 0");
                         /* there are 2 possible situations: filled = 0 or filled = bufSize */
                         /* so if we are empty => can't write to buffer yet                */
                         //DEBPRINT("buffer are empty\n");
                         continue;
                     }
 
-                    readSize = MIN(PIPE_BUF, writeToBuf - readFromBuf);
+                    readSize = MIN(PIPE_BUF, TI[iTransm].writeTo - TI[iTransm].readFrom + TI[iTransm].filled);
+                    fprintf(stderr, "1. readSize = %d\n", readSize);
+                    //fprintf(stderr, "filled = %d", TI[iTransm].filled);
+                    fprintf(stderr, "(trans = %d):filled = %d\nwriteToBuf - readFromBuf = %ld\n", iTransm, TI[iTransm].filled, TI[iTransm].writeTo - TI[iTransm].readFrom);
                 }
                 else /* writeTo < readFrom */
                 {
@@ -442,10 +501,11 @@ int main(int argc, const char *argv[])
                                         //                                        /\
                                         //  pointer on read from buf -------------/
                     
-                    readSize = MIN(PIPE_BUF, endOfBuf - readFromBuf);
+                    readSize = MIN(PIPE_BUF, TI[iTransm].endOfBuffer - TI[iTransm].readFrom);
+                    fprintf(stderr, "2. readSize = %d\n", readSize);
                 }
 
-                if ((retWrite = write(writeToPipe, writeToBuf, readSize)) == -1)
+                if ((retWrite = write(writeToPipe, TI[iTransm].readFrom, readSize)) == -1)
                     err(EX_OSERR, "write to pipe from transmission buffer");
                 
                 /*if (retWrite == 0)
@@ -457,19 +517,29 @@ int main(int argc, const char *argv[])
 
                 /* update transmission info */
 
-                DEBPRINT("write to child pipe %d bytes\n", retWrite);
+                fprintf(stderr, "write to child pipe %d bytes\n", retWrite);
 
+                fprintf(stderr, "old readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
                 TI[iTransm].readFrom += retWrite;
+                fprintf(stderr, "new readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
+
 
                 TI[iTransm].filled   -= retWrite; /* the invariant (filled + empty = bufSize) */
                 TI[iTransm].empty    += retWrite; /*              is preserved                */
                 
                 if (TI[iTransm].readFrom == TI[iTransm].endOfBuffer)
+                {
+                    fprintf(stderr, "readFrom == end (transfer it to the beginning of buffer)\n");
                     TI[iTransm].readFrom = TI[iTransm].buffer;
+                }
 
                 if (TI[iTransm].finished && TI[iTransm].filled == 0)
+                {
                     if (close(TI[iTransm].WFd) == -1)
                         err(EX_OSERR, "close W FD of some child");
+
+                    totalServed++;
+                }
             }
         }
     
