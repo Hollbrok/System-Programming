@@ -10,6 +10,8 @@
 
 #define MIN(a,b) (a) < (b) ? (a) : (b)
 
+#define MAX(a,b) (a) < (b) ? (b) : (a)
+
 volatile sig_atomic_t k_numberOfExitedChilds = 0;
 int k_OfChilds;
 
@@ -63,7 +65,7 @@ int main(int argc, const char *argv[])
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
-    sa.sa_handler = handlerSigChld;
+    sa.sa_handler = SIG_IGN;
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
         err(EX_OSERR, "sigaction to SIGCHLD");
 
@@ -166,13 +168,25 @@ int main(int argc, const char *argv[])
 
             int retSplice = -1;
 
+            if (curChild == nOfChilds - 1)
+                fprintf(stderr, "LC: before splice cycle (RFD = %d)\n", fdR);
+
             while (retSplice != 0)
-            {       
+            {      
+                if (curChild == nOfChilds - 1)
+                    fprintf(stderr, "LC: before splice\n");
+
                 if ((retSplice = splice(fdR, NULL, fdW, NULL, PIPE_BUF, SPLICE_F_MOVE)) == -1)
                     err(EX_OSERR, "splice");
 
+                if (curChild == nOfChilds - 1)
+                    fprintf(stderr, "LC: after splice\n");
+
                 DEBPRINT("(C%d): transfer %dBytes\n", getpid(), retSplice);
             }
+
+            if (curChild == nOfChilds - 1)
+                fprintf(stderr, "LC: END\n");
             
             DEBPRINT("(C%d): end of splice\n", getpid());
 
@@ -235,10 +249,14 @@ int main(int argc, const char *argv[])
     int endOfTransm = 0;
     totalServed = 0;
 
-    while ((totalServed + k_numberOfExitedChilds) != 2 * nOfTI)
+    fprintf(stderr, "TESTTT: last WFD = %d\n", TI[nOfTI - 1].WFd);
+
+    while ((totalServed) != nOfTI)
     {
         DEBPRINT("Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
         fd_set rFds, wFds;
+
+        fprintf(stderr, "server = %d of (%d)\n", totalServed, nOfTI);
 
         FD_ZERO(&rFds);
         FD_ZERO(&wFds);
@@ -249,6 +267,11 @@ int main(int argc, const char *argv[])
         int maxWFd = -1;
 
         int totalSet = 0;
+
+        //FD_SET(TI[nOfTI - 1].WFd, &wFds);
+        //maxWFd = TI[nOfTI - 1].WFd > maxWFd ? TI[nOfTI - 1].WFd : maxWFd;
+
+//        fprintf(stderr, "TEST ADD: %d", TI[nOfTI - 1].WFd);
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
@@ -261,27 +284,22 @@ int main(int argc, const char *argv[])
 
             if (TI[iTransm].filled != 0)
             {
+//                fprintf(stderr, "IT(%d), WFD = %d, max = %d", iTransm, TI[iTransm].WFd, maxWFd);
                 FD_SET(TI[iTransm].WFd, &wFds);
                 totalSet++;
                 maxWFd = TI[iTransm].WFd > maxWFd ? TI[iTransm].WFd : maxWFd;
             }
         }
 
-        if (totalSet == 0)
-            continue;
-
         int retSelect = -1;
 
         errno = 0;
 
-        if (maxRFd != -1)
-        {   /* R select are possible */
-            
-        }
-
         struct timeval zeroT = {0};
 
-        if ((retSelect = select(maxRFd + 1, &rFds, NULL, NULL, &zeroT)) == -1)
+        int maxSelectFD = MAX(maxRFd, maxWFd);
+
+        if ((retSelect = select(maxSelectFD + 1, &rFds, &wFds, NULL, NULL)) == -1)
         {
             if (errno == EINTR)
             {
@@ -368,36 +386,9 @@ int main(int argc, const char *argv[])
             }
         }
 
-        errno = 0;
-
-        if (maxWFd == -1)
-        {   /* W select aren't possible */
-            continue;
-        }
-
-        if ((retSelect = select(maxWFd + 1, NULL, &wFds, NULL, &zeroT)) == -1)
-        {
-            if (errno == EINTR)
-            {
-                DEBPRINT("W: EINTR\n");
-                continue;
-            }   
-            else
-                err(EX_OSERR, "select (W FDs)");
-        }   
-        
-        if (errno != 0)
-            err(EX_OSERR, "P: select write");
-
-        if (retSelect == 0)
-        {
-            DEBPRINT("Test: (retSelect == 0) (W)\n");
-            continue;
-        }
-
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
-            int writeToPipe   = TI[iTransm].WFd;
+            int writeToPipe  = TI[iTransm].WFd;
 
             if (FD_ISSET(TI[iTransm].WFd, &wFds)) /* write from us to child is available for this FD */
             {
