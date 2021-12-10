@@ -26,7 +26,6 @@ struct TransInfo
 
     size_t bufSize;     /* size of transmittion buffer                                                                                  */
     size_t filled;      /* amount of bytes, that are available to be read from us to the 2nd child.                                     */
-    size_t empty;       /* (bufSize - filled); So amount of bytes, that are available to be written to us from the 1st child.           */
     
     int RFd;            /* read from pipe to transmission buffer  ; FDs[2 * iTransm][PIPE_R]                                            */
     int WFd;            /* write from transmission buffer to pipe ; FDs[2 * iTransm + 1][PIPE_W]                                        */
@@ -91,7 +90,7 @@ int main(int argc, const char *argv[])
     {
         /* preparing */
 
-        // можно динамически от ребенка к ребенку создавать pipe, а закрывать соответственно все предыдущие.
+        int fdR = -1, fdW = -1;
 
         /*  */
 
@@ -110,13 +109,7 @@ int main(int argc, const char *argv[])
 
             /* close FDs that we are not interested in*/
 
-            //if (curChild == 2) /*  kill random child */
-            //    exit(EXIT_SUCCESS);
-
-            int fdR = -1, fdW = -1;
-
             /* 0-child */
-
             if (curChild == 0)
             {
                 if (close(FDs[0][PIPE_R]) == -1)
@@ -131,8 +124,8 @@ int main(int argc, const char *argv[])
 
                 fdW = FDs[0][PIPE_W];
             }
-            /* last child*/
 
+            /* last child*/
             else if (curChild == nOfChilds - 1)
             {
                 if (close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_W]) == -1)
@@ -147,7 +140,6 @@ int main(int argc, const char *argv[])
             }
 
             /* anothers */
-
             else
             {
                 if (close(FDs[curChild * 2 - 1][PIPE_W]) == -1 || close(FDs[curChild * 2][PIPE_R]) == -1)
@@ -162,8 +154,6 @@ int main(int argc, const char *argv[])
                 fdR = FDs[curChild * 2 - 1][PIPE_R];
                 fdW = FDs[curChild * 2][PIPE_W];
             }
-
-            /* end of close FDs that we are not interested in. */
   
             /* data transfer */
 
@@ -194,7 +184,6 @@ int main(int argc, const char *argv[])
             break;
         }
         default:    /*   PARENT  */
-
             break;
         }
 
@@ -229,7 +218,6 @@ int main(int argc, const char *argv[])
             err(EX_OSERR, "can't calloc memory for buffer");
 
         TI[iTransm].filled    = 0;
-        TI[iTransm].empty     = TI[iTransm].bufSize;
         
         TI[iTransm].endOfBuffer = TI[iTransm].buffer + TI[iTransm].bufSize;
 
@@ -249,7 +237,7 @@ int main(int argc, const char *argv[])
 
     while ((totalServed + k_numberOfExitedChilds) != 2 * nOfTI)
     {
-        fprintf(stderr, "Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
+        DEBPRINT("Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
         fd_set rFds, wFds;
 
         FD_ZERO(&rFds);
@@ -264,7 +252,7 @@ int main(int argc, const char *argv[])
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
-            if (!TI[iTransm].finished && TI[iTransm].empty != 0)
+            if (!TI[iTransm].finished && (TI[iTransm].bufSize - TI[iTransm].filled /* = amount of empty */) != 0)
             {
                 FD_SET(TI[iTransm].RFd, &rFds);
                 totalSet++;
@@ -297,8 +285,7 @@ int main(int argc, const char *argv[])
         {
             if (errno == EINTR)
             {
-                fprintf(stderr, "EINTR\n");
-                //totalServed++;
+                DEBPRINT("EINTR\n");
                 continue;
             }   
             else
@@ -315,8 +302,6 @@ int main(int argc, const char *argv[])
             if (FD_ISSET(TI[iTransm].RFd, &rFds)) /* read to us is available for this FD*/
             {
                 DEBPRINT("R: iTransm = %d, FD = %d\n", iTransm, TI[iTransm].RFd);
-
-                fprintf(stderr, "R: CHECK: iTransm = %d\n", iTransm);
 
                 /* write to buffer from (child) pipe */
 
@@ -337,8 +322,7 @@ int main(int argc, const char *argv[])
                     {
                         /* there are 2 possible situations: filled = 0 or filled = bufSize */
                         /* so if we are filled => can't write to buffer yet                */
-                        //DEBPRINT("buffer are fully filled\n");
-                        fprintf(stderr, "fully filled\n");
+                        DEBPRINT("fully filled\n");
                         continue;
                     }
 
@@ -374,16 +358,10 @@ int main(int argc, const char *argv[])
 
                 DEBPRINT("read from child pipe %d bytes\n", retRead);
 
-                //fprintf(stderr, "old writeToBuf = %ld\n", TI[iTransm].writeTo);
                 TI[iTransm].writeTo += retRead;
-                //fprintf(stderr, "new writeToBuf = %ld(trans = %d)\n", TI[iTransm].writeTo, iTransm);
-
-
-                TI[iTransm].filled  += retRead; /* the invariant (filled + empty = bufSize) */
+                TI[iTransm].filled  += retRead;
 
                 DEBPRINT("new filled = %d\n", TI[iTransm].filled);
-
-                TI[iTransm].empty   -= retRead; /*              is preserved                */
                 
                 if (TI[iTransm].writeTo == TI[iTransm].endOfBuffer)
                     TI[iTransm].writeTo = TI[iTransm].buffer;                
@@ -401,8 +379,7 @@ int main(int argc, const char *argv[])
         {
             if (errno == EINTR)
             {
-                fprintf(stderr, "W: EINTR\n");
-                //totalServed++;
+                DEBPRINT("W: EINTR\n");
                 continue;
             }   
             else
@@ -414,7 +391,7 @@ int main(int argc, const char *argv[])
 
         if (retSelect == 0)
         {
-            fprintf(stderr, "Test: (retSelect == 0) (W)\n");
+            DEBPRINT("Test: (retSelect == 0) (W)\n");
             continue;
         }
 
@@ -425,8 +402,6 @@ int main(int argc, const char *argv[])
             if (FD_ISSET(TI[iTransm].WFd, &wFds)) /* write from us to child is available for this FD */
             {
                 DEBPRINT("W: iTransm = %d, FD = %d\n", iTransm, TI[iTransm].WFd);
-
-                fprintf(stderr, "W: CHECK: iTransm = %d\n", iTransm);
 
                 int retWrite = -1;
                 int readSize = -1; /* read from buffer to pipe */
@@ -477,8 +452,7 @@ int main(int argc, const char *argv[])
 
                 TI[iTransm].readFrom += retWrite;
 
-                TI[iTransm].filled   -= retWrite; /* the invariant (filled + empty = bufSize) */
-                TI[iTransm].empty    += retWrite; /*              is preserved                */
+                TI[iTransm].filled   -= retWrite;
                 
                 if (TI[iTransm].readFrom == TI[iTransm].endOfBuffer)
                 {
@@ -511,7 +485,7 @@ int main(int argc, const char *argv[])
     
     fprintf(stderr, "P: FINISHED\n");
 
-    /* waiting for end */
+    /* waiting for end of transmission */
 
     while (wait(NULL) != -1)
     {}
