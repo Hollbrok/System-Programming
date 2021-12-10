@@ -13,6 +13,8 @@
 volatile sig_atomic_t k_numberOfExitedChilds = 0;
 int k_OfChilds;
 
+int totalServed;
+
 
 /* contains all the information you need for convenient transfer */
 struct TransInfo
@@ -62,7 +64,7 @@ int main(int argc, const char *argv[])
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
-    sa.sa_handler = SIG_IGN;
+    sa.sa_handler = handlerSigChld;
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
         err(EX_OSERR, "sigaction to SIGCHLD");
 
@@ -71,20 +73,17 @@ int main(int argc, const char *argv[])
     int isParent = -1;
     int parentPid = getpid();
 
-    fprintf(stderr, "Parent PID: %ld\n", (long)getpid());
-
-
     /* create pipes with O_NONBLOCK! */
 
     int FDs[2 * (nOfChilds - 1)][2];
 
-    fprintf(stderr, "Number of pipes: %d\n", 2 * (nOfChilds - 1));
+    DEBPRINT("Parent PID:      %d\n"
+             "Number of child: %d\n"
+             "Number of pipes: %d\n", parentPid, nOfChilds, 2 * (nOfChilds - 1));
 
     for (int i = 0; i < (nOfChilds - 1) * 2; ++i)
         if (pipe2(FDs[i], O_NONBLOCK) == -1)
             err(EX_OSERR, "pipe2");
-
-    fprintf(stderr, "\n");
 
     errno = 0;
 
@@ -134,7 +133,6 @@ int main(int argc, const char *argv[])
 
             else if (curChild == nOfChilds - 1)
             {
-                DEBPRINT("LC:\n");
                 if (close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_W]) == -1)
                     err(EX_OSERR, "close last-child write-end");
 
@@ -144,8 +142,6 @@ int main(int argc, const char *argv[])
 
                 fdR = FDs[(nOfChilds - 1) * 2 - 1][PIPE_R];
                 fdW = STDOUT_FILENO;
-
-                DEBPRINT("LC: R FD = %d\n", fdR);
             }
 
             /* anothers */
@@ -165,59 +161,28 @@ int main(int argc, const char *argv[])
                 fdW = FDs[curChild * 2][PIPE_W];
             }
 
-            /* end of close FDs that we are not interested in */
+            /* end of close FDs that we are not interested in. */
   
             /* data transfer */
 
             int lastRead  = -1;
             char buffer[PIPE_BUF] = {};
 
-            if ( fcntl(fdW, F_SETFL, O_WRONLY) == -1 ||
-                 fcntl(fdR, F_SETFL, O_RDONLY) == -1 )
+            if ( fcntl(fdW, F_SETFL, O_WRONLY) == -1 || fcntl(fdR, F_SETFL, O_RDONLY) == -1 )
                 err(EX_OSERR, "~O_NONBLOCK");
 
-            //DEBPRINT("\n\t Child before R/W\n");
 
             int retSplice = -1;
 
-            while (retSplice != 0) // splice
+            while (retSplice != 0)
             {       
                 if ((retSplice = splice(fdR, NULL, fdW, NULL, PIPE_BUF, SPLICE_F_MOVE)) == -1)
                     err(EX_OSERR, "splice");
 
-                fprintf(stderr, "(%d)child: transfer %dB\n", getpid(), retSplice);
-
-                /* int retWrite = 1;
-
-                fprintf(stderr, "(%d)child: before read\n", getpid());
-
-                if ((lastRead = read(fdR, buffer, PIPE_BUF)) == -1)
-                {
-                    fprintf(stderr, "(%d)child: END-OF-FILE\n", getpid());
-                    err(EX_OSERR, "C: read");
-                }
-
-                if (lastRead == 0)
-                    break;
-
-                fprintf(stderr, "(%d)child: after read %d B;before write\n", getpid(), lastRead);
-
-                char *tmpBuffer = buffer;
-
-                while (lastRead > 0)
-                {
-                    if ((retWrite = write(fdW, tmpBuffer, lastRead)) == -1)
-                        err(EX_OSERR, "C: write");
-
-                    lastRead  -= retWrite;
-                    tmpBuffer += retWrite;
-
-                    fprintf(stderr, "(%d)child: after write\n", getpid());
-
-                } */
+                DEBPRINT("(C%d): transfer %dBytes\n", getpid(), retSplice);
             }
             
-            fprintf(stderr, "(%d)child: end of splice\n", getpid());
+            DEBPRINT("(C%d): end of splice\n", getpid());
 
             if (close(fdR) == -1 || close(fdW) == -1)
                 err(EX_OSERR, "close fdR/fdW");
@@ -275,17 +240,14 @@ int main(int argc, const char *argv[])
         TI[iTransm].finished = 0;
     }
 
-    fprintf(stderr, "P: LAST W FD = %d\n", TI[nOfTI - 1].WFd);
-
     /* data transmission (Parent) */
-
+    
     int endOfTransm = 0;
+    totalServed = 0;
 
-    int totalServed = 0;
-
-    while (totalServed != nOfTI)
+    while ((totalServed + k_numberOfExitedChilds) != 2 * nOfTI)
     {
-        fprintf(stderr, "while1\n");
+        fprintf(stderr, "Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
         fd_set rFds, wFds;
 
         FD_ZERO(&rFds);
@@ -293,8 +255,8 @@ int main(int argc, const char *argv[])
 
         /* select stuff */
         
-        int maxRFd = -1; /* or just TI[nOfTI - 1].RFd + 1 */
-        int maxWFd = -1; /* or just TI[nOfTI - 1].WFd + 1 */
+        int maxRFd = -1;
+        int maxWFd = -1;
 
         int totalSet = 0;
 
@@ -302,7 +264,6 @@ int main(int argc, const char *argv[])
         {
             if (!TI[iTransm].finished && TI[iTransm].empty != 0)
             {
-                DEBPRINT("add to R mask: %d\n", iTransm);
                 FD_SET(TI[iTransm].RFd, &rFds);
                 totalSet++;
                 maxRFd = TI[iTransm].RFd > maxRFd ? TI[iTransm].RFd : maxRFd;
@@ -310,7 +271,6 @@ int main(int argc, const char *argv[])
 
             if (TI[iTransm].filled != 0)
             {
-                DEBPRINT("add to W mask: %d\n", iTransm);
                 FD_SET(TI[iTransm].WFd, &wFds);
                 totalSet++;
                 maxWFd = TI[iTransm].WFd > maxWFd ? TI[iTransm].WFd : maxWFd;
@@ -318,19 +278,16 @@ int main(int argc, const char *argv[])
         }
 
         if (totalSet == 0)
-        {
-            fprintf(stderr, "totalSet == 0, served = %d (of %d)", totalServed, nOfTI);
             continue;
-        }
-        else
-            fprintf(stderr, "totalSet == %d, served = %d (of %d)", totalSet, totalServed, nOfTI);
 
         int retSelect = -1;
 
         errno = 0;
 
-        //if (maxRFd == -1)
-        //    continue;
+        if (maxRFd != -1)
+        {   /* R select are possible */
+            
+        }
 
         struct timeval zeroT = {0};
 
@@ -339,6 +296,7 @@ int main(int argc, const char *argv[])
             if (errno == EINTR)
             {
                 fprintf(stderr, "EINTR\n");
+                //totalServed++;
                 continue;
             }   
             else
@@ -347,12 +305,6 @@ int main(int argc, const char *argv[])
         
         if (errno != 0)
             err(EX_OSERR, "P: select read");
-
-        /*if (retSelect == 0)
-        {
-            fprintf(stderr, "Test: (retSelect == 0) (R)\n");
-            continue;
-        }*/
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
@@ -438,11 +390,8 @@ int main(int argc, const char *argv[])
 
         errno = 0;
 
-        DEBPRINT("\tB1\n");
-
         if (maxWFd == -1)
-        {
-            fprintf(stderr, "maxWfd == -1\n");
+        {   /* W select aren't possible */
             continue;
         }
 
@@ -450,12 +399,14 @@ int main(int argc, const char *argv[])
         {
             if (errno == EINTR)
             {
-                fprintf(stderr, "EINTR\n");
+                fprintf(stderr, "W: EINTR\n");
+                //totalServed++;
                 continue;
             }   
             else
                 err(EX_OSERR, "select (W FDs)");
-        }
+        }   
+        
         if (errno != 0)
             err(EX_OSERR, "P: select write");
 
@@ -464,8 +415,6 @@ int main(int argc, const char *argv[])
             fprintf(stderr, "Test: (retSelect == 0) (W)\n");
             continue;
         }
-        
-        DEBPRINT("\tB2\n");
 
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
@@ -492,32 +441,20 @@ int main(int argc, const char *argv[])
 
                     if ((TI[iTransm].writeTo == TI[iTransm].readFrom) && (TI[iTransm].filled == 0))
                     {
-                        DEBPRINT("TEST: filled == 0");
                         /* there are 2 possible situations: filled = 0 or filled = bufSize */
                         /* so if we are empty => can't write to buffer yet                */
-                        //DEBPRINT("buffer are empty\n");
                         continue;
                     }
 
                     if ((TI[iTransm].writeTo == TI[iTransm].readFrom) && (TI[iTransm].filled == TI[iTransm].bufSize)) // full filled
-                    {
-                        fprintf(stderr, "F1\n");
                         readSize = MIN(PIPE_BUF, TI[iTransm].endOfBuffer - TI[iTransm].readFrom);
-                    }
                     else if (TI[iTransm].writeTo > TI[iTransm].readFrom)
-                    {
-                        fprintf(stderr, "F2\n");
                         readSize = MIN(PIPE_BUF, TI[iTransm].writeTo - TI[iTransm].readFrom);
-                    }
                     else
                     {
                         fprintf(stderr, "LOGIC ERROR #2\n");
                         exit(EXIT_FAILURE);
                     }
-
-                    fprintf(stderr, "1. readSize = %d\n", readSize);
-                    //fprintf(stderr, "filled = %d", TI[iTransm].filled);
-                    fprintf(stderr, "(trans = %d):filled = %d(bufSize = %d)\nwriteToBuf - readFromBuf = %ld\n", iTransm, TI[iTransm].filled, TI[iTransm].bufSize, TI[iTransm].writeTo - TI[iTransm].readFrom);
                 }
                 else /* writeTo < readFrom */
                 {
@@ -528,44 +465,27 @@ int main(int argc, const char *argv[])
                                         //  pointer on read from buf -------------/
                     
                     readSize = MIN(PIPE_BUF, TI[iTransm].endOfBuffer - TI[iTransm].readFrom);
-                    fprintf(stderr, "2. readSize = %d\n", readSize);
-                    fprintf(stderr, "(trans = %d): buffer_size = %ld, endBuffer = %ld, readFrom = %ld \n", iTransm, TI[iTransm].bufSize, TI[iTransm].endOfBuffer - TI[iTransm].buffer, TI[iTransm].readFrom - TI[iTransm].buffer);
-
                 }
-
-                fprintf(stderr, "ReadF before write %d\n", TI[iTransm].readFrom - TI[iTransm].buffer);
 
                 if ((retWrite = write(writeToPipe, TI[iTransm].readFrom, readSize)) == -1)
                     err(EX_OSERR, "write to pipe from transmission buffer");
-                
-                /*if (retWrite == 0)
-                {
-                    DEBPRINT("\t LOGIC ERROR in write from buf to child pipe\n");
-                    perror("");
-                    exit(EXIT_FAILURE);
-                }*/
 
                 /* update transmission info */
 
-                fprintf(stderr, "write to child pipe %d bytes\n", retWrite);
-
-                //fprintf(stderr, "old readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
                 TI[iTransm].readFrom += retWrite;
-                //fprintf(stderr, "new readFrom = %ld\n", TI[iTransm].readFrom - TI[iTransm].buffer);
-
 
                 TI[iTransm].filled   -= retWrite; /* the invariant (filled + empty = bufSize) */
                 TI[iTransm].empty    += retWrite; /*              is preserved                */
                 
                 if (TI[iTransm].readFrom == TI[iTransm].endOfBuffer)
                 {
-                    fprintf(stderr, "readFrom == end (transfer it to the beginning of buffer)\n");
+                    DEBPRINT("readFrom == end (transfer it to the beginning of buffer)\n");
                     TI[iTransm].readFrom = TI[iTransm].buffer;
                 }
 
                 if (TI[iTransm].readFrom > TI[iTransm].endOfBuffer)
                 {
-                    fprintf(stderr, "LOGIC ERROR, OUT OF BUFFER\nreadFrom - endBuffer = %d\n", TI[iTransm].readFrom - TI[iTransm].endOfBuffer);
+                    DEBPRINT("LOGIC ERROR, OUT OF BUFFER\nreadFrom - endBuffer = %d\n", TI[iTransm].readFrom - TI[iTransm].endOfBuffer);
                     exit(EXIT_FAILURE);
                 }
 
@@ -586,14 +506,14 @@ int main(int argc, const char *argv[])
         }
     }
     
-    /* waiting for end */
+    fprintf(stderr, "P: FINISHED\n");
 
-    DEBPRINT("\n\tSuccess, waiting all childs...\n");
+    /* waiting for end */
 
     while (wait(NULL) != -1)
     {}
 
-    DEBPRINT("\n\tAll childs have finished\n");
+    fprintf(stderr, "Success\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -646,6 +566,7 @@ void handlerSigChld(int signum)
         DEBPRINT("\t some child exited with EXIT_SUCCESS\n");
         
         k_numberOfExitedChilds++;
+        //totalServed++;
 
         if (k_numberOfExitedChilds == k_OfChilds)
             exit(EXIT_SUCCESS);
