@@ -256,7 +256,7 @@ int main(int argc, const char *argv[])
         DEBPRINT("Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
         fd_set rFds, wFds;
 
-        fprintf(stderr, "server = %d of (%d)\n", totalServed, nOfTI);
+        //fprintf(stderr, "server = %d of (%d)\n", totalServed, nOfTI);
 
         FD_ZERO(&rFds);
         FD_ZERO(&wFds);
@@ -478,8 +478,8 @@ int main(int argc, const char *argv[])
 
     /* waiting for end of transmission */
 
-    while (wait(NULL) != -1)
-    {}
+    //while (wait(NULL) != -1)
+    //{}
 
     fprintf(stderr, "Success\n");
 
