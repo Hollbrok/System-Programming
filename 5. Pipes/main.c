@@ -102,7 +102,6 @@ int main(int argc, const char *argv[])
             break;
         case 0:     /*   CHILD   */
         {
-        
             if (prctl(PR_SET_PDEATHSIG, SIGHUP) == -1)
                 err(EX_OSERR, "prctl");
         
@@ -110,6 +109,9 @@ int main(int argc, const char *argv[])
                 err(EX_OSERR, "err ppid");
 
             /* close FDs that we are not interested in*/
+
+            //if (curChild == 2) /*  kill random child */
+            //    exit(EXIT_SUCCESS);
 
             int fdR = -1, fdW = -1;
 
@@ -467,7 +469,8 @@ int main(int argc, const char *argv[])
                     readSize = MIN(PIPE_BUF, TI[iTransm].endOfBuffer - TI[iTransm].readFrom);
                 }
 
-                if ((retWrite = write(writeToPipe, TI[iTransm].readFrom, readSize)) == -1)
+                /* if between select and write one of the children dies => this call'll cause SIGPIPE + EPIPE */
+                if ((retWrite = write(writeToPipe, TI[iTransm].readFrom, readSize)) == -1)  
                     err(EX_OSERR, "write to pipe from transmission buffer");
 
                 /* update transmission info */
@@ -569,12 +572,15 @@ void handlerSigChld(int signum)
         //totalServed++;
 
         if (k_numberOfExitedChilds == k_OfChilds)
+        {
+            fprintf(stderr, "All childs are served\n");
             exit(EXIT_SUCCESS);
-        
+        }
+
         return;
     }
 
     DEBPRINT("\t some child didn't exit or exited, but with no EXIT_SUCCESS\n");
 
-    exit(EXIT_FAILURE);
+    return;//exit(EXIT_FAILURE);
 }
