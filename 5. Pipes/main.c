@@ -68,6 +68,10 @@ int main(int argc, const char *argv[])
     sa.sa_handler = SIG_IGN;
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
         err(EX_OSERR, "sigaction to SIGCHLD");
+    
+    sa.sa_handler = SIG_IGN;
+    if (sigaction(SIGPIPE, &sa, NULL) == -1)
+        err(EX_OSERR, "sigaction to SIGPIPE");
 
     /* */
 
@@ -87,6 +91,13 @@ int main(int argc, const char *argv[])
             err(EX_OSERR, "pipe2");
 
     errno = 0;
+
+    /* this pipe is needed to check for the existence of the
+       zero-child before data transmission, because he may be dead */
+    
+    int zeroPipe[2];                
+    if (pipe2(zeroPipe, O_NONBLOCK) == -1)
+        err(EX_OSERR, "pipe2 zeroPipe");
 
     for (int curChild = 0; curChild < nOfChilds; ++curChild)
     {
@@ -111,9 +122,15 @@ int main(int argc, const char *argv[])
 
             /* close FDs that we are not interested in*/
 
+            if (curChild == 0)
+                exit(EXIT_FAILURE);
+
             /* 0-child */
             if (curChild == 0)
             {
+                if (close(zeroPipe[PIPE_W] == -1))
+                    err(EX_OSERR, "C: close zeroPipe");
+
                 if (close(FDs[0][PIPE_R]) == -1)
                     err(EX_OSERR, "close 0-child read-end");
             
@@ -169,24 +186,24 @@ int main(int argc, const char *argv[])
             int retSplice = -1;
 
             if (curChild == nOfChilds - 1)
-                fprintf(stderr, "LC: before splice cycle (RFD = %d)\n", fdR);
+                DEBPRINT("LC: before splice cycle (RFD = %d)\n", fdR);
 
             while (retSplice != 0)
             {      
                 if (curChild == nOfChilds - 1)
-                    fprintf(stderr, "LC: before splice\n");
+                    DEBPRINT("LC: before splice\n");
 
                 if ((retSplice = splice(fdR, NULL, fdW, NULL, PIPE_BUF, SPLICE_F_MOVE)) == -1)
                     err(EX_OSERR, "splice");
 
                 if (curChild == nOfChilds - 1)
-                    fprintf(stderr, "LC: after splice\n");
+                    DEBPRINT("LC: after splice\n");
 
                 DEBPRINT("(C%d): transfer %dBytes\n", getpid(), retSplice);
             }
 
             if (curChild == nOfChilds - 1)
-                fprintf(stderr, "LC: END\n");
+                DEBPRINT("LC: END\n");
             
             DEBPRINT("(C%d): end of splice\n", getpid());
 
@@ -198,12 +215,20 @@ int main(int argc, const char *argv[])
             break;
         }
         default:    /*   PARENT  */
+            if (curChild == 0)
+            {
+                fprintf(stderr, "close ZPIPE RFD\n");
+                if (close(zeroPipe[PIPE_R] == -1))
+                    err(EX_OSERR, "close zeroPipe");
+            }
             break;
         }
 
     }
 
     /* close FDs that won't be used */
+    //if (close(zeroPipe[PIPE_R] == -1))
+    //    err(EX_OSERR, "close zeroPipe");
 
     if (close(FDs[0][PIPE_W]) == -1 || close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_R]) == -1)
         err(EX_OSERR, "P: close W/R 0/end-child");
@@ -251,6 +276,16 @@ int main(int argc, const char *argv[])
 
     fprintf(stderr, "TESTTT: last WFD = %d\n", TI[nOfTI - 1].WFd);
 
+    // should check if zero-child is alive!
+    char testByte = 'H';
+    if (write(zeroPipe[PIPE_W], &testByte, 1) != 1)
+    {
+        if (errno == EPIPE)
+            err(EX_OSERR, "zero-child is dead");
+        else
+            err(EX_OSERR, "test zeroPipe");
+    }
+
     while ((totalServed) != nOfTI)
     {
         DEBPRINT("Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
@@ -266,27 +301,17 @@ int main(int argc, const char *argv[])
         int maxRFd = -1;
         int maxWFd = -1;
 
-        int totalSet = 0;
-
-        //FD_SET(TI[nOfTI - 1].WFd, &wFds);
-        //maxWFd = TI[nOfTI - 1].WFd > maxWFd ? TI[nOfTI - 1].WFd : maxWFd;
-
-//        fprintf(stderr, "TEST ADD: %d", TI[nOfTI - 1].WFd);
-
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
             if (!TI[iTransm].finished && (TI[iTransm].bufSize - TI[iTransm].filled /* = amount of empty */) != 0)
             {
                 FD_SET(TI[iTransm].RFd, &rFds);
-                totalSet++;
                 maxRFd = TI[iTransm].RFd > maxRFd ? TI[iTransm].RFd : maxRFd;
             }
 
             if (TI[iTransm].filled != 0)
             {
-//                fprintf(stderr, "IT(%d), WFD = %d, max = %d", iTransm, TI[iTransm].WFd, maxWFd);
                 FD_SET(TI[iTransm].WFd, &wFds);
-                totalSet++;
                 maxWFd = TI[iTransm].WFd > maxWFd ? TI[iTransm].WFd : maxWFd;
             }
         }
@@ -299,7 +324,7 @@ int main(int argc, const char *argv[])
 
         int maxSelectFD = MAX(maxRFd, maxWFd);
 
-        if ((retSelect = select(maxSelectFD + 1, &rFds, &wFds, NULL, NULL)) == -1)
+        if ((retSelect = select(maxSelectFD + 1, &rFds, &wFds, NULL, NULL)) == -1) // or &zeroT (also works)
         {
             if (errno == EINTR)
             {
@@ -313,6 +338,7 @@ int main(int argc, const char *argv[])
         if (errno != 0)
             err(EX_OSERR, "P: select read");
 
+        /* read from pipe to buf */
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
             int readFromPipe  = TI[iTransm].RFd;
@@ -361,8 +387,14 @@ int main(int argc, const char *argv[])
                 if ((retRead = read(readFromPipe, TI[iTransm].writeTo, writeSize)) == -1)
                     err(EX_OSERR, "read from pipe to transmission buffer");
                 
-                if (retRead == 0) /* current child has finished transmission*/
+                if (retRead == 0) /* current child has finished transmission (terminated)*/
                 {
+                    if (iTransm != totalServed)
+                    {
+                        fprintf(stderr, "Unexpected child death, exit.\n");
+                        exit(EXIT_FAILURE);
+                    }
+
                     DEBPRINT("Close R of %d transm\n", iTransm);
                     /* just close unnecessary anymore file descriptor */
                     if (close(TI[iTransm].RFd) == -1)
@@ -386,6 +418,7 @@ int main(int argc, const char *argv[])
             }
         }
 
+        /* write from buf to pipe*/
         for (int iTransm = 0; iTransm < nOfTI; ++iTransm)
         {
             int writeToPipe  = TI[iTransm].WFd;
@@ -436,9 +469,13 @@ int main(int argc, const char *argv[])
                 }
 
                 /* if between select and write one of the children dies => this call'll cause SIGPIPE + EPIPE */
-                if ((retWrite = write(writeToPipe, TI[iTransm].readFrom, readSize)) == -1)  
-                    err(EX_OSERR, "write to pipe from transmission buffer");
-
+                if ((retWrite = write(writeToPipe, TI[iTransm].readFrom, readSize)) == -1)
+                {
+                    if (errno == EPIPE)
+                        err(EX_OSERR, "one of the children died");
+                    else
+                        err(EX_OSERR, "write to pipe from transmission buffer");
+                }
                 /* update transmission info */
 
                 TI[iTransm].readFrom += retWrite;
@@ -478,9 +515,6 @@ int main(int argc, const char *argv[])
 
     /* waiting for end of transmission */
 
-    //while (wait(NULL) != -1)
-    //{}
-
     fprintf(stderr, "Success\n");
 
     exit(EXIT_SUCCESS);
@@ -518,34 +552,4 @@ long getNumber(const char *numString, int *errorState)
     }
     
     return gNumber;
-}
-
-
-void handlerSigChld(int signum)
-{
-    DEBPRINT("One of the children died\n");
-
-    int status = -1;
-
-    wait(&status);
-
-    if (WIFEXITED(status) && (WEXITSTATUS(status) == EXIT_SUCCESS) )
-    {
-        DEBPRINT("\t some child exited with EXIT_SUCCESS\n");
-        
-        k_numberOfExitedChilds++;
-        //totalServed++;
-
-        if (k_numberOfExitedChilds == k_OfChilds)
-        {
-            fprintf(stderr, "All childs are served\n");
-            exit(EXIT_SUCCESS);
-        }
-
-        return;
-    }
-
-    DEBPRINT("\t some child didn't exit or exited, but with no EXIT_SUCCESS\n");
-
-    return;//exit(EXIT_FAILURE);
 }
