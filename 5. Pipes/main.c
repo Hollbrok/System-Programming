@@ -92,12 +92,6 @@ int main(int argc, const char *argv[])
 
     errno = 0;
 
-    /* this pipe is needed to check for the existence of the
-       zero-child before data transmission, because he may be dead */
-    
-    int zeroPipe[2];                
-    if (pipe2(zeroPipe, O_NONBLOCK) == -1)
-        err(EX_OSERR, "pipe2 zeroPipe");
 
     for (int curChild = 0; curChild < nOfChilds; ++curChild)
     {
@@ -122,15 +116,9 @@ int main(int argc, const char *argv[])
 
             /* close FDs that we are not interested in*/
 
-            if (curChild == 0)
-                exit(EXIT_FAILURE);
-
             /* 0-child */
             if (curChild == 0)
             {
-                if (close(zeroPipe[PIPE_W] == -1))
-                    err(EX_OSERR, "C: close zeroPipe");
-
                 if (close(FDs[0][PIPE_R]) == -1)
                     err(EX_OSERR, "close 0-child read-end");
             
@@ -215,20 +203,12 @@ int main(int argc, const char *argv[])
             break;
         }
         default:    /*   PARENT  */
-            if (curChild == 0)
-            {
-                fprintf(stderr, "close ZPIPE RFD\n");
-                if (close(zeroPipe[PIPE_R] == -1))
-                    err(EX_OSERR, "close zeroPipe");
-            }
             break;
         }
 
     }
 
     /* close FDs that won't be used */
-    //if (close(zeroPipe[PIPE_R] == -1))
-    //    err(EX_OSERR, "close zeroPipe");
 
     if (close(FDs[0][PIPE_W]) == -1 || close(FDs[(nOfChilds - 1) * 2 - 1][PIPE_R]) == -1)
         err(EX_OSERR, "P: close W/R 0/end-child");
@@ -275,17 +255,7 @@ int main(int argc, const char *argv[])
     totalServed = 0;
 
     fprintf(stderr, "TESTTT: last WFD = %d\n", TI[nOfTI - 1].WFd);
-
-    // should check if zero-child is alive!
-    char testByte = 'H';
-    if (write(zeroPipe[PIPE_W], &testByte, 1) != 1)
-    {
-        if (errno == EPIPE)
-            err(EX_OSERR, "zero-child is dead");
-        else
-            err(EX_OSERR, "test zeroPipe");
-    }
-
+    
     while ((totalServed) != nOfTI)
     {
         DEBPRINT("Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
