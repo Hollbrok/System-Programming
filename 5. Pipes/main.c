@@ -114,6 +114,9 @@ int main(int argc, const char *argv[])
             if (parentPid != getppid())
                 err(EX_OSERR, "err ppid");
 
+            //if (curChild == nOfChilds - 5)
+            //    exit(EXIT_FAILURE);
+
             /* close FDs that we are not interested in*/
 
             /* 0-child */
@@ -182,7 +185,7 @@ int main(int argc, const char *argv[])
                     DEBPRINT("LC: before splice\n");
 
                 if ((retSplice = splice(fdR, NULL, fdW, NULL, PIPE_BUF, SPLICE_F_MOVE)) == -1)
-                    err(EX_OSERR, "splice");
+                    exit(EXIT_FAILURE);//err(EX_OSERR, "C: splice\n");
 
                 if (curChild == nOfChilds - 1)
                     DEBPRINT("LC: after splice\n");
@@ -254,8 +257,10 @@ int main(int argc, const char *argv[])
     int endOfTransm = 0;
     totalServed = 0;
 
-    fprintf(stderr, "TESTTT: last WFD = %d\n", TI[nOfTI - 1].WFd);
-    
+    DEBPRINT("TESTTT: last WFD = %d\n", TI[nOfTI - 1].WFd);
+
+    int isAnyInfo = 0;
+
     while ((totalServed) != nOfTI)
     {
         DEBPRINT("Served %d of %d", totalServed + k_numberOfExitedChilds, 2 * nOfTI);
@@ -357,11 +362,14 @@ int main(int argc, const char *argv[])
                 if ((retRead = read(readFromPipe, TI[iTransm].writeTo, writeSize)) == -1)
                     err(EX_OSERR, "read from pipe to transmission buffer");
                 
+                if (iTransm == 0)
+                    isAnyInfo += retRead;
+                
                 if (retRead == 0) /* current child has finished transmission (terminated)*/
                 {
-                    if (iTransm != totalServed)
+                    if (iTransm != totalServed || (!isAnyInfo && iTransm == 0))
                     {
-                        fprintf(stderr, "Unexpected child death, exit.\n");
+                        fprintf(stderr, "Unexpected child death or no info from zeroChild, exit.\n");
                         exit(EXIT_FAILURE);
                     }
 
@@ -481,8 +489,6 @@ int main(int argc, const char *argv[])
         }
     }
     
-    fprintf(stderr, "P: FINISHED\n");
-
     /* waiting for end of transmission */
 
     fprintf(stderr, "Success\n");
