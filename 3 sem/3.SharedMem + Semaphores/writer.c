@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     struct sembuf checkAnotherWriters[2] = {
         {SEM_W_ALIVE, 0, 0},
         {SEM_W_ALIVE, +1, SEM_UNDO}
-    };
+    }; 
 
     if (semop(semId, checkAnotherWriters, 2) == -1)
         ERR_HANDLER("Start critical section of initialization of writer\n");
@@ -113,12 +113,9 @@ int main(int argc, char* argv[])
 
     while (1)
     {     
-        //fprintf(stderr, "1");
-
         if (semop(semId, &reserveW, 1) == -1)
             ERR_HANDLER("reserve WRITE sem");
 
-        //fprintf(stderr, "2");
         /* if another side has already died  */
 
         if (getSemVal(semId, SEM_R_ALIVE) == 0)

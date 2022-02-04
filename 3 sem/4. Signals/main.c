@@ -113,7 +113,7 @@ int main(int argc, const char *argv[])
 /* send and receive info by bits throw signals */
 
     kcBegin = clock();
-
+ // какие сигналы посылаются из процесса и кому в момент его смерти и в каких обст.
     if (isParent)
     {
         unsigned char byte;
