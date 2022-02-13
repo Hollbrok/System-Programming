@@ -3,16 +3,23 @@
 
 #include "libs.h"
 
-struct bintree_elem
-{
-	struct bintree_elem* left_  = nullptr;
-	struct bintree_elem* right_ = nullptr;
 
-    int data_ = 0;
+struct bintreeElem
+{
+	struct bintreeElem* left_ ;// = nullptr;
+	struct bintreeElem* right_;// = nullptr;
+
+    int data_;// = 0;
 };
 
 /////
 
+/*
 
+    create_elem 
 
-#endif BINTREE_ELEM_H
+*/
+
+RET_ERR_TYPE createElem(struct bintreeElem* retElem, int value);
+
+#endif

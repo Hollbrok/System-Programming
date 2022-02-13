@@ -3,11 +3,13 @@
 
 #include "bintree_elem.h"
 
-struct tree
-{
-	struct bintree_elem* root_  = nullptr;
+/* The binary sort tree (left - less, right - over) */
 
-    int size_ = 0;
+struct bintree
+{
+	struct bintreeElem *root_;  // = nullptr;
+
+    int size_;                  // = 0;
 };
 
 /////
@@ -25,5 +27,17 @@ foreach {1st argument is the type of ordering: PreOrder, PostOrder, InOrder}
 
 */
 
+RET_ERR_TYPE createTree(struct bintree* newTree);
 
-#endif BINTREE_H
+RET_ERR_TYPE add(struct bintree* tree, int value);
+
+RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem);
+
+
+//// DUMP
+
+void show_tree(struct bintree* tree);
+void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name);
+void print_all_elements_beauty(struct bintreeElem* elem, FILE* dump);
+
+#endif

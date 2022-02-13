@@ -16,10 +16,17 @@
 #define NEED_LINE    0
 #define NEED_PID     1
 
+#define RET_ERR_TYPE int
+
 enum ERRORS_TYPE
 {
     ERROR = -1,
-    ERR_ARGS = 2,
+    ERR_SUCCESS = 1,
+    ERR_ARGS,
+    ERR_TREE_NULL,
+    ERR_TREE_ELEM_NULL,
+    ERR_CALLOC,
+    ERR_ALREADY_EXISTS,
 
 };
 
