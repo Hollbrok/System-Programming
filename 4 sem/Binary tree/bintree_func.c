@@ -103,14 +103,15 @@ RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
 
 void show_tree(struct bintree* tree)
 {
-    graphviz_beauty_dump(tree ,"DUMP.dot");
+    graphviz_beauty_dump(tree ,"dump/DUMP.dot");
 
-    system("iconv -t UTF-8 -f  CP1251 < DUMP.dot > DUMP_temp.dot");
-    system("dot DUMP_temp.dot -Tpdf -o DUMP.pdf");
-    system("rm -rf DUMP.dot");
-    system("mv DUMP_temp.dot DUMP.dot");
+    system("iconv -t UTF-8 -f  CP1251 < dump/DUMP.dot > dump/DUMP_temp.dot");
+    system("dot dump/DUMP_temp.dot -Tpdf -o dump/DUMP.pdf");
+    system("rm -rf dump/DUMP.dot");
+    system("mv dump/DUMP_temp.dot dump/DUMP.dot");
 
-    system("okular DUMP.pdf");
+    //system("okular DUMP.pdf");
+
 
     return;
 }
@@ -119,38 +120,39 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
 {
     assert(dumpfile_name && "You passed nullptr dumpfile_name");
 
-    FILE* dump = fopen(dumpfile_name, "wb");
-    assert(dump && "Can't open dump.dot");
+    int fileDump = open(dumpfile_name, 0666, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
+    if (fileDump == -1)
+        ERR_HANDLER("open dumpfile");
 
-    fprintf(dump, "digraph name {\n");
-    fprintf(dump, "node [color = Red, fontname = Courier, style = filled, shape=ellipse, fillcolor = purple]\n");
-    fprintf(dump, "edge [color = Blue, style=dashed]\n");
+    dprintf(fileDump, "digraph name {\n");
+    dprintf(fileDump, "node [color = Red, fontname = Courier, style = filled, shape=ellipse, fillcolor = purple]\n");
+    dprintf(fileDump, "edge [color = Blue, style=dashed]\n");
 
-    print_all_elements_beauty(tree->root_, dump);
-    fprintf(dump, "}\n");
+    print_all_elements_beauty(tree->root_, fileDump);
+    dprintf(fileDump, "}\n");
 
-    fclose(dump);
+    close(fileDump);
     return;
 }
 
-void print_all_elements_beauty(struct bintreeElem* elem, FILE* dump)
+void print_all_elements_beauty(struct bintreeElem* elem, int dumpFile)
 {
     assert(elem && "elem is nullptr in print_all_elements");
 
     if (elem->left_ != NULL)
     {
-        print_all_elements_beauty(elem->left_, dump);
-        fprintf(dump, "\"%p\" -> \"%p\" [label=\"less\", fontcolor=darkblue]\n", elem, elem->left_);
+        print_all_elements_beauty(elem->left_, dumpFile);
+        dprintf(dumpFile, "\"%p\" -> \"%p\" [label=\"less\", fontcolor=darkblue]\n", elem, elem->left_);
     }
     if (elem->right_ != NULL)
     {
-        print_all_elements_beauty(elem->right_, dump);
-        fprintf(dump, "\"%p\" -> \"%p\" [label=\"more\", fontcolor=darkblue]\n", elem, elem->right_);
+        print_all_elements_beauty(elem->right_, dumpFile);
+        dprintf(dumpFile, "\"%p\" -> \"%p\" [label=\"more\", fontcolor=darkblue]\n", elem, elem->right_);
     }
 
     if ((elem->right_ == NULL) && (elem->left_ == NULL))
-        fprintf(dump, "\"%p\" [label = \"%d\",style = filled, fillcolor = lightgreen] \n", elem, elem->data_);
+        dprintf(dumpFile, "\"%p\" [label = \"%d\",style = filled, fillcolor = lightgreen] \n", elem, elem->data_);
     else
-        fprintf(dump, "\"%p\" [label = \"%d\",style = filled, fillcolor = purple] \n", elem, elem->data_);
+        dprintf(dumpFile, "\"%p\" [label = \"%d\",style = filled, fillcolor = purple] \n", elem, elem->data_);
     return;
 }
