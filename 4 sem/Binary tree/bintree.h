@@ -38,6 +38,6 @@ RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
 
 void show_tree(struct bintree* tree);
 void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name);
-void print_all_elements_beauty(struct bintreeElem* elem, FILE* dump);
+void print_all_elements_beauty(struct bintreeElem* elem, int dump);
 
 #endif
