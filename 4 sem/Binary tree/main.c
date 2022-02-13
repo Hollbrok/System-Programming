@@ -21,16 +21,23 @@ int main(int argc, char *argv[])
     add(tree, 3);
     add(tree, 6);
     add(tree, 100);
+    add(tree, 102);
     add(tree, 0);
     add(tree, -1);
-    add(tree, 5);
+    //add(tree, 5);
     add(tree, 66);
     add(tree, 7);
     add(tree, 1);
 
+    removeElem(tree, 4);
+    removeElem(tree, 6);
+
+
     fprintf(stderr, "size of tree = %d.\n", tree->size_);
+    fprintf(stderr, "root value = %d\n", tree->root_->data_);
 
     show_tree(tree);
+
 
     exit(EXIT_SUCCESS);
 }

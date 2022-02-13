@@ -91,7 +91,126 @@ RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
     return ERR_SUCCESS;
 }
 
+RET_ERR_TYPE removeElem(struct bintree* tree, int value)
+{
+    if (tree == NULL)
+    {
+        fprintf(stderr, "pointer to bintree in REMOVE_ELEM is null.\n");
+        return ERR_TREE_NULL; /* or exit? */
+    }
 
+    if (tree->root_ == NULL)
+    {
+        return ERR_EMPTY_TREE;
+    }
+    else
+    {
+        enum ERRORS_TYPE retVal = ERROR;
+
+        if (tree->root_->data_ == value)
+        {
+            struct bintreeElem *saveRoot = tree->root_;
+
+            if (tree->root_->right_ != NULL)
+            {
+                if (tree->root_->left_ != NULL)
+                {
+                    struct bintreeElem* iterElem = tree->root_->right_;
+                    
+                    while (iterElem->left_ != NULL)
+                        iterElem = iterElem->left_;
+
+                    iterElem->left_ = tree->root_->left_;
+                }
+
+                tree->root_ = tree->root_->right_;
+            }
+            else if (tree->root_->left_ != NULL)
+                tree->root_ = tree->root_->left_;
+
+            deconstrElem(saveRoot);
+            tree->size_--;
+        }
+        else /* check if there are left or|and right|left elems*/
+        {
+            if (value < tree->root_->data_)
+            { 
+                if ( (tree->root_->left_ != NULL) && (value != tree->root_->left_->data_))
+                    retVal = removeElemFrom(tree->root_->left_, value);
+                else if (tree->root_->left_ != NULL)
+                {
+                    struct bintreeElem *saveLeft = tree->root_->left_;
+
+                    if (tree->root_->left_->right_ != NULL)
+                    {
+                        struct bintreeElem *iterElem = tree->root_->left_->right_;
+                        while (iterElem->left_ != NULL)
+                            iterElem = iterElem->left_;
+
+                        iterElem->left_ = tree->root_->left_->left_;
+
+                        tree->root_->left_ = saveLeft->right_;
+
+                    }
+                    else if (tree->root_->left_->left_ != NULL)
+                        tree->root_->left_ = tree->root_->left_->left_;
+                    else
+                    {
+                        tree->root_->left_ = NULL;
+                    }
+                    
+                    deconstrElem(saveLeft);
+                }
+            }
+            else
+            {
+                if ( (tree->root_->right_ != NULL) && (value != tree->root_->right_->data_))
+                    retVal = removeElemFrom(tree->root_->right_, value);
+                else if (tree->root_->right_ != NULL)
+                {
+                    struct bintreeElem *saveRight = tree->root_->right_;
+
+                    if (tree->root_->right_->right_ != NULL)
+                    {
+                        struct bintreeElem *iterElem = tree->root_->right_->right_;
+                        while (iterElem->left_ != NULL)
+                            iterElem = iterElem->left_;
+
+                        iterElem->left_ = tree->root_->right_->left_;
+
+                        tree->root_->right_ = saveRight->right_;
+
+                    }
+                    else if (tree->root_->right_->left_ != NULL)
+                        tree->root_->right_ = tree->root_->right_->left_;
+                    else
+                    {
+                        tree->root_->right_ = NULL;
+                    }
+                    
+                    deconstrElem(saveRight);
+                }
+            }
+            if (retVal != ERR_NO_NEED_ELEM)
+                tree->size_--;
+        }
+    }
+
+    return ERR_SUCCESS;
+}
+
+/* remove element with data = value, but starting from mainElem (which is not included)*/
+RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
+{
+    fprintf(stderr, "NONONONONONONON.\n");
+
+    if (mainElem->data_ == value)
+    {
+        
+    }
+
+
+}
 
 
 
@@ -120,7 +239,7 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
 {
     assert(dumpfile_name && "You passed nullptr dumpfile_name");
 
-    int fileDump = open(dumpfile_name, 0666, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
+    int fileDump = open(dumpfile_name, 0666 | O_TRUNC, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
     if (fileDump == -1)
         ERR_HANDLER("open dumpfile");
 
@@ -129,7 +248,8 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
     dprintf(fileDump, "edge [color = Blue, style=dashed]\n");
 
     print_all_elements_beauty(tree->root_, fileDump);
-    dprintf(fileDump, "}\n");
+
+    dprintf(fileDump, "}//\n");
 
     close(fileDump);
     return;

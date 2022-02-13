@@ -14,3 +14,23 @@ RET_ERR_TYPE createElem(struct bintreeElem* retElem, int value)
 
     return ERR_SUCCESS;
 }
+
+RET_ERR_TYPE deconstrElem(struct bintreeElem* elem)
+{
+    if (elem == NULL)
+    {
+        fprintf(stderr, "pointer to elem in REMOVE is null.\n");
+        return ERR_TREE_ELEM_NULL; /* or exit? */
+    }
+    else
+    {
+        elem->left_  = NULL;
+        elem->right_ = NULL;
+        elem->data_  = 0;
+        free(elem);
+
+        return ERR_SUCCESS;
+    }
+
+
+}
