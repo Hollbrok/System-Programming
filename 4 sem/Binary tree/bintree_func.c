@@ -265,18 +265,62 @@ RET_ERR_TYPE clear(struct bintree* tree)
         return ERR_TREE_NULL; /* or exit? */
     }
 
-    clearFrom(tree->root_);
-    tree->size_ = 0;
+    if (tree->root_ != NULL)
+    {
+        enum ERRORS_TYPE retVal = ERROR;
+        retVal = clearFrom(tree->root_);
+        tree->size_ = 0;
+        
+        return retVal;
+    }
+    else
+        return ERR_TREE_ELEM_NULL;
 }
 
 RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem)
 {
+    enum ERRORS_TYPE retVal = ERROR;
+
     if (mainElem->left_ != NULL)
-        clearFrom(mainElem->left_);
+        if ( (retVal = clearFrom(mainElem->left_)) != ERR_SUCCESS)
+            return retVal;
     if (mainElem->right_ != NULL)
-        clearFrom(mainElem->right_);
+        if ( (retVal = clearFrom(mainElem->right_)) != ERR_SUCCESS)
+            return retVal;
     
-    deconstrElem(mainElem);
+    return deconstrElem(mainElem);
+}
+
+int search(struct bintree* tree, int value)
+{
+    if (tree == NULL)
+    {
+        fprintf(stderr, "pointer to bintree in SEARCH is null.\n");
+        return ERR_TREE_NULL; /* or exit? */
+    }
+
+    if (tree->root_ != NULL)
+        return searchFrom(tree->root_, value);
+    else
+        return ERR_TREE_ELEM_NULL;
+}
+
+RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value)
+{
+    if (mainElem->data_ == value)
+        return ERR_SUCCESS;
+    else
+    {
+        enum ERRORS_TYPE retVal = ERROR;
+
+        if (mainElem->left_ != NULL)
+            if ( (retVal = searchFrom(mainElem->left_, value) ) == ERR_SUCCESS)
+                return ERR_SUCCESS;
+        if (mainElem->right_ != NULL)
+            if ( (retVal = searchFrom(mainElem->right_, value) ) == ERR_SUCCESS)
+                return ERR_SUCCESS;
+        return ERROR;
+    }
 }
 
 /* ORDETING foreach */

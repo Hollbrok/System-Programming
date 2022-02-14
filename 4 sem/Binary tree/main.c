@@ -43,8 +43,11 @@ int main(int argc, char *argv[])
 
     //foreach(OR_T_INORDER, tree, testForeach, (void *) -1);
 
-    clear(tree);
-    add(tree, 1);
+    //clear(tree);
+    //add(tree, 1);
+
+    printf("9 %s here.\n", (search(tree, 9) == -1 ? "isn't" : "is" ));
+    printf("5 %s here.\n", (search(tree, 5) == -1 ? "isn't" : "is" ));
 
     show_tree(tree);
 
