@@ -202,13 +202,58 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
 /* remove element with data = value, but starting from mainElem (which is not included)*/
 RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
 {
-    fprintf(stderr, "NONONONONONONON.\n");
+    if (value < mainElem->data_)
+    { 
+        if ( (mainElem->left_ != NULL) && (value != mainElem->left_->data_))
+            return removeElemFrom(mainElem->left_, value);
+        else if (mainElem->left_ != NULL)
+        {
+            struct bintreeElem *saveLeft = mainElem->left_;
+            if (mainElem->left_->right_ != NULL)
+            {
+                struct bintreeElem *iterElem = mainElem->left_->right_;
+                while (iterElem->left_ != NULL)
+                    iterElem = iterElem->left_;
 
-    if (mainElem->data_ == value)
-    {
-        
+                iterElem->left_ = mainElem->left_->left_;
+                mainElem->left_ = saveLeft->right_;
+            }
+            else if (mainElem->left_->left_ != NULL)
+                mainElem->left_ = mainElem->left_->left_;
+            else
+            {
+                mainElem->left_ = NULL;
+            }
+                
+            deconstrElem(saveLeft);
+        }
     }
+    else
+    {
+        if ( (mainElem->right_ != NULL) && (value != mainElem->right_->data_))
+            return removeElemFrom(mainElem->right_, value);
+        else if (mainElem->right_ != NULL)
+        {
+            struct bintreeElem *saveRight = mainElem->right_;
+            if (mainElem->right_->right_ != NULL)
+            {
+                struct bintreeElem *iterElem = mainElem->right_->right_;
+                while (iterElem->left_ != NULL)
+                    iterElem = iterElem->left_;
 
+                iterElem->left_ = mainElem->right_->left_;
+                mainElem->right_ = saveRight->right_;
+            }
+            else if (mainElem->right_->left_ != NULL)
+                mainElem->right_ = mainElem->right_->left_;
+            else
+            {
+                mainElem->right_ = NULL;
+            }
+                
+            deconstrElem(saveRight);
+        }
+    }
 
 }
 

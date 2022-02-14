@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
     add(tree, 7);
     add(tree, 1);
 
-    removeElem(tree, 4);
-    removeElem(tree, 6);
+    removeElem(tree, 2);
+    removeElem(tree, 100);
 
 
     fprintf(stderr, "size of tree = %d.\n", tree->size_);
