@@ -41,6 +41,11 @@ RET_ERR_TYPE clear(struct bintree* tree);
 
 RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem);
 
+/* -1 if there is no elem with data == value in tree, another value on success. */
+int search(struct bintree* tree, int value);
+
+RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value);
+
 /* Postorder foreach */
 
 RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (func)(struct bintreeElem *, void *), void *x);

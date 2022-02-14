@@ -30,6 +30,7 @@ enum ERRORS_TYPE
 {
     ERROR = -1,
     ERR_SUCCESS = 1,
+    ERR_FAILURE,
     ERR_ARGS,
     ERR_TREE_NULL,
     ERR_TREE_ELEM_NULL,
