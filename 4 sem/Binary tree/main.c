@@ -4,6 +4,14 @@
  
 long getNumber(char *numString);
 
+int testForeach(struct bintreeElem *elem, void* x)
+{
+    if (elem->data_ > (int) x)
+        printf("[%d]\n", elem->data_);
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     struct bintree *tree = (struct bintree *) (calloc(1, sizeof(struct bintree)));
@@ -29,15 +37,16 @@ int main(int argc, char *argv[])
     add(tree, 7);
     add(tree, 1);
 
-    removeElem(tree, 2);
-    removeElem(tree, 100);
-
 
     fprintf(stderr, "size of tree = %d.\n", tree->size_);
     fprintf(stderr, "root value = %d\n", tree->root_->data_);
 
-    show_tree(tree);
+    //foreach(OR_T_INORDER, tree, testForeach, (void *) -1);
 
+    clear(tree);
+    add(tree, 1);
+
+    show_tree(tree);
 
     exit(EXIT_SUCCESS);
 }

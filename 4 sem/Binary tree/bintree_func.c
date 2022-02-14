@@ -257,9 +257,110 @@ RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
 
 }
 
+RET_ERR_TYPE clear(struct bintree* tree)
+{
+    if (tree == NULL)
+    {
+        fprintf(stderr, "pointer to bintree in CLEAR is null.\n");
+        return ERR_TREE_NULL; /* or exit? */
+    }
 
+    clearFrom(tree->root_);
+    tree->size_ = 0;
+}
 
+RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem)
+{
+    if (mainElem->left_ != NULL)
+        clearFrom(mainElem->left_);
+    if (mainElem->right_ != NULL)
+        clearFrom(mainElem->right_);
+    
+    deconstrElem(mainElem);
+}
 
+/* ORDETING foreach */
+
+RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (func)(struct bintreeElem *, void *), void *x)
+{
+    if (tree == NULL)
+    {
+        fprintf(stderr, "pointer to bintree in FOREACH is null.\n");
+        return ERR_TREE_NULL; /* or exit? */
+    }
+
+    if (tree->root_ == NULL)
+    {
+        fprintf(stderr, "pointer to root in FOREACH is null.\n");
+        return ERR_TREE_ELEM_NULL; /* or exit? */
+    }
+
+    return foreachFrom(orderType, tree->root_, func, x);
+}
+
+RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x)
+{
+    enum ERRORS_TYPE retVal = ERROR;
+
+    switch (orderType)
+    {
+    case OR_T_PREORDER:
+        func(mainElem, x);
+
+        if (mainElem->left_ != NULL)
+        {
+            retVal = foreachFrom(orderType, mainElem->left_, func, x);
+            if (retVal != ERR_SUCCESS)
+                return retVal;
+        }
+        if (mainElem->right_ != NULL)
+        {
+            retVal = foreachFrom(orderType, mainElem->right_, func, x);
+            if (retVal != ERR_SUCCESS)
+                return retVal;
+        }
+        break;
+    case OR_T_POSTORDER:
+        if (mainElem->left_ != NULL)
+        {
+            retVal = foreachFrom(orderType, mainElem->left_, func, x);
+            if (retVal != ERR_SUCCESS)
+                return retVal;
+        }
+        if (mainElem->right_ != NULL)
+        {
+            retVal = foreachFrom(orderType, mainElem->right_, func, x);
+            if (retVal != ERR_SUCCESS)
+                return retVal;
+        }
+    
+        func(mainElem, x);
+        break;
+    case OR_T_INORDER:
+        if (mainElem->left_ != NULL)
+        {
+            retVal = foreachFrom(orderType, mainElem->left_, func, x);
+            if (retVal != ERR_SUCCESS)
+                return retVal;
+        }
+
+        func(mainElem, x);
+
+        if (mainElem->right_ != NULL)
+        {
+            retVal = foreachFrom(orderType, mainElem->right_, func, x);
+            if (retVal != ERR_SUCCESS)
+                return retVal;
+        }
+    
+        break;
+    default: /* POSTORDER by default */
+        return foreachFrom(OR_T_POSTORDER, mainElem, func, x);
+        break;
+    }
+
+    return ERR_SUCCESS;
+}
 
 
 
