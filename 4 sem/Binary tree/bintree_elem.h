@@ -22,4 +22,6 @@ struct bintreeElem
 
 RET_ERR_TYPE createElem(struct bintreeElem* retElem, int value);
 
+RET_ERR_TYPE deconstrElem(struct bintreeElem* elem);
+
 #endif

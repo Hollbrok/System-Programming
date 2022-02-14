@@ -18,6 +18,14 @@
 
 #define RET_ERR_TYPE int
 
+enum ORDERING_TYPE
+{
+    OR_T_PREORDER, 
+    OR_T_POSTORDER,
+    OR_T_INORDER,
+
+};
+
 enum ERRORS_TYPE
 {
     ERROR = -1,
@@ -27,6 +35,8 @@ enum ERRORS_TYPE
     ERR_TREE_ELEM_NULL,
     ERR_CALLOC,
     ERR_ALREADY_EXISTS,
+    ERR_EMPTY_TREE,
+    ERR_NO_NEED_ELEM,
 
 };
 

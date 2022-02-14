@@ -33,11 +33,27 @@ RET_ERR_TYPE add(struct bintree* tree, int value);
 
 RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem);
 
+RET_ERR_TYPE removeElem(struct bintree* tree, int value);
+
+RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value);
+
+RET_ERR_TYPE clear(struct bintree* tree);
+
+RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem);
+
+/* Postorder foreach */
+
+RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (func)(struct bintreeElem *, void *), void *x);
+
+RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x);
+
 
 //// DUMP
 
 void show_tree(struct bintree* tree);
+
 void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name);
+
 void print_all_elements_beauty(struct bintreeElem* elem, int dump);
 
 #endif
