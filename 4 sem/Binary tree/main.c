@@ -1,5 +1,5 @@
-#include "libs.h"
-#include "bintree.h"
+#include "headers/libs.h"
+#include "headers/bintree.h"
 
  
 long getNumber(char *numString);
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     createTree(tree);
 
     add(tree, 5);
-    add(tree, 4);
+    /*add(tree, 4);
     add(tree, 2);
     add(tree, 3);
     add(tree, 6);
@@ -32,10 +32,9 @@ int main(int argc, char *argv[])
     add(tree, 102);
     add(tree, 0);
     add(tree, -1);
-    //add(tree, 5);
     add(tree, 66);
     add(tree, 7);
-    add(tree, 1);
+    add(tree, 1); */
 
 
     fprintf(stderr, "size of tree = %d.\n", tree->size_);
@@ -46,10 +45,14 @@ int main(int argc, char *argv[])
     //clear(tree);
     //add(tree, 1);
 
-    printf("9 %s here.\n", (search(tree, 9) == -1 ? "isn't" : "is" ));
-    printf("5 %s here.\n", (search(tree, 5) == -1 ? "isn't" : "is" ));
+    //printf("9 %s here.\n", (search(tree, 9) == -1 ? "isn't" : "is" ));
+    //printf("5 %s here.\n", (search(tree, 5) == -1 ? "isn't" : "is" ));
 
     show_tree(tree);
+
+    clear(tree);
+
+    fprintf(stderr, "after clear\n");
 
     exit(EXIT_SUCCESS);
 }

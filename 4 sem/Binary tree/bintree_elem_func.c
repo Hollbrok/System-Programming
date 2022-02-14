@@ -1,4 +1,4 @@
- #include "bintree_elem.h"
+ #include "headers/bintree_elem.h"
 
 RET_ERR_TYPE createElem(struct bintreeElem* retElem, int value)
 {
@@ -27,6 +27,8 @@ RET_ERR_TYPE deconstrElem(struct bintreeElem* elem)
         elem->left_  = NULL;
         elem->right_ = NULL;
         elem->data_  = 0;
+
+        fprintf(stderr, "2");
         free(elem);
 
         return ERR_SUCCESS;

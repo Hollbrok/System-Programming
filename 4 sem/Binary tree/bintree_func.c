@@ -1,15 +1,21 @@
- #include "bintree.h"
+ #include "headers/bintree.h"
 
 RET_ERR_TYPE createTree(struct bintree* newTree)
 {
+    printf("01\n");
+    printf("[%p]\n", newTree);
     if (newTree == NULL)
     {
+        printf("02\n");
         fprintf(stderr, "pointer to newTree in CREATE_TREE is null.\n");
         return ERR_TREE_NULL;
     }
-
+    
+    printf("1");
     newTree->root_ = NULL;
+    printf("2");
     newTree->size_ = 0;
+    printf("3\n");
 
     return ERR_SUCCESS;
 }
@@ -265,16 +271,21 @@ RET_ERR_TYPE clear(struct bintree* tree)
         return ERR_TREE_NULL; /* or exit? */
     }
 
-    if (tree->root_ != NULL)
+    if (tree->root_ != NULL && tree->size_ != 0)
     {
         enum ERRORS_TYPE retVal = ERROR;
         retVal = clearFrom(tree->root_);
+                
         tree->size_ = 0;
+
         
         return retVal;
     }
     else
+    {
+        fprintf(stderr, "root in NULL in CLEAR.\n");
         return ERR_TREE_ELEM_NULL;
+    }
 }
 
 RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem)
