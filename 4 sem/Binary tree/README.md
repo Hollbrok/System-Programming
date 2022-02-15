@@ -32,11 +32,11 @@ The output of tests will be in tests/report in the file __index.html__
 __src__:
 
 99.8% in total :
-    99.6%   262/263 (Line Coverage)
-    100.0 %	17 / 17 (Functions)
+    __99.6%__   262/263 (Line Coverage)
+    __100.0%__	17 / 17 (Functions)
 
 __tests__:
 
 100.0% in total:
-    100.0%	154 / 154 (Line Coverage)
-    100.0%	7 / 7 (Finctions)
+    __100.0%__	154 / 154 (Line Coverage)
+    __100.0%__	7 / 7 (Finctions)
