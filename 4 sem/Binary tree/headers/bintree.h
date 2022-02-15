@@ -27,7 +27,7 @@ RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value);
 
 RET_ERR_TYPE clear(struct bintree* tree);
 
-RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem);
+void clearFrom(struct bintreeElem* mainElem);
 
 /* -1 if there is no elem with data == value in tree, another value on success. */
 int search(struct bintree* tree, int value);
