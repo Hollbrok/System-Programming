@@ -1,11 +1,17 @@
 #include "../headers/bintree.h"
 
 int printElem(struct bintreeElem *elem, void *x);
+
 void testAdd(struct bintree* tree);
+
 void testForeach(struct bintree *tree);
+
 void testConstrDeconstr();
+
 void testRemoveElem_and_Show(struct bintree *tree);
+
 void testSearch(struct bintree *tree);
+
 int main(int argc, char *argv[])
 {
     struct bintree tree = {};
@@ -23,6 +29,7 @@ int main(int argc, char *argv[])
     testConstrDeconstr();
 
     clear(&tree);
+
     exit(EXIT_SUCCESS);
 }
 
