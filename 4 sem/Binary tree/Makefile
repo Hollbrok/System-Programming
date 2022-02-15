@@ -1,35 +1,67 @@
 VALGRIND_FLAGS = --leak-check=full --show-leak-kinds=all
 
-CODE_PATH = ./src
-TEST_PATH = ./tests
+CFLAGS = -g -MD -c
+GCOV_FLAGS = -fprofile-arcs -ftest-coverage
 
-all : main.o bt.o bt_elem.o
-	gcc -o out *.o && $(MAKE) clean
+CODE_PATH = src
+TEST_PATH = tests
 
-main.o : $(CODE_PATH)/main.c	
-	gcc -c -o main.o $(CODE_PATH)/main.c
+SOURCES = $(CODE_PATH)/main.c $(CODE_PATH)/bintree_func.c $(CODE_PATH)/bintree_elem_func.c
 
-bt.o : $(CODE_PATH)/bintree_func.c	
-	gcc -c -o bt.o $(CODE_PATH)/bintree_func.c
+OBJECTS = $(SOURCES:.c=.o)
 
-bt_elem.o : $(CODE_PATH)/bintree_elem_func.c	
-	gcc -c -o bt_elem.o $(CODE_PATH)/bintree_elem_func.c
+EXECUTABLE = xxx
+
+# -------------------------------
+
+all: $(SOURCES) $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(OBJECTS) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ $<
+
 
 run_test :
 	sh tests/run_tests.sh 
 
-valgrind : all
-	valgrind $(VALGRIND_FLAGS) ./out
-
-#CFLAGS = -g -MD -c
-
-#%.o: %.c 
-#		$(CC) $(CFLAGS) -o $@ $<
+valgrind : $(SOURCES)
+	valgrind $(VALGRIND_FLAGS) ./xxx
 
 
-#-include *.d
+-include *.d
 
 .PHONY: clean
 clean: 
-		rm *.o *.d *.gcda *.gcno *.gcov *.out *.dot *.jpg
+		cd src/ && rm -rf *.o *.d *.gcda *.gcno *.gcov *.out *.dot *.jpg
+
+
+#------------------------------------------------------------------------------
+
+#CFLAGS = -g -MD -c
+#GCOV_FLAGS = -fprofile-arcs -ftest-coverage
+
+#coverage: RB_Tree.gcno RB_Tree.gcda
+#	gcov -f RB_Tree.c && gcovr -f RB_Tree.c
+
+#test: unittests.out
+
+#%.o: %.c
+#	$(CC) $(CFLAGS) -o $@ $<
+
+#check_code.out: unittests.c RB_Tree.c
+#	$(CC) $(GCOV_FLAGS) -o check_code.out $^
+
+#unittests.out: unittests.c RB_Tree.c
+#	$(CC) -o RB_tree.out $^
+
+#RB_Tree.gcno: unittests.c RB_Tree.c
+#	$(CC) $(GCOV_FLAGS) -o check_code.out $^
+
+#RB_Tree.gcda: check_code.out
+#	./check_code.out
+#-include *.d
+
+
 
