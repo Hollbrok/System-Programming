@@ -1,16 +1,25 @@
-all: test
+VALGRIND_FLAGS = --leak-check=full --show-leak-kinds=all
 
-test : main.o bt.o bt_elem.o
-	gcc -o out *.o
+CODE_PATH = ./src
+TEST_PATH = ./tests
 
-main.o : main.c	
-	gcc -c -o main.o main.c
+all : main.o bt.o bt_elem.o
+	gcc -o out *.o && $(MAKE) clean
 
-bt.o : bintree_func.c	
-	gcc -c -o bt.o bintree_func.c
+main.o : $(CODE_PATH)/main.c	
+	gcc -c -o main.o $(CODE_PATH)/main.c
 
-bt_elem.o : bintree_elem_func.c	
-	gcc -c -o bt_elem.o bintree_elem_func.c
+bt.o : $(CODE_PATH)/bintree_func.c	
+	gcc -c -o bt.o $(CODE_PATH)/bintree_func.c
+
+bt_elem.o : $(CODE_PATH)/bintree_elem_func.c	
+	gcc -c -o bt_elem.o $(CODE_PATH)/bintree_elem_func.c
+
+run_test :
+	sh tests/run_tests.sh 
+
+valgrind : all
+	valgrind $(VALGRIND_FLAGS) ./out
 
 #CFLAGS = -g -MD -c
 
@@ -20,6 +29,7 @@ bt_elem.o : bintree_elem_func.c
 
 #-include *.d
 
-#.PHONY: clean
-#clean: rm *.o *.d *.gcda *.gcno *.gcov *.out *.dot *.jpg
+.PHONY: clean
+clean: 
+		rm *.o *.d *.gcda *.gcno *.gcov *.out *.dot *.jpg
 
