@@ -429,9 +429,7 @@ void show_tree(struct bintree* tree)
     system("dot dump/DUMP_temp.dot -Tpdf -o dump/DUMP.pdf");
     system("rm -rf dump/DUMP.dot");
     system("mv dump/DUMP_temp.dot dump/DUMP.dot");
-
-    //system("okular DUMP.pdf");
-
+ 
 
     return;
 }
@@ -440,12 +438,11 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
 {
     assert(dumpfile_name && "You passed nullptr dumpfile_name");
 
-    int fileDump = open(dumpfile_name, 0666 | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
-    if (fileDump == -1)
-        if (errno == EEXIST)
-            fileDump = open(dumpfile_name, 0666 | O_TRUNC, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
-        else
-            ERR_HANDLER("open dumpfile");
+    mkdir("dump", S_IRWXU|S_IRWXG|S_IROTH);
+
+    int fileDump = open(dumpfile_name, 0666 | O_TRUNC | O_CREAT, S_IRWXU|S_IRWXG|S_IROTH);
+    if (fileDump == -1 && errno != EEXIST)
+        ERR_HANDLER("open dumpfile");
 
     dprintf(fileDump, "digraph name {\n");
     dprintf(fileDump, "node [color = Red, fontname = Courier, style = filled, shape=ellipse, fillcolor = purple]\n");
