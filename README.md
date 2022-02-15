@@ -1,6 +1,6 @@
 # My Projects for Lunev course
 
-- [ ] __1 semestr__: <details><summary></summary>
+- [X] __1 semestr__: <details><summary></summary>
     - [X] Warm-up tasks <details><summary></summary>
         - [X] __Show numbers__ from _1_ to _X_, where X is argument of the cmd line.
         - [X] __Copy__ _f1_ data to _f2_, where is f1 and f2 are argument of the cmd line.
@@ -16,9 +16,9 @@
     - [X] __Pipes(send file between all children via parent)__
     </details>
 - [ ] __2 semestr__ <details><summary></summary>
-    - [x] __Binary tree of search__
-    - [x] __Threads integrator__
-    - [X] __Multy-PC integrator__
+    - [X] __Binary tree of search__
+    - [ ] __Threads integrator__
+    - [ ] __Multy-PC integrator__
     </details>
 </details>
 
