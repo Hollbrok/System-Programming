@@ -438,15 +438,15 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
 {
     assert(dumpfile_name && "You passed nullptr dumpfile_name");
 
-    mkdir("dump", S_IRWXU|S_IRWXG|S_IROTH);
+    mkdir("dump", S_IRWXU | S_IRWXG | S_IROTH);
 
-    int fileDump = open(dumpfile_name, 0666 | O_TRUNC | O_CREAT, S_IRWXU|S_IRWXG|S_IROTH);
+    int fileDump = open(dumpfile_name, 0666 | O_TRUNC, S_IRWXU | S_IRWXG | S_IROTH);
     if (fileDump == -1 && errno != EEXIST)
         ERR_HANDLER("open dumpfile");
 
     dprintf(fileDump, "digraph name {\n");
-    dprintf(fileDump, "node [color = Red, fontname = Courier, style = filled, shape=ellipse, fillcolor = purple]\n");
-    dprintf(fileDump, "edge [color = Blue, style=dashed]\n");
+    dprintf(fileDump, "node [color = Red, fontname = Courier, style = filled, shape = ellipse, fillcolor = purple]\n");
+    dprintf(fileDump, "edge [color = Blue, style = dashed]\n");
 
     fprintf(stderr, "TEST2\n");
 
@@ -464,24 +464,24 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
     return;
 }
 
-void print_all_elements_beauty(struct bintreeElem* elem, int dumpFile)
+void print_all_elements_beauty(struct bintreeElem* elem, int dump)
 {
     assert(elem && "elem is nullptr in print_all_elements");
 
     if (elem->left_ != NULL)
     {
-        print_all_elements_beauty(elem->left_, dumpFile);
-        dprintf(dumpFile, "\"%p\" -> \"%p\" [label=\"less\", fontcolor=darkblue]\n", elem, elem->left_);
+        print_all_elements_beauty(elem->left_, dump);
+        dprintf(dump, "\"%p\" -> \"%p\" [label=\"less\", fontcolor=darkblue]\n", elem, elem->left_);
     }
     if (elem->right_ != NULL)
     {
-        print_all_elements_beauty(elem->right_, dumpFile);
-        dprintf(dumpFile, "\"%p\" -> \"%p\" [label=\"more\", fontcolor=darkblue]\n", elem, elem->right_);
+        print_all_elements_beauty(elem->right_, dump);
+        dprintf(dump, "\"%p\" -> \"%p\" [label=\"more\", fontcolor=darkblue]\n", elem, elem->right_);
     }
 
     if ((elem->right_ == NULL) && (elem->left_ == NULL))
-        dprintf(dumpFile, "\"%p\" [label = \"%d\",style = filled, fillcolor = lightgreen] \n", elem, elem->data_);
+        dprintf(dump, "\"%p\" [label = \"%d\",style = filled, fillcolor = lightgreen] \n", elem, elem->data_);
     else
-        dprintf(dumpFile, "\"%p\" [label = \"%d\",style = filled, fillcolor = purple] \n", elem, elem->data_);
+        dprintf(dump, "\"%p\" [label = \"%d\",style = filled, fillcolor = purple] \n", elem, elem->data_);
     return;
 }
