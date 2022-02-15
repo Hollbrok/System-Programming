@@ -1,2 +1,2 @@
 all:
-	g++ main.c  -o prog1
+	g++ main.c -o prog1
