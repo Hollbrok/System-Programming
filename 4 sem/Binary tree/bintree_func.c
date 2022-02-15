@@ -1,5 +1,22 @@
  #include "headers/bintree.h"
 
+void *TEST_calloc(size_t nmemb, size_t size)
+{
+    static int randomErr = 1;
+
+    if ( randomErr % 30 == 0)
+    {
+        randomErr++;
+        return NULL;
+    }
+    else
+    {
+        randomErr++;
+        return calloc(nmemb, size);
+    }
+}
+
+
 RET_ERR_TYPE createTree(struct bintree* newTree)
 {
     printf("01\n");
@@ -28,7 +45,7 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
         return ERR_TREE_NULL; /* or exit? */
     }
 
-    struct bintreeElem *newElem = (struct bintreeElem*) (calloc(1, sizeof(struct bintreeElem))); 
+    struct bintreeElem *newElem = (struct bintreeElem*) (TEST_calloc(1, sizeof(struct bintreeElem))); 
     if (newElem == NULL)
     {
         fprintf(stderr, "can't calloc memory for newElem in ADD.\n");
@@ -37,8 +54,7 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
 
     enum ERRORS_TYPE retErrVal = -1;
 
-    if ( (retErrVal = createElem(newElem, value)) != ERR_SUCCESS)
-        return retErrVal;//exit(retVal);
+    createElem(newElem, value); /* can't return any error if newElem isn't NULL*/
 
     if (tree->root_ == NULL)
     {
@@ -135,6 +151,7 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
                 tree->root_ = tree->root_->left_;
 
             deconstrElem(saveRoot);
+            tree->root_ = NULL;
             tree->size_--;
         }
         else /* check if there are left or|and right|left elems*/
@@ -273,31 +290,27 @@ RET_ERR_TYPE clear(struct bintree* tree)
 
     if (tree->root_ != NULL && tree->size_ != 0)
     {
-        enum ERRORS_TYPE retVal = ERROR;
-        retVal = clearFrom(tree->root_);
+        clearFrom(tree->root_);
                 
         tree->size_ = 0;
 
-        
-        return retVal;
+        return ERR_SUCCESS;        
     }
     else
     {
-        fprintf(stderr, "root in NULL in CLEAR.\n");
+        fprintf(stderr, "root is NULL in CLEAR. [%p]\n", tree->root_);
         return ERR_TREE_ELEM_NULL;
     }
 }
 
-RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem)
+void clearFrom(struct bintreeElem* mainElem)
 {
     enum ERRORS_TYPE retVal = ERROR;
 
     if (mainElem->left_ != NULL)
-        if ( (retVal = clearFrom(mainElem->left_)) != ERR_SUCCESS)
-            return retVal;
+        clearFrom(mainElem->left_);
     if (mainElem->right_ != NULL)
-        if ( (retVal = clearFrom(mainElem->right_)) != ERR_SUCCESS)
-            return retVal;
+        clearFrom(mainElem->right_);
     
     return deconstrElem(mainElem);
 }
@@ -402,7 +415,15 @@ RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainE
 
 void show_tree(struct bintree* tree)
 {
+    if (tree == NULL)
+    {
+        fprintf(stderr, "null tree in show_tree.\n");
+        return;
+    }
+
+    fprintf(stderr, "TEST1\n");
     graphviz_beauty_dump(tree ,"dump/DUMP.dot");
+    fprintf(stderr, "TEST3\n");
 
     system("iconv -t UTF-8 -f  CP1251 < dump/DUMP.dot > dump/DUMP_temp.dot");
     system("dot dump/DUMP_temp.dot -Tpdf -o dump/DUMP.pdf");
@@ -419,15 +440,26 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
 {
     assert(dumpfile_name && "You passed nullptr dumpfile_name");
 
-    int fileDump = open(dumpfile_name, 0666 | O_TRUNC, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
+    int fileDump = open(dumpfile_name, 0666 | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
     if (fileDump == -1)
-        ERR_HANDLER("open dumpfile");
+        if (errno == EEXIST)
+            fileDump = open(dumpfile_name, 0666 | O_TRUNC, S_IRUSR | S_IWUSR | S_IWOTH | S_IROTH);
+        else
+            ERR_HANDLER("open dumpfile");
 
     dprintf(fileDump, "digraph name {\n");
     dprintf(fileDump, "node [color = Red, fontname = Courier, style = filled, shape=ellipse, fillcolor = purple]\n");
     dprintf(fileDump, "edge [color = Blue, style=dashed]\n");
 
-    print_all_elements_beauty(tree->root_, fileDump);
+    fprintf(stderr, "TEST2\n");
+
+    if (tree->root_ != NULL)
+    {
+        fprintf(stderr, "TEST ROOT IS NOT A NULL\n");
+        print_all_elements_beauty(tree->root_, fileDump);
+    }
+    else
+        fprintf(stderr, "NULL root in DUMP-func.\n");
 
     dprintf(fileDump, "}//\n");
 
