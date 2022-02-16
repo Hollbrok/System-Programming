@@ -25,15 +25,11 @@ RET_ERR_TYPE deconstrElem(struct bintreeElem* elem)
     else
     {
         elem->left_  = NULL;
-        elem->right_ = NULL;
-
-        fprintf(stderr, "#BF %d\n", elem->data_);
-        
+        elem->right_ = NULL;        
         elem->data_  = 0;
 
         free(elem);
         elem = NULL;
-        fprintf(stderr, "GOOD FREE\n");
 
         return ERR_SUCCESS;
     }

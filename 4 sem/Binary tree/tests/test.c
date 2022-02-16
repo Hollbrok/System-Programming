@@ -61,7 +61,6 @@ int printElem(struct bintreeElem *elem, void *x)
 
 void testForeach(struct bintree *tree) 
 {
-    fprintf(stderr, "TTT: %p\n", tree->root_);
     for (int i = 0; i < 10; i++)
     {
         foreach(OR_T_INORDER, tree, printElem, (void *) -1);
@@ -77,6 +76,9 @@ void testForeach(struct bintree *tree)
     foreach(OR_T_DEFAULT, tree, NULL, NULL);
     
     fprintf(stderr, "FOREACH test SUCCESS.\n");
+
+    clear(&treeNullRoot);
+
     return;
 }
 
@@ -86,15 +88,16 @@ void testRemoveElem_and_Show(struct bintree *tree)
 
     struct bintree treeNullRoot = {.root_ = NULL}; 
     removeElem (&treeNullRoot, 1);
+    clear(&treeNullRoot);
 
-    //show_tree(tree);
+    show_tree(tree);
 
     removeElem(tree, 5);
     removeElem(tree, 66);
     removeElem(tree, -1);
     removeElem(tree, 6);
 
-    struct bintree testTree = {.root_ = NULL};
+    struct bintree testTree = {.root_ = NULL}; 
 
     /* tests of operations on the left subtree */
 
@@ -104,6 +107,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
     removeElem(&testTree, 10);
     removeElem(&testTree, 9);
 
+    
     add(&testTree, 10);
     add(&testTree, 11);
 
@@ -120,7 +124,6 @@ void testRemoveElem_and_Show(struct bintree *tree)
 
     removeElem(&testTree, 19);
 
-    
     add(&testTree, 29);
     add(&testTree, 28);
     add(&testTree, 27);
@@ -133,6 +136,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
     /* on the right subtree*/
 
     clear(&testTree);
+
 
     add(&testTree, 11);
     add(&testTree, 10);
@@ -158,7 +162,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
 
     clear(&testTree);
 
-    clear(NULL);
+    clear(NULL); 
     
     /* to test removeFrom needs "big" tree */
 
@@ -208,6 +212,9 @@ void testRemoveElem_and_Show(struct bintree *tree)
     removeElem(tree, 128);
 
     show_tree(&testTree);
+    
+
+
     show_tree(NULL);
 
 
@@ -215,6 +222,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
     clear(&nullRoot);
     show_tree(&nullRoot);
 
+    clear(&testTree);
 
     return;
 }
@@ -241,6 +249,7 @@ void testSearch(struct bintree *tree)
 
     search(tree, 24);
 
+    clear(&nullRoot);
 }
 
 void testConstrDeconstr()

@@ -49,10 +49,6 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
         fprintf(stderr, "can't calloc memory for newElem in ADD.\n");
         return ERR_CALLOC;
     }
-    else
-    {
-        fprintf(stderr, "GOOD CALLOC\n");
-    }
 
     enum ERRORS_TYPE retErrVal = -1;
 
@@ -66,19 +62,13 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
     }
     else /* there is at least root in tree */
     {
-        //fprintf(stderr, "not a root.\n");
         retErrVal = addTo(tree->root_, newElem);
 
         if (retErrVal == ERR_SUCCESS)
-        {
-            fprintf(stderr, "ERROR = SUCCESS\n");
             tree->size_++;
-        }
         else
         {
-            fprintf(stderr, "ERROR: retVal = %d\n", (int) retErrVal);
             free(newElem);
-            fprintf(stderr, "ERROR: GOOD FREE. retVal = %d\n", (int) retErrVal);
             return retErrVal;
         }
     }
@@ -89,21 +79,12 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
 
 RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
 {
-    //fprintf(stderr, "DATA = %d.\n", insertElem->data_);
-
     if (insertElem->data_ < mainElem->data_)
     {
         if (mainElem->left_ == NULL)
-        {
-            //fprintf(stderr, "insert on the left %d.\n", insertElem->data_);
             mainElem->left_ = insertElem;
-            //fprintf(stderr, "new left_");
-        }
         else
-        {
-            //fprintf(stderr, "no null.\n");
             return addTo(mainElem->left_, insertElem);  
-        }
     }
     else if (insertElem->data_ > mainElem->data_)
     {
@@ -113,11 +94,7 @@ RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
             return addTo(mainElem->right_, insertElem);  
     }
     else 
-    {
-        //fprintf(stderr, "TETETTETE.\n");
         return ERR_ALREADY_EXISTS;
-        /* equal => do nothing? */
-    }
 
 
     return ERR_SUCCESS;
@@ -161,7 +138,6 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
                 tree->root_ = tree->root_->left_;
 
             deconstrElem(saveRoot);
-            //tree->root_ = NULL;
             tree->size_--;
 
             if (tree->size_ == 0)
