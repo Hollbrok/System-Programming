@@ -24,35 +24,16 @@ int main(int argc, char *argv[])
     createTree(tree);
 
     add(tree, 5);
-    /*add(tree, 4);
-    add(tree, 2);
-    add(tree, 3);
-    add(tree, 6);
-    add(tree, 100);
-    add(tree, 102);
-    add(tree, 0);
-    add(tree, -1);
-    add(tree, 66);
-    add(tree, 7);
-    add(tree, 1); */
-
 
     fprintf(stderr, "size of tree = %d.\n", tree->size_);
     fprintf(stderr, "root value = %d\n", tree->root_->data_);
 
-    //foreach(OR_T_INORDER, tree, testForeach, (void *) -1);
-
-    //clear(tree);
-    //add(tree, 1);
-
-    //printf("9 %s here.\n", (search(tree, 9) == -1 ? "isn't" : "is" ));
-    //printf("5 %s here.\n", (search(tree, 5) == -1 ? "isn't" : "is" ));
-
     show_tree(tree);
 
     clear(tree);
+    
+    free(tree);
 
-    fprintf(stderr, "after clear\n");
 
     exit(EXIT_SUCCESS);
 }

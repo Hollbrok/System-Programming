@@ -4,14 +4,12 @@ void *TEST_calloc(size_t nmemb, size_t size)
 {
     static int randomErr = 1;
 
-    if ( randomErr % 30 == 0)
+    if ( randomErr++ % 50 == 0)
     {
-        randomErr++;
         return NULL;
     }
     else
     {
-        randomErr++;
         return calloc(nmemb, size);
     }
 }
@@ -51,6 +49,10 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
         fprintf(stderr, "can't calloc memory for newElem in ADD.\n");
         return ERR_CALLOC;
     }
+    else
+    {
+        fprintf(stderr, "GOOD CALLOC\n");
+    }
 
     enum ERRORS_TYPE retErrVal = -1;
 
@@ -58,7 +60,7 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
 
     if (tree->root_ == NULL)
     {
-        //fprintf(stderr, "root.\n");
+        fprintf(stderr, "root is null.\n");
         tree->root_ = newElem;
         tree->size_ = 1;
     }
@@ -67,10 +69,18 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
         //fprintf(stderr, "not a root.\n");
         retErrVal = addTo(tree->root_, newElem);
 
-        if (retErrVal != ERR_ALREADY_EXISTS)
+        if (retErrVal == ERR_SUCCESS)
+        {
+            fprintf(stderr, "ERROR = SUCCESS\n");
             tree->size_++;
-
-        return retErrVal;
+        }
+        else
+        {
+            fprintf(stderr, "ERROR: retVal = %d\n", (int) retErrVal);
+            free(newElem);
+            fprintf(stderr, "ERROR: GOOD FREE. retVal = %d\n", (int) retErrVal);
+            return retErrVal;
+        }
     }
 
 
@@ -151,8 +161,12 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
                 tree->root_ = tree->root_->left_;
 
             deconstrElem(saveRoot);
-            tree->root_ = NULL;
+            //tree->root_ = NULL;
             tree->size_--;
+
+            if (tree->size_ == 0)
+                tree->root_ = NULL;
+            
         }
         else /* check if there are left or|and right|left elems*/
         {
@@ -293,12 +307,12 @@ RET_ERR_TYPE clear(struct bintree* tree)
         clearFrom(tree->root_);
                 
         tree->size_ = 0;
-
+        tree->root_ = NULL;
         return ERR_SUCCESS;        
     }
     else
     {
-        fprintf(stderr, "root is NULL in CLEAR. [%p]\n", tree->root_);
+        fprintf(stderr, "root is NULL in CLEAR.\n");
         return ERR_TREE_ELEM_NULL;
     }
 }
@@ -312,7 +326,7 @@ void clearFrom(struct bintreeElem* mainElem)
     if (mainElem->right_ != NULL)
         clearFrom(mainElem->right_);
     
-    return deconstrElem(mainElem);
+    deconstrElem(mainElem);
 }
 
 int search(struct bintree* tree, int value)
