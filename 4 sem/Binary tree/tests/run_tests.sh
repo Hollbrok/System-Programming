@@ -1,3 +1,4 @@
+make
 cd ./tests
 gcc --coverage ../src/bintree_elem_func.c ../src/bintree_func.c ./test.c -o ./test
 ./test

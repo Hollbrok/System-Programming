@@ -14,7 +14,7 @@ EXECUTABLE = xxx
 
 # -------------------------------
 
-all: $(SOURCES) $(EXECUTABLE)
+all: $(SOURCES) $(EXECUTABLE) clean
 
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $@
@@ -24,18 +24,18 @@ $(EXECUTABLE): $(OBJECTS)
 
 
 run_test :
-	sh tests/run_tests.sh 
+	sh tests/run_tests.sh && tests/
 
 valgrind : $(SOURCES)
-	valgrind $(VALGRIND_FLAGS) ./xxx
+	valgrind $(VALGRIND_FLAGS) tests/test   
 
+# valgrind --leak-check=full --show-leak-kinds=all ./xxx 
 
 -include *.d
 
 .PHONY: clean
+
 clean: 
 		cd src/ && rm -rf *.o *.d *.gcda *.gcno *.gcov *.out *.dot *.jpg
-
-
 
 
