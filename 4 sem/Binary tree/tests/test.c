@@ -14,21 +14,30 @@ void testSearch(struct bintree *tree);
 
 int main(int argc, char *argv[])
 {
-    struct bintree tree = {};
+    struct bintree tree_2 = {};
 
-    createTree(&tree);
+    initTree(&tree_2);
 
-    testAdd(&tree);
+    clear(&tree_2);
 
-    testForeach(&tree);
+    struct bintree tree;
+    struct bintree *ptree = NULL;
 
-    testRemoveElem_and_Show(&tree);
+    if ( (ptree = createTree()) == NULL)
+        ptree = createTree();
 
-    testSearch(&tree);
+    testAdd(ptree);
+
+    testForeach(ptree);
+
+    testRemoveElem_and_Show(ptree);
+
+    testSearch(ptree);
 
     testConstrDeconstr();
 
-    clear(&tree);
+    clear(ptree);
+    free(ptree);
 
     exit(EXIT_SUCCESS);
 }
@@ -48,6 +57,8 @@ void testAdd(struct bintree* tree)
     add(tree, -1);
     add(tree, 66);
     add(tree, 17);
+
+    addTo(NULL, NULL);
 
     add(NULL, 1);
 }
@@ -254,8 +265,12 @@ void testSearch(struct bintree *tree)
 
 void testConstrDeconstr()
 {
-    createElem(NULL, 1);
+    initElem(NULL, 1);
+
+    struct bintreeElem testElem;
+    initElem(&testElem, 1);
+
     deconstrElem(NULL);
-    createTree(NULL);
+    initTree(NULL);
 }
 

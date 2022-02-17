@@ -1,10 +1,10 @@
- #include "../headers/bintree.h"
+#include "../headers/bintree.h"
 
 void *TEST_calloc(size_t nmemb, size_t size)
 {
     static int randomErr = 1;
 
-    if ( randomErr++ % 50 == 0)
+    if ( (randomErr++ % 55 == 0) || randomErr == 2)
     {
         return NULL;
     }
@@ -56,7 +56,7 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
     if (newElem == NULL)
         return ERR_CALLOC;
 
-    enum ERRORS_TYPE retErrVal = -1;
+    enum ERRORS_TYPE retErrVal = ERROR;
 
     if (tree->root_ == NULL)
     {
@@ -71,11 +71,10 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
             tree->size_++;
         else
         {
-            deconstrElem(newElem);//free(newElem);
+            free(newElem);
             return retErrVal;
         }
     }
-
 
     return ERR_SUCCESS;
 }
