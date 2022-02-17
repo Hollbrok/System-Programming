@@ -12,15 +12,14 @@ struct bintreeElem
     int data_;// = 0;
 };
 
-/////
+/* */
 
-/*
+void *TEST_calloc(size_t nmemb, size_t size);
 
-    create_elem 
+RET_ERR_TYPE initElem(struct bintreeElem* retElem, int value);
 
-*/
+struct bintreeElem* createElem(int value);
 
-RET_ERR_TYPE createElem(struct bintreeElem* retElem, int value);
 
 RET_ERR_TYPE deconstrElem(struct bintreeElem* elem);
 

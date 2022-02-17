@@ -15,24 +15,33 @@ void *TEST_calloc(size_t nmemb, size_t size)
 }
 
 
-RET_ERR_TYPE createTree(struct bintree* newTree)
+RET_ERR_TYPE initTree(struct bintree* newTree)
 {
-    printf("01\n");
-    printf("[%p]\n", newTree);
     if (newTree == NULL)
     {
-        printf("02\n");
         fprintf(stderr, "pointer to newTree in CREATE_TREE is null.\n");
         return ERR_TREE_NULL;
     }
     
-    printf("1");
     newTree->root_ = NULL;
-    printf("2");
     newTree->size_ = 0;
-    printf("3\n");
 
     return ERR_SUCCESS;
+}
+
+struct bintree* createTree()
+{
+    struct bintree *newTree = (struct bintree *) TEST_calloc(1, sizeof(struct bintree));
+    if (newTree == NULL)
+    {
+        fprintf(stderr, "Can't calloc for tree in CREATE_TREE.\n");
+        return newTree;
+    }
+
+    newTree->root_ = NULL;
+    newTree->size_ = 0;
+
+    return newTree;
 }
 
 RET_ERR_TYPE add(struct bintree* tree, int value)
@@ -43,20 +52,14 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
         return ERR_TREE_NULL; /* or exit? */
     }
 
-    struct bintreeElem *newElem = (struct bintreeElem*) (TEST_calloc(1, sizeof(struct bintreeElem))); 
+    struct bintreeElem *newElem = createElem(value);
     if (newElem == NULL)
-    {
-        fprintf(stderr, "can't calloc memory for newElem in ADD.\n");
         return ERR_CALLOC;
-    }
 
     enum ERRORS_TYPE retErrVal = -1;
 
-    createElem(newElem, value); /* can't return any error if newElem isn't NULL*/
-
     if (tree->root_ == NULL)
     {
-        fprintf(stderr, "root is null.\n");
         tree->root_ = newElem;
         tree->size_ = 1;
     }
@@ -68,7 +71,7 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
             tree->size_++;
         else
         {
-            free(newElem);
+            deconstrElem(newElem);//free(newElem);
             return retErrVal;
         }
     }
@@ -79,6 +82,9 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
 
 RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
 {
+    if (mainElem == NULL || insertElem == NULL)
+        return ERR_TREE_ELEM_NULL;
+
     if (insertElem->data_ < mainElem->data_)
     {
         if (mainElem->left_ == NULL)
@@ -305,7 +311,7 @@ void clearFrom(struct bintreeElem* mainElem)
     deconstrElem(mainElem);
 }
 
-int search(struct bintree* tree, int value)
+RET_ERR_TYPE search(struct bintree* tree, int value)
 {
     if (tree == NULL)
     {

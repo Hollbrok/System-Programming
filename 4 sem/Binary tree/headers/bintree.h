@@ -14,23 +14,34 @@ struct bintree
 
 /////
 
+void *TEST_calloc(size_t nmemb, size_t size);
 
-RET_ERR_TYPE createTree(struct bintree* newTree);
+RET_ERR_TYPE initTree(struct bintree* newTree);
+
+struct bintree* createTree();
+
+/* */
 
 RET_ERR_TYPE add(struct bintree* tree, int value);
 
 RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem);
 
+/* */
+
 RET_ERR_TYPE removeElem(struct bintree* tree, int value);
 
 RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value);
+
+/*  */
 
 RET_ERR_TYPE clear(struct bintree* tree);
 
 void clearFrom(struct bintreeElem* mainElem);
 
+
 /* -1 if there is no elem with data == value in tree, another value on success. */
-int search(struct bintree* tree, int value);
+
+RET_ERR_TYPE search(struct bintree* tree, int value);
 
 RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value);
 

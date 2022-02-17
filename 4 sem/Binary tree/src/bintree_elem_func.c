@@ -1,6 +1,6 @@
  #include "../headers/bintree_elem.h"
 
-RET_ERR_TYPE createElem(struct bintreeElem* retElem, int value)
+RET_ERR_TYPE initElem(struct bintreeElem* retElem, int value)
 {
     if (retElem == NULL)
     {
@@ -9,10 +9,24 @@ RET_ERR_TYPE createElem(struct bintreeElem* retElem, int value)
     }
 
     retElem->left_  = NULL;
-    retElem->right_ = NULL;
+    retElem->right_ = NULL; 
     retElem->data_  = value;
 
     return ERR_SUCCESS;
+}
+
+struct bintreeElem* createElem(int value)
+{
+    struct bintreeElem *newElem = (struct bintreeElem *) TEST_calloc(1, sizeof(struct bintreeElem));
+    if (newElem == NULL)
+    {
+        fprintf(stderr, "Can't calloc for elem in CREATE_ELEM.\n");
+        return newElem;
+    }
+
+    newElem->left_  = NULL;
+    newElem->right_ = NULL; 
+    newElem->data_  = value;
 }
 
 RET_ERR_TYPE deconstrElem(struct bintreeElem* elem)
