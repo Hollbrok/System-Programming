@@ -125,17 +125,14 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
         {
             struct bintreeElem *saveRoot = tree->root_;
 
-            if (tree->root_->right_ != NULL)
+            if ( (tree->root_->right_ != NULL) && (tree->root_->left_ != NULL) )
             {
-                if (tree->root_->left_ != NULL)
-                {
-                    struct bintreeElem* iterElem = tree->root_->right_;
+                struct bintreeElem* iterElem = tree->root_->right_;
                     
-                    while (iterElem->left_ != NULL)
-                        iterElem = iterElem->left_;
+                while (iterElem->left_ != NULL)
+                    iterElem = iterElem->left_;
 
-                    iterElem->left_ = tree->root_->left_;
-                }
+                iterElem->left_ = tree->root_->left_;
 
                 tree->root_ = tree->root_->right_;
             }
@@ -151,66 +148,11 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
         }
         else /* check if there are left or|and right|left elems*/
         {
-            if (value < tree->root_->data_)
-            { 
-                if ( (tree->root_->left_ != NULL) && (value != tree->root_->left_->data_))
-                    retVal = removeElemFrom(tree->root_->left_, value);
-                else if (tree->root_->left_ != NULL)
-                {
-                    struct bintreeElem *saveLeft = tree->root_->left_;
-
-                    if (tree->root_->left_->right_ != NULL)
-                    {
-                        struct bintreeElem *iterElem = tree->root_->left_->right_;
-                        while (iterElem->left_ != NULL)
-                            iterElem = iterElem->left_;
-
-                        iterElem->left_ = tree->root_->left_->left_;
-
-                        tree->root_->left_ = saveLeft->right_;
-
-                    }
-                    else if (tree->root_->left_->left_ != NULL)
-                        tree->root_->left_ = tree->root_->left_->left_;
-                    else
-                    {
-                        tree->root_->left_ = NULL;
-                    }
-                    
-                    deconstrElem(saveLeft);
-                }
-            }
-            else
-            {
-                if ( (tree->root_->right_ != NULL) && (value != tree->root_->right_->data_))
-                    retVal = removeElemFrom(tree->root_->right_, value);
-                else if (tree->root_->right_ != NULL)
-                {
-                    struct bintreeElem *saveRight = tree->root_->right_;
-
-                    if (tree->root_->right_->right_ != NULL)
-                    {
-                        struct bintreeElem *iterElem = tree->root_->right_->right_;
-                        while (iterElem->left_ != NULL)
-                            iterElem = iterElem->left_;
-
-                        iterElem->left_ = tree->root_->right_->left_;
-
-                        tree->root_->right_ = saveRight->right_;
-
-                    }
-                    else if (tree->root_->right_->left_ != NULL)
-                        tree->root_->right_ = tree->root_->right_->left_;
-                    else
-                    {
-                        tree->root_->right_ = NULL;
-                    }
-                    
-                    deconstrElem(saveRight);
-                }
-            }
-            if (retVal != ERR_NO_NEED_ELEM)
+            enum ERRORS_TYPE retVal = ERROR;
+            if ( (retVal = removeElemFrom(tree->root_, value)) == ERR_SUCCESS)
                 tree->size_--;
+            else 
+                return retVal;
         }
     }
 
@@ -242,8 +184,10 @@ RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
             {
                 mainElem->left_ = NULL;
             }
-                
-            deconstrElem(saveLeft);
+
+            enum ERRORS_TYPE retVal = ERROR;
+            if ( (retVal = deconstrElem(saveLeft)) != ERR_SUCCESS)
+                return retVal;
         }
     }
     else
@@ -269,9 +213,15 @@ RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
                 mainElem->right_ = NULL;
             }
                 
-            deconstrElem(saveRight);
+            enum ERRORS_TYPE retVal = ERROR;
+            if ( (retVal = deconstrElem(saveRight)) != ERR_SUCCESS)
+                return retVal;
         }
+        else
+            return ERR_NO_NEED_ELEM;
     }
+
+    return ERR_SUCCESS;
 
 }
 

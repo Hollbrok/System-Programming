@@ -6,7 +6,7 @@ long getNumber(char *numString);
 
 int testForeach(struct bintreeElem *elem, void* x)
 {
-    if (elem->data_ > (int) x)
+    if (elem->data_ > *((int *) x))
         printf("[%d]\n", elem->data_);
 
     return 0;
