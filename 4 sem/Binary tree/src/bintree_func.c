@@ -14,7 +14,6 @@ void *TEST_calloc(size_t nmemb, size_t size)
     }
 }
 
-
 RET_ERR_TYPE initTree(struct bintree* newTree)
 {
     if (newTree == NULL)
@@ -162,6 +161,13 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
 /* remove element with data = value, but starting from mainElem (which is not included)*/
 RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
 {
+    if (mainElem == NULL)
+    {
+        fprintf(stderr, "NULL pointer to mainElem in REMOVE_ELEM_FROM.\n");
+        return ERR_TREE_ELEM_NULL;
+    }
+
+
     if (value < mainElem->data_)
     { 
         if ( (mainElem->left_ != NULL) && (value != mainElem->left_->data_))
@@ -185,9 +191,7 @@ RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
                 mainElem->left_ = NULL;
             }
 
-            enum ERRORS_TYPE retVal = ERROR;
-            if ( (retVal = deconstrElem(saveLeft)) != ERR_SUCCESS)
-                return retVal;
+            deconstrElem(saveLeft);
         }
     }
     else
@@ -213,16 +217,13 @@ RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
                 mainElem->right_ = NULL;
             }
                 
-            enum ERRORS_TYPE retVal = ERROR;
-            if ( (retVal = deconstrElem(saveRight)) != ERR_SUCCESS)
-                return retVal;
+            deconstrElem(saveRight);
         }
         else
             return ERR_NO_NEED_ELEM;
     }
 
     return ERR_SUCCESS;
-
 }
 
 RET_ERR_TYPE clear(struct bintree* tree)
@@ -235,11 +236,11 @@ RET_ERR_TYPE clear(struct bintree* tree)
 
     if (tree->root_ != NULL && tree->size_ != 0)
     {
-        clearFrom(tree->root_);
+        enum ERRORS_TYPE retVal = clearFrom(tree->root_);
                 
         tree->size_ = 0;
         tree->root_ = NULL;
-        return ERR_SUCCESS;        
+        return retVal;        
     }
     else
     {
@@ -248,8 +249,14 @@ RET_ERR_TYPE clear(struct bintree* tree)
     }
 }
 
-void clearFrom(struct bintreeElem* mainElem)
+RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem)
 {
+    if (mainElem == NULL)
+    {
+        fprintf(stderr, "NULL pointer to mainElem in CLEAR_FROM.\n");
+        return ERR_TREE_ELEM_NULL;
+    }
+
     enum ERRORS_TYPE retVal = ERROR;
 
     if (mainElem->left_ != NULL)
@@ -257,7 +264,7 @@ void clearFrom(struct bintreeElem* mainElem)
     if (mainElem->right_ != NULL)
         clearFrom(mainElem->right_);
     
-    deconstrElem(mainElem);
+    return deconstrElem(mainElem);
 }
 
 RET_ERR_TYPE search(struct bintree* tree, int value)
@@ -276,6 +283,12 @@ RET_ERR_TYPE search(struct bintree* tree, int value)
 
 RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value)
 {
+    if (mainElem == NULL)
+    {
+        fprintf(stderr, "NULL pointer to mainElem in SEARCH_FROM.\n");
+        return ERR_TREE_ELEM_NULL;
+    }
+
     if (mainElem->data_ == value)
         return ERR_SUCCESS;
     else
@@ -319,6 +332,12 @@ RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (fu
 
 RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x)
 {
+    if (mainElem == NULL)
+    {
+        fprintf(stderr, "NULL pointer to mainElem in FOREACH_FROM.\n");
+        return ERR_TREE_ELEM_NULL;
+    }
+
     switch (orderType)
     {
     case OR_T_PREORDER:

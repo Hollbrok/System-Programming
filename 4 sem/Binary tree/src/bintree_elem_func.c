@@ -4,7 +4,7 @@ RET_ERR_TYPE initElem(struct bintreeElem* retElem, int value)
 {
     if (retElem == NULL)
     {
-        fprintf(stderr, "pointer to retElem in CREATE_ELEM is null.");
+        fprintf(stderr, "pointer to retElem in CREATE_ELEM is null.\n");
         return ERR_TREE_ELEM_NULL;
     }
 
