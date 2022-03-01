@@ -16,7 +16,7 @@
 #define NEED_LINE    0
 #define NEED_PID     1
 
-#define RET_ERR_TYPE int
+#define RET_ERR_TYPE enum ERRORS_TYPE
 
 enum ORDERING_TYPE
 {
