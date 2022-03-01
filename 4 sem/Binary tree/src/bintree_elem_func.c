@@ -27,6 +27,8 @@ struct bintreeElem* createElem(int value)
     newElem->left_  = NULL;
     newElem->right_ = NULL; 
     newElem->data_  = value;
+
+    return newElem;
 }
 
 RET_ERR_TYPE deconstrElem(struct bintreeElem* elem)
