@@ -61,6 +61,8 @@ void testAdd(struct bintree* tree)
     addTo(NULL, NULL);
 
     add(NULL, 1);
+
+    fprintf(stderr, "ADD test - SUCCESS.\n");
 }
 
 int printElem(struct bintreeElem *elem, void *x)
@@ -85,8 +87,10 @@ void testForeach(struct bintree *tree)
     foreach(OR_T_DEFAULT, NULL, printElem, NULL);
     foreach(OR_T_DEFAULT, &treeNullRoot, printElem, NULL);
     foreach(OR_T_DEFAULT, tree, NULL, NULL);
+
+    foreachFrom(OR_T_DEFAULT, NULL, printElem, NULL);
     
-    fprintf(stderr, "FOREACH test SUCCESS.\n");
+    fprintf(stderr, "FOREACH test - SUCCESS.\n");
 
     clear(&treeNullRoot);
 
@@ -107,6 +111,8 @@ void testRemoveElem_and_Show(struct bintree *tree)
     removeElem(tree, 66);
     removeElem(tree, -1);
     removeElem(tree, 6);
+
+    removeElemFrom(NULL, 1);
 
     struct bintree testTree = {.root_ = NULL}; 
 
@@ -147,6 +153,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
     /* on the right subtree*/
 
     clear(&testTree);
+    clearFrom(NULL);
 
 
     add(&testTree, 11);
@@ -235,12 +242,16 @@ void testRemoveElem_and_Show(struct bintree *tree)
 
     clear(&testTree);
 
+    fprintf(stderr, "REMOVE and SHOW tests - SUCCESS.\n");
+
+
     return;
 }
 
 void testSearch(struct bintree *tree)
 {
     search(NULL, 1);
+    searchFrom(NULL, 1);
 
     struct bintree nullRoot = {.root_ = NULL };
     search(&nullRoot, 1);
@@ -261,6 +272,9 @@ void testSearch(struct bintree *tree)
     search(tree, 24);
 
     clear(&nullRoot);
+
+    fprintf(stderr, "SEARCH test - SUCCESS.\n");
+
 }
 
 void testConstrDeconstr()
@@ -272,5 +286,7 @@ void testConstrDeconstr()
 
     deconstrElem(NULL);
     initTree(NULL);
+
+    fprintf(stderr, "(DE)/CONSTR test - SUCCESS.\n");
 }
 
