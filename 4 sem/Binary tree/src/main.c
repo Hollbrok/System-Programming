@@ -15,7 +15,7 @@ int testForeach(struct bintreeElem *elem, void* x)
 int main(int argc, char *argv[])
 {
     struct bintree *tree = (struct bintree *) (calloc(1, sizeof(struct bintree)));
-    if (tree == NULL)
+    if (unlikely(tree == NULL))
     {
         fprintf(stderr, "can't calloc memory for tree.\n");
         exit(ERR_CALLOC);
@@ -40,11 +40,11 @@ int main(int argc, char *argv[])
 
 long getNumber(char *numString)
 {
-    if (numString == NULL)
+    if (unlikely(numString == NULL))
     {
         fprintf(stderr, "null string argument\n");
     }
-    if (*numString == '\0')
+    if (unlikely(*numString == '\0'))
     {
         fprintf(stderr, "empty number argument\n");
         exit(ERR_ARGS);
@@ -58,12 +58,12 @@ long getNumber(char *numString)
     const int baseOfNumber = 10;
     gNumber = strtol(numString, &endOfEnter, baseOfNumber);
 
-    if(*endOfEnter != '\0')
+    if(unlikely(*endOfEnter != '\0'))
     {
         fprintf(stderr, "strtol error\n");
         exit(ERR_ARGS);
     }
-    if (errno != 0)
+    if (unlikely(errno != 0))
     {
         fprintf(stderr, "strtol error\n");
         exit(ERR_ARGS);

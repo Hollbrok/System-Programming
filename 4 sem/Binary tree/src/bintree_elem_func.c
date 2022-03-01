@@ -2,7 +2,7 @@
 
 RET_ERR_TYPE initElem(struct bintreeElem* retElem, int value)
 {
-    if (retElem == NULL)
+    if (unlikely(retElem == NULL))
     {
         fprintf(stderr, "pointer to retElem in CREATE_ELEM is null.\n");
         return ERR_TREE_ELEM_NULL;
@@ -18,7 +18,7 @@ RET_ERR_TYPE initElem(struct bintreeElem* retElem, int value)
 struct bintreeElem* createElem(int value)
 {
     struct bintreeElem *newElem = (struct bintreeElem *) TEST_calloc(1, sizeof(struct bintreeElem));
-    if (newElem == NULL)
+    if (unlikely(newElem == NULL))
     {
         fprintf(stderr, "Can't calloc for elem in CREATE_ELEM.\n");
         return newElem;
@@ -33,7 +33,7 @@ struct bintreeElem* createElem(int value)
 
 RET_ERR_TYPE deconstrElem(struct bintreeElem* elem)
 {
-    if (elem == NULL)
+    if (unlikely(elem == NULL))
     {
         fprintf(stderr, "pointer to elem in REMOVE is null.\n");
         return ERR_TREE_ELEM_NULL; /* or exit? */
