@@ -24,32 +24,32 @@ struct bintree* createTree();
 
 RET_ERR_TYPE add(struct bintree* tree, int value);
 
-RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem);
+static RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem);
 
 /* */
 
 RET_ERR_TYPE removeElem(struct bintree* tree, int value);
 
-RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value);
+static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value);
 
 /*  */
 
 RET_ERR_TYPE clear(struct bintree* tree);
 
-RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem);
+static RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem);
 
 
 /* -1 if there is no elem with data == value in tree, another value on success. */
 
 RET_ERR_TYPE search(struct bintree* tree, int value);
 
-RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value);
+static RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value);
 
 /* Postorder foreach */
 
 RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (func)(struct bintreeElem *, void *), void *x);
 
-RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x);
+static RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x);
 
 
 //// DUMP
