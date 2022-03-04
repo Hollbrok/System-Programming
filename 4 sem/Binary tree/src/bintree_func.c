@@ -5,16 +5,12 @@ void *TEST_calloc(size_t nmemb, size_t size)
     static int randomErr = 1;
 
     if ( unlikely((randomErr++ % 55 == 0) || randomErr == 2) )
-    {
         return NULL;
-    }
     else
-    {
         return calloc(nmemb, size);
-    }
 }
 
-RET_ERR_TYPE initTree(struct bintree* newTree)
+/*RET_ERR_TYPE initTree(struct bintree* newTree)
 {
     if (unlikely(newTree == NULL))
     {
@@ -26,21 +22,11 @@ RET_ERR_TYPE initTree(struct bintree* newTree)
     newTree->size_ = 0;
 
     return ERR_SUCCESS;
-}
+}*/
 
 struct bintree* createTree()
 {
-    struct bintree *newTree = (struct bintree *) TEST_calloc(1, sizeof(struct bintree));
-    if (unlikely(newTree == NULL))
-    {
-        fprintf(stderr, "Can't calloc for tree in CREATE_TREE.\n");
-        return newTree;
-    }
-
-    newTree->root_ = NULL;
-    newTree->size_ = 0;
-
-    return newTree;
+    return (struct bintree *) TEST_calloc(1, sizeof(struct bintree));
 }
 
 RET_ERR_TYPE add(struct bintree* tree, int value)
@@ -55,50 +41,50 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
     if (unlikely(newElem == NULL))
         return ERR_CALLOC;
 
-    enum ERRORS_TYPE retErrVal = ERROR;
-
     if (tree->root_ == NULL)
     {
         tree->root_ = newElem;
-        tree->size_ = 1;
-    }
-    else /* there is at least root in tree */
-    {
-        retErrVal = addTo(tree->root_, newElem);
-
-        if (likely(retErrVal == ERR_SUCCESS))
-            tree->size_++;
-        else
-        {
-            free(newElem);
-            return retErrVal;
-        }
+        tree->size_++;
+        return ERR_SUCCESS;
     }
 
-    return ERR_SUCCESS;
+    enum ERRORS_TYPE retErrVal = ERR_SUCCESS;
+
+
+    retErrVal = addTo(tree->root_, newElem);
+
+    if (likely(retErrVal == ERR_SUCCESS))
+        tree->size_++;
+    else
+        free(newElem);
+
+    return retErrVal;
 }
 
-RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
+/* this method should be called only from method add(struct bintree* tree, int value) .*/
+static RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem)
 {
     if (unlikely(mainElem == NULL || insertElem == NULL))
         return ERR_TREE_ELEM_NULL;
 
+    if (insertElem->data_ == mainElem->data_)
+        return ERR_ALREADY_EXISTS;
+    
+    
     if (insertElem->data_ < mainElem->data_)
     {
-        if (mainElem->left_ == NULL)
-            mainElem->left_ = insertElem;
+        if (mainElem->left_ != NULL)
+            return addTo(mainElem->left_, insertElem);
         else
-            return addTo(mainElem->left_, insertElem);  
+            mainElem->left_ = insertElem;  
     }
     else if (insertElem->data_ > mainElem->data_)
     {
-        if (mainElem->right_ == NULL)
-            mainElem->right_ = insertElem;
-        else
+        if (mainElem->right_ != NULL)
             return addTo(mainElem->right_, insertElem);  
+        else
+            mainElem->right_ = insertElem;
     }
-    else 
-        return ERR_ALREADY_EXISTS;
 
 
     return ERR_SUCCESS;
@@ -113,9 +99,7 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
     }
 
     if (unlikely(tree->root_ == NULL))
-    {
         return ERR_EMPTY_TREE;
-    }
     else
     {
         enum ERRORS_TYPE retVal = ERROR;
@@ -159,7 +143,7 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
 }
 
 /* remove element with data = value, but starting from mainElem (which is not included)*/
-RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
+static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
 {
     if (unlikely(mainElem == NULL))
     {
@@ -242,29 +226,24 @@ RET_ERR_TYPE clear(struct bintree* tree)
         tree->root_ = NULL;
         return retVal;        
     }
-    else
-    {
-        fprintf(stderr, "root is NULL in CLEAR.\n");
-        return ERR_TREE_ELEM_NULL;
-    }
+
+    fprintf(stderr, "root is NULL in CLEAR.\n");
+    return ERR_TREE_ELEM_NULL;
 }
 
-RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem)
+static RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem)
 {
     if (unlikely(mainElem == NULL))
     {
-        fprintf(stderr, "NULL pointer to mainElem in CLEAR_FROM.\n");
+        //fprintf(stderr, "NULL pointer to mainElem in CLEAR_FROM.\n");
         return ERR_TREE_ELEM_NULL;
     }
 
-    enum ERRORS_TYPE retVal = ERROR;
+    clearFrom(mainElem->left_);
+    clearFrom(mainElem->right_);
 
-    if (mainElem->left_ != NULL)
-        clearFrom(mainElem->left_);
-    if (mainElem->right_ != NULL)
-        clearFrom(mainElem->right_);
-    
-    return deconstrElem(mainElem);
+    deconstrElem(mainElem);
+    return ERR_SUCCESS;
 }
 
 RET_ERR_TYPE search(struct bintree* tree, int value)
@@ -275,13 +254,10 @@ RET_ERR_TYPE search(struct bintree* tree, int value)
         return ERR_TREE_NULL; /* or exit? */
     }
 
-    if (likely(tree->root_ != NULL))
-        return searchFrom(tree->root_, value);
-    else
-        return ERR_TREE_ELEM_NULL;
+    return searchFrom(tree->root_, value);
 }
 
-RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value)
+static RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value)
 {
     if (unlikely(mainElem == NULL))
     {
@@ -289,20 +265,18 @@ RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value)
         return ERR_TREE_ELEM_NULL;
     }
 
-    if (mainElem->data_ == value)
-        return ERR_SUCCESS;
-    else
+    for(; (mainElem->left_ != NULL) || (mainElem->right_ != NULL) ;)
     {
-        enum ERRORS_TYPE retVal = ERROR;
+        if (mainElem->data_ == value)
+            return ERR_SUCCESS;
 
-        if (mainElem->left_ != NULL)
-            if ( (retVal = searchFrom(mainElem->left_, value) ) == ERR_SUCCESS)
-                return ERR_SUCCESS;
-        if (mainElem->right_ != NULL)
-            if ( (retVal = searchFrom(mainElem->right_, value) ) == ERR_SUCCESS)
-                return ERR_SUCCESS;
-        return ERROR;
+        if ( (mainElem->left_ != NULL) && (value < mainElem->data_) )
+            mainElem = mainElem->left_;
+
+        else if ( (mainElem->right_ != NULL) && (value > mainElem->data_) )
+            mainElem = mainElem->right_;
     }
+
 }
 
 /* ORDETING foreach */
@@ -315,12 +289,6 @@ RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (fu
         return ERR_TREE_NULL; /* or exit? */
     }
 
-    if (unlikely(tree->root_ == NULL))
-    {
-        fprintf(stderr, "pointer to root in FOREACH is null.\n");
-        return ERR_TREE_ELEM_NULL; /* or exit? */
-    }
-
     if (unlikely(func == NULL))
     {
         fprintf(stderr, "pointer to func in FOREACH is null.\n");
@@ -330,7 +298,7 @@ RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (fu
     return foreachFrom(orderType, tree->root_, func, x);
 }
 
-RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x)
+static RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x)
 {
     if (unlikely(mainElem == NULL))
     {
