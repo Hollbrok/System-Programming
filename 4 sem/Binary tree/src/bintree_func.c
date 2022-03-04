@@ -41,17 +41,16 @@ RET_ERR_TYPE add(struct bintree* tree, int value)
     if (unlikely(newElem == NULL))
         return ERR_CALLOC;
 
-    if (tree->root_ == NULL)
+    enum ERRORS_TYPE retErrVal = ERR_SUCCESS;
+
+    retErrVal = addTo(tree->root_, newElem);
+
+    if (retErrVal == ERR_TREE_ELEM_NULL) /* there is only 1 possibility: root in NULL */
     {
         tree->root_ = newElem;
         tree->size_++;
         return ERR_SUCCESS;
     }
-
-    enum ERRORS_TYPE retErrVal = ERR_SUCCESS;
-
-
-    retErrVal = addTo(tree->root_, newElem);
 
     if (likely(retErrVal == ERR_SUCCESS))
         tree->size_++;
@@ -100,43 +99,41 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
 
     if (unlikely(tree->root_ == NULL))
         return ERR_EMPTY_TREE;
-    else
+
+    enum ERRORS_TYPE retVal = ERROR;
+
+    if (unlikely(tree->root_->data_ == value))
+    {
+        struct bintreeElem *saveRoot = tree->root_;
+
+        if ( (tree->root_->right_ != NULL) && (tree->root_->left_ != NULL) )
+        {
+            struct bintreeElem* iterElem = tree->root_->right_;
+                    
+            while (iterElem->left_ != NULL)
+                iterElem = iterElem->left_;
+
+            iterElem->left_ = tree->root_->left_;
+
+            tree->root_ = tree->root_->right_;
+        }
+        else if (tree->root_->left_ != NULL)
+            tree->root_ = tree->root_->left_;
+
+        deconstrElem(saveRoot);
+        tree->size_--;
+
+        if (tree->size_ == 0)
+            tree->root_ = NULL;
+            
+    }
+    else /* check if there are left or|and right|left elems*/
     {
         enum ERRORS_TYPE retVal = ERROR;
-
-        if (unlikely(tree->root_->data_ == value))
-        {
-            struct bintreeElem *saveRoot = tree->root_;
-
-            if ( (tree->root_->right_ != NULL) && (tree->root_->left_ != NULL) )
-            {
-                struct bintreeElem* iterElem = tree->root_->right_;
-                    
-                while (iterElem->left_ != NULL)
-                    iterElem = iterElem->left_;
-
-                iterElem->left_ = tree->root_->left_;
-
-                tree->root_ = tree->root_->right_;
-            }
-            else if (tree->root_->left_ != NULL)
-                tree->root_ = tree->root_->left_;
-
-            deconstrElem(saveRoot);
+        if ( (retVal = removeElemFrom(tree->root_, value)) == ERR_SUCCESS)
             tree->size_--;
-
-            if (tree->size_ == 0)
-                tree->root_ = NULL;
-            
-        }
-        else /* check if there are left or|and right|left elems*/
-        {
-            enum ERRORS_TYPE retVal = ERROR;
-            if ( (retVal = removeElemFrom(tree->root_, value)) == ERR_SUCCESS)
-                tree->size_--;
-            else 
-                return retVal;
-        }
+        else 
+            return retVal;
     }
 
     return ERR_SUCCESS;
@@ -171,9 +168,7 @@ static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
             else if (mainElem->left_->left_ != NULL)
                 mainElem->left_ = mainElem->left_->left_;
             else
-            {
                 mainElem->left_ = NULL;
-            }
 
             deconstrElem(saveLeft);
         }
@@ -197,9 +192,7 @@ static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
             else if (mainElem->right_->left_ != NULL)
                 mainElem->right_ = mainElem->right_->left_;
             else
-            {
                 mainElem->right_ = NULL;
-            }
                 
             deconstrElem(saveRight);
         }
@@ -366,7 +359,7 @@ void show_tree(struct bintree* tree)
     return;
 }
 
-void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
+static void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
 {
     assert(dumpfile_name && "You passed nullptr dumpfile_name");
 
@@ -385,10 +378,10 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
     if (likely(tree->root_ != NULL))
     {
         fprintf(stderr, "TEST ROOT IS NOT A NULL\n");
-        print_all_elements_beauty(tree->root_, fileDump);
+        print_all_elements_beauty(tree, fileDump);
     }
     else
-        fprintf(stderr, "NULL root in DUMP-func.\n");
+        fprintf(stderr, "NULL root in DUMP-func. size = %d, root = %p\n", tree->size_, tree->root_);
 
     dprintf(fileDump, "}//\n");
 
@@ -396,24 +389,34 @@ void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name)
     return;
 }
 
-void print_all_elements_beauty(struct bintreeElem* elem, int dump)
+
+static int printInfo(struct bintreeElem *elem, void *infoDump)
 {
-    assert(elem && "elem is nullptr in print_all_elements");
+    int fd = *((int *)infoDump);
 
     if (likely(elem->left_ != NULL))
     {
-        print_all_elements_beauty(elem->left_, dump);
-        dprintf(dump, "\"%p\" -> \"%p\" [label=\"less\", fontcolor=darkblue]\n", elem, elem->left_);
+        dprintf(fd, "\"%p\" -> \"%p\" [label=\"less\", fontcolor=darkblue]\n", elem, elem->left_);
     }
     if (likely(elem->right_ != NULL))
     {
-        print_all_elements_beauty(elem->right_, dump);
-        dprintf(dump, "\"%p\" -> \"%p\" [label=\"more\", fontcolor=darkblue]\n", elem, elem->right_);
+        dprintf(fd, "\"%p\" -> \"%p\" [label=\"more\", fontcolor=darkblue]\n", elem, elem->right_);
     }
 
     if ((elem->right_ == NULL) && (elem->left_ == NULL))
-        dprintf(dump, "\"%p\" [label = \"%d\",style = filled, fillcolor = lightgreen] \n", elem, elem->data_);
+        dprintf(fd, "\"%p\" [label = \"%d\",style = filled, fillcolor = lightgreen] \n", elem, elem->data_);
     else
-        dprintf(dump, "\"%p\" [label = \"%d\",style = filled, fillcolor = purple] \n", elem, elem->data_);
+        dprintf(fd, "\"%p\" [label = \"%d\",style = filled, fillcolor = purple] \n", elem, elem->data_);
+
+    return 0;
+
+}
+
+static void print_all_elements_beauty(struct bintree* tree, int dumpFd)
+{
+    assert(tree && "elem is nullptr in print_all_elements");
+
+    foreach(OR_T_PREORDER, tree, printInfo, &dumpFd);
+
     return;
 }

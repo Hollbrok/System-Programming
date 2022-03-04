@@ -56,8 +56,10 @@ static RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem
 
 void show_tree(struct bintree* tree);
 
-void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name);
+static void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name);
 
-void print_all_elements_beauty(struct bintreeElem* elem, int dump);
+static int printInfo(struct bintreeElem *elem, void *infoDump);
+
+static void print_all_elements_beauty(struct bintree* tree, int dump);
 
 #endif
