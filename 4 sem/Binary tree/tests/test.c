@@ -14,16 +14,16 @@ void testSearch(struct bintree *tree);
 
 int main(int argc, char *argv[])
 {
-    struct bintree tree_2 = {};
+    struct bintree *tree_2 = createTree();
 
-    initTree(&tree_2);
+    //initTree(&tree_2);
 
-    clear(&tree_2);
+    clear(tree_2);
 
     struct bintree tree;
     struct bintree *ptree = NULL;
 
-    if ( (ptree = createTree()) == NULL)
+    if ( (ptree = createTree()) == NULL) /* first call of MY_CALLOC returns NULL*/
         ptree = createTree();
 
     testAdd(ptree);
@@ -38,12 +38,18 @@ int main(int argc, char *argv[])
 
     clear(ptree);
     free(ptree);
+    free(tree_2);
+
+
+    //struct bintreeElem *testElem;
+    //fprintf(stderr, "addr = %p\n", testElem);
 
     exit(EXIT_SUCCESS);
 }
 
 void testAdd(struct bintree* tree)
 {
+    fprintf(stderr, "root = %p\n", tree->root_);
     add(tree, 5);
     add(tree, 5);
     add(tree, 2);
@@ -58,7 +64,7 @@ void testAdd(struct bintree* tree)
     add(tree, 66);
     add(tree, 17);
 
-    addTo(NULL, NULL);
+    //addTo(NULL, NULL);
 
     add(NULL, 1);
 
@@ -88,7 +94,7 @@ void testForeach(struct bintree *tree)
     foreach(OR_T_DEFAULT, &treeNullRoot, printElem, NULL);
     foreach(OR_T_DEFAULT, tree, NULL, NULL);
 
-    foreachFrom(OR_T_DEFAULT, NULL, printElem, NULL);
+    //foreachFrom(OR_T_DEFAULT, NULL, printElem, NULL);
     
     fprintf(stderr, "FOREACH test - SUCCESS.\n");
 
@@ -112,7 +118,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
     removeElem(tree, -1);
     removeElem(tree, 6);
 
-    removeElemFrom(NULL, 1);
+    //removeElemFrom(NULL, 1);
 
     struct bintree testTree = {.root_ = NULL}; 
 
@@ -153,7 +159,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
     /* on the right subtree*/
 
     clear(&testTree);
-    clearFrom(NULL);
+    //clearFrom(NULL);
 
 
     add(&testTree, 11);
@@ -251,7 +257,7 @@ void testRemoveElem_and_Show(struct bintree *tree)
 void testSearch(struct bintree *tree)
 {
     search(NULL, 1);
-    searchFrom(NULL, 1);
+    //searchFrom(NULL, 1);
 
     struct bintree nullRoot = {.root_ = NULL };
     search(&nullRoot, 1);
@@ -285,7 +291,7 @@ void testConstrDeconstr()
     initElem(&testElem, 1);
 
     deconstrElem(NULL);
-    initTree(NULL);
+    //initTree(NULL);
 
     fprintf(stderr, "(DE)/CONSTR test - SUCCESS.\n");
 }
