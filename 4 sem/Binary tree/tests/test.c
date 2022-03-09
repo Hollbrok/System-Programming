@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 
     clear(tree_2);
 
-    struct bintree tree;
+    struct bintree tree; 
     struct bintree *ptree = NULL;
 
     if ( (ptree = createTree()) == NULL) /* first call of MY_CALLOC returns NULL*/
