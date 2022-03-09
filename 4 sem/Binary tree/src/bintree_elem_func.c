@@ -1,18 +1,5 @@
 #include "../headers/bintree_elem.h"
 
-RET_ERR_TYPE initElem(struct bintreeElem* retElem, int value)
-{
-    if (unlikely(retElem == NULL))
-    {
-        fprintf(stderr, "pointer to retElem in CREATE_ELEM is null.\n");
-        return ERR_TREE_ELEM_NULL;
-    }
- 
-    retElem->data_  = value;
-
-    return ERR_SUCCESS;
-}
-
 struct bintreeElem* createElem(int value)
 {
     struct bintreeElem *newElem = (struct bintreeElem *) TEST_calloc(1, sizeof(struct bintreeElem));

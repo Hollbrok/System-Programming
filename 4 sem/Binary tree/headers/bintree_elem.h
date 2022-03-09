@@ -16,8 +16,6 @@ struct bintreeElem
 
 void *TEST_calloc(size_t nmemb, size_t size);
 
-RET_ERR_TYPE initElem(struct bintreeElem* retElem, int value);
-
 struct bintreeElem* createElem(int value);
 
 

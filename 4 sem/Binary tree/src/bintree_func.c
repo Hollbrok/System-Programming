@@ -1,5 +1,24 @@
 #include "../headers/bintree.h"
 
+static RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* insertElem);
+
+static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value);
+
+static RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem);
+
+static RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value);
+
+static RET_ERR_TYPE foreachFrom(enum ORDERING_TYPE orderType, struct bintreeElem *mainElem, int (func)(struct bintreeElem *, void *), void *x);
+
+
+static void graphviz_beauty_dump(struct bintree* tree, const char* dumpfile_name);
+
+static int printInfo(struct bintreeElem *elem, void *infoDump);
+
+static void print_all_elements_beauty(struct bintree* tree, int dump);
+
+
+
 void *TEST_calloc(size_t nmemb, size_t size)
 {
     static int randomErr = 1;
@@ -9,20 +28,6 @@ void *TEST_calloc(size_t nmemb, size_t size)
     else
         return calloc(nmemb, size);
 }
-
-/*RET_ERR_TYPE initTree(struct bintree* newTree)
-{
-    if (unlikely(newTree == NULL))
-    {
-        fprintf(stderr, "pointer to newTree in CREATE_TREE is null.\n");
-        return ERR_TREE_NULL;
-    }
-    
-    newTree->root_ = NULL;
-    newTree->size_ = 0;
-
-    return ERR_SUCCESS;
-}*/
 
 struct bintree* createTree()
 {
