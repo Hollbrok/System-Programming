@@ -4,6 +4,8 @@ static RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* inse
 
 static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value);
 
+static RET_ERR_TYPE removeRoot(struct bintree *tree);
+
 static RET_ERR_TYPE clearFrom(struct bintreeElem* mainElem);
 
 static RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value);
@@ -94,7 +96,8 @@ static RET_ERR_TYPE addTo(struct bintreeElem* mainElem, struct bintreeElem* inse
     return ERR_SUCCESS;
 }
 
-RET_ERR_TYPE removeElem(struct bintree* tree, int value)
+
+RET_ERR_TYPE removeElem(struct bintree *tree, int value)
 {
     if (unlikely(tree == NULL))
     {
@@ -105,43 +108,14 @@ RET_ERR_TYPE removeElem(struct bintree* tree, int value)
     if (unlikely(tree->root_ == NULL))
         return ERR_EMPTY_TREE;
 
-    enum ERRORS_TYPE retVal = ERROR;
-
     if (unlikely(tree->root_->data_ == value))
-    {
-        struct bintreeElem *saveRoot = tree->root_;
+        return removeRoot(tree); 
 
-        if ( (tree->root_->right_ != NULL) && (tree->root_->left_ != NULL) )
-        {
-            struct bintreeElem* iterElem = tree->root_->right_;
-                    
-            while (iterElem->left_ != NULL)
-                iterElem = iterElem->left_;
-
-            iterElem->left_ = tree->root_->left_;
-
-            tree->root_ = tree->root_->right_;
-        }
-        else if (tree->root_->left_ != NULL)
-            tree->root_ = tree->root_->left_;
-
-        deconstrElem(saveRoot);
-        tree->size_--;
-
-        if (tree->size_ == 0)
-            tree->root_ = NULL;
-            
-    }
-    else /* check if there are left or|and right|left elems*/
-    {
-        enum ERRORS_TYPE retVal = ERROR;
-        if ( (retVal = removeElemFrom(tree->root_, value)) == ERR_SUCCESS)
+    enum ERRORS_TYPE retVal = ERROR;
+    if ( (retVal = removeElemFrom(tree->root_, value)) == ERR_SUCCESS)
             tree->size_--;
-        else 
-            return retVal;
-    }
 
-    return ERR_SUCCESS;
+    return retVal;
 }
 
 /* remove element with data = value, but starting from mainElem (which is not included)*/
@@ -206,6 +180,33 @@ static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
     }
 
     return ERR_SUCCESS;
+}
+
+static RET_ERR_TYPE removeRoot(struct bintree *tree)
+{
+    struct bintreeElem *saveRoot = tree->root_;
+
+    if ( (tree->root_->right_ != NULL) && (tree->root_->left_ != NULL) )
+    {
+        struct bintreeElem* iterElem = tree->root_->right_;
+                    
+        while (iterElem->left_ != NULL)
+            iterElem = iterElem->left_;
+
+        iterElem->left_ = tree->root_->left_;
+
+        tree->root_ = tree->root_->right_;
+    }
+    else if (tree->root_->left_ != NULL)
+        tree->root_ = tree->root_->left_;
+
+    deconstrElem(saveRoot);
+    tree->size_--;
+
+    if (tree->size_ == 0)
+        tree->root_ = NULL;
+        
+        return ERR_SUCCESS;  
 }
 
 RET_ERR_TYPE clear(struct bintree* tree)
