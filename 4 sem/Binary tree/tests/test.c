@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     testConstrDeconstr();
 
     clear(ptree);
+    
     free(ptree);
     free(tree_2);
 
