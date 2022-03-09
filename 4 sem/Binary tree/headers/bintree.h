@@ -14,10 +14,6 @@ struct bintree
 
 /////
 
-void *TEST_calloc(size_t nmemb, size_t size);
-
-RET_ERR_TYPE initTree(struct bintree* newTree);
-
 struct bintree* createTree();
 
 /* */

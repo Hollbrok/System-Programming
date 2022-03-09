@@ -21,7 +21,7 @@ static void print_all_elements_beauty(struct bintree* tree, int dump);
 
 
 
-void *TEST_calloc(size_t nmemb, size_t size)
+static void *TEST_calloc(size_t nmemb, size_t size)
 {
     static int randomErr = 1;
 
@@ -150,36 +150,35 @@ static RET_ERR_TYPE removeElemFrom(struct bintreeElem* mainElem, int value)
                 mainElem->left_ = NULL;
 
             deconstrElem(saveLeft);
+            return ERR_SUCCESS;
         }
+    }
+
+    if ( (mainElem->right_ != NULL) && (value != mainElem->right_->data_))
+        return removeElemFrom(mainElem->right_, value);
+    else if (mainElem->right_ != NULL)
+    {
+        struct bintreeElem *saveRight = mainElem->right_;
+        if (mainElem->right_->right_ != NULL)
+        {
+            struct bintreeElem *iterElem = mainElem->right_->right_;
+            while (iterElem->left_ != NULL)
+                iterElem = iterElem->left_;
+
+            iterElem->left_ = mainElem->right_->left_;
+            mainElem->right_ = saveRight->right_;
+        }
+        else if (mainElem->right_->left_ != NULL)
+            mainElem->right_ = mainElem->right_->left_;
+        else
+            mainElem->right_ = NULL;
+            
+        deconstrElem(saveRight);
+        return ERR_SUCCESS;
+
     }
     else
-    {
-        if ( (mainElem->right_ != NULL) && (value != mainElem->right_->data_))
-            return removeElemFrom(mainElem->right_, value);
-        else if (mainElem->right_ != NULL)
-        {
-            struct bintreeElem *saveRight = mainElem->right_;
-            if (mainElem->right_->right_ != NULL)
-            {
-                struct bintreeElem *iterElem = mainElem->right_->right_;
-                while (iterElem->left_ != NULL)
-                    iterElem = iterElem->left_;
-
-                iterElem->left_ = mainElem->right_->left_;
-                mainElem->right_ = saveRight->right_;
-            }
-            else if (mainElem->right_->left_ != NULL)
-                mainElem->right_ = mainElem->right_->left_;
-            else
-                mainElem->right_ = NULL;
-                
-            deconstrElem(saveRight);
-        }
-        else
-            return ERR_NO_NEED_ELEM;
-    }
-
-    return ERR_SUCCESS;
+        return ERR_NO_NEED_ELEM;
 }
 
 static RET_ERR_TYPE removeRoot(struct bintree *tree)

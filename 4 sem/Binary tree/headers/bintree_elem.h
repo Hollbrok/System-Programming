@@ -14,8 +14,6 @@ struct bintreeElem
 
 /* */
 
-void *TEST_calloc(size_t nmemb, size_t size);
-
 struct bintreeElem* createElem(int value);
 
 

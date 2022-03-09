@@ -1,5 +1,15 @@
 #include "../headers/bintree_elem.h"
 
+static void *TEST_calloc(size_t nmemb, size_t size)
+{
+    static int randomErr = 1;
+
+    if ( unlikely((randomErr++ % 55 == 0) || randomErr == 2) )
+        return NULL;
+    else
+        return calloc(nmemb, size);
+}
+
 struct bintreeElem* createElem(int value)
 {
     struct bintreeElem *newElem = (struct bintreeElem *) TEST_calloc(1, sizeof(struct bintreeElem));
