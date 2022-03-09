@@ -277,20 +277,20 @@ static RET_ERR_TYPE searchFrom(struct bintreeElem* mainElem, int value)
 
 }
 
-/* ORDETING foreach */
+/* Ordering foreach */
 
 RET_ERR_TYPE foreach(enum ORDERING_TYPE orderType, struct bintree *tree, int (func)(struct bintreeElem *, void *), void *x)
 {
     if (unlikely(tree == NULL))
     {
         fprintf(stderr, "pointer to bintree in FOREACH is null.\n");
-        return ERR_TREE_NULL; /* or exit? */
+        return ERR_TREE_NULL;
     }
 
     if (unlikely(func == NULL))
     {
         fprintf(stderr, "pointer to func in FOREACH is null.\n");
-        return ERR_FUNC_NULL; /* or exit? */
+        return ERR_FUNC_NULL;
     }
 
     return foreachFrom(orderType, tree->root_, func, x);

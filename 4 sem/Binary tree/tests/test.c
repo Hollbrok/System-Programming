@@ -2,16 +2,6 @@
 
 int printElem(struct bintreeElem *elem, void *x);
 
-void testAdd(struct bintree* tree);
-
-void testForeach(struct bintree *tree);
-
-void testConstrDeconstr();
-
-void testRemoveElem_and_Show(struct bintree *tree);
-
-void testSearch(struct bintree *tree);
-
 int main(int argc, char *argv[])
 {
     struct bintree *tree_2 = createTree();
@@ -88,17 +78,18 @@ void testForeach(struct bintree *tree)
         foreach(OR_T_DEFAULT, tree, printElem, (void *) -1);
     }
 
-    struct bintree treeNullRoot = {.root_ = NULL}; 
+    struct bintree *treeNullRoot = createTree(); 
 
     foreach(OR_T_DEFAULT, NULL, printElem, NULL);
-    foreach(OR_T_DEFAULT, &treeNullRoot, printElem, NULL);
+    foreach(OR_T_DEFAULT, treeNullRoot, printElem, NULL);
     foreach(OR_T_DEFAULT, tree, NULL, NULL);
 
     //foreachFrom(OR_T_DEFAULT, NULL, printElem, NULL);
     
     fprintf(stderr, "FOREACH test - SUCCESS.\n");
 
-    clear(&treeNullRoot);
+    clear(treeNullRoot);
+    free(treeNullRoot);
 
     return;
 }
@@ -285,13 +276,7 @@ void testSearch(struct bintree *tree)
 
 void testConstrDeconstr()
 {
-    initElem(NULL, 1);
-
-    struct bintreeElem testElem;
-    initElem(&testElem, 1);
-
     deconstrElem(NULL);
-    //initTree(NULL);
 
     fprintf(stderr, "(DE)/CONSTR test - SUCCESS.\n");
 }
