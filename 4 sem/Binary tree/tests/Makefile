@@ -1,3 +1,3 @@
 .PHONY: clean
 clean: 
-		rm *.o *.d *.gcda *.gcno *.gcov *.out *.dot *.jpg
+	rm *.o *.d *.gcda *.gcno *.gcov *.out *.dot *.jpg

@@ -2,6 +2,16 @@
 
 int printElem(struct bintreeElem *elem, void *x);
 
+void testAdd(struct bintree* tree);
+
+void testForeach(struct bintree *tree);
+
+void testRemoveElem_and_Show(struct bintree *tree);
+
+void testSearch(struct bintree *tree);
+
+void testConstrDeconstr();
+
 int main(int argc, char *argv[])
 {
     struct bintree *tree_2 = createTree();
