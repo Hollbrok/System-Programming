@@ -1,4 +1,0 @@
-digraph name {
-node [color = Red, fontname = Courier, style = filled, shape = ellipse, fillcolor = purple]
-edge [color = Blue, style = dashed]
-}//
