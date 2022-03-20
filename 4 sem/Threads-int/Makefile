@@ -11,7 +11,7 @@ GCOV_FLAGS = -fprofile-arcs -ftest-coverage
 
 CODE_PATH = .
 
-SOURCES = $(CODE_PATH)/threads_int.c
+SOURCES = $(CODE_PATH)/threads_int.c $(CODE_PATH)/threads_int_func.c
 
 OBJECTS = $(SOURCES:.c=.o)
 
