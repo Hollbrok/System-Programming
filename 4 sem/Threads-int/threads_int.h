@@ -41,6 +41,9 @@
     do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
 
+#define MAX(a, b) (a) > (b) ? (a) : (b)
+
+
 /* headers of functions */
 
 typedef double (*IntFunc)(double);
@@ -48,21 +51,21 @@ typedef double (*IntFunc)(double);
 typedef struct ThreadInfo 
 {
     //IntFunc func;         /* integral of what function will be calculated                 */
-    
+
     double sum;             /* value of integral on [ startX ; finishX ]                    */
 
     double a;               /* value from from which the calculation of the integral begins */
     double b;               /* value of the end of the integral calculation                 */
-    double deltaX;          /* calculation offset (accuracy)                                */
+    double dX;              /* calculation offset (accuracy)                                */
     
-    int numCPU;             /* to set CPU affinity of a thread if there was empty threads   */
+    int numCPU;             /* to set CPU affinity of the thread if there was empty threads */
 
 } ThreadInfo;
 
-/* main function for integral calculation */
-void calcInt(char *strNum, IntFunc intFunc);
+/* main function for integral calculation; returns result of integral sum */
+double calcInt(char *strNum, IntFunc intFunc);
 
-/* cmd line number parser */
+/* cmd line number parser ( returns <long> number according to numString with error handling) */
 static long getNumber(char *numString);
 
 /* allocate memory for threads data according to cache line size */
