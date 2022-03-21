@@ -13,7 +13,8 @@ max_NO_threads=${1:-${DEFAULT_MAX_NO_THREADS}}
 for NO_threads in $(eval echo "{$start_NO_threads..$max_NO_threads}")
 do
     echo "NO threads: $NO_threads"
-    time ./xxx $NO_threads
+    # flag -v for full info
+    /usr/bin/time -f "\n\tcalculation time: %e sec\n" ./xxx $NO_threads
     echo -e "\n"
 done
 
