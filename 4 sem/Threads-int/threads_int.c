@@ -11,7 +11,9 @@ int main(int argc, char *argv[])
     if (argc != 2)
         ERR_HANDLER("./xxx <NO threads>Z");
 
-    calcInt(argv[1], function);
+    double intVal = calcInt(argv[1], function);
+
+    fprintf(stdout,"\tIntegral value - %lg", intVal);
 
     return EXIT_SUCCESS;
 }
