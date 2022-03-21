@@ -4,7 +4,7 @@ static IntFunc function = NULL;
 
 /* calculate integral of function from 0 to 1 in <argv1> threads */
 
-void calcInt(char *strNum, IntFunc intFunc)
+double calcInt(char *strNum, IntFunc intFunc)
 {
     function = intFunc;
 
@@ -18,18 +18,20 @@ void calcInt(char *strNum, IntFunc intFunc)
         if usr request of threads is < CA processors => noEmptyThreads > 0                      */
     int noEmptyThreads = noProc > noThreads? noProc - noThreads : 0;
 
+    /* max NO threads of noProc and noThreads */
+    int maxThreads = MAX(noProc, noThreads);
 
     /* allocate memory, but we should take into consideration cache line size */
 
     size_t sizeThreadInfo = 0;
-    void* threadsInfo = threadInfoConstr(noThreads + noEmptyThreads, &sizeThreadInfo);
+    void* threadsInfo = threadInfoConstr(maxThreads, &sizeThreadInfo);
     if (threadsInfo == NULL)
         ERR_HANDLER("AllocThreadInfo");
 
 
     /*  */
 
-    pthread_t* threadsID = (pthread_t*)calloc(noThreads + noEmptyThreads, sizeof(pthread_t));
+    pthread_t* threadsID = (pthread_t*)calloc(maxThreads, sizeof(pthread_t));
     if (threadsID == NULL)
         ERR_HANDLER("Can`t calloc memory for threadsID");
 
@@ -39,7 +41,7 @@ void calcInt(char *strNum, IntFunc intFunc)
 
     /* creating of threads */
 
-    for (int iThread = 0; iThread < noThreads + noEmptyThreads; iThread++) 
+    for (int iThread = 0; iThread < maxThreads; iThread++) 
     {
         if (noEmptyThreads > 0)
             ((ThreadInfo*)(threadsInfo + iThread * sizeThreadInfo))->numCPU = iThread;
@@ -54,22 +56,29 @@ void calcInt(char *strNum, IntFunc intFunc)
 
     double finalSum = 0;
     
-    for (long iThread = 0; iThread < noThreads + noEmptyThreads; iThread++) 
+    for (int iThread = 0; iThread < maxThreads; iThread++) 
     {
         if (pthread_join(threadsID[iThread], NULL) != 0)
-            ERR_HANDLER("Something wrong with pthread_join");
+            ERR_HANDLER("pthread_join non-empty Threads");
 
-        finalSum += ((ThreadInfo*)(threadsInfo + iThread * sizeThreadInfo))->sum;
+        if (iThread < noThreads)
+            finalSum += ((ThreadInfo*)(threadsInfo + iThread * sizeThreadInfo))->sum;
     }
+
+    /*for (int iThread = noEmptyThreads; iThread < maxThreads; iThread++) 
+    {
+        if (pthread_join(threadsID[iThread], NULL) != 0)
+            ERR_HANDLER("pthread_join empty Thread");
+    }*/
 
     /* printing result and exit s*/
 
-    fprintf(stdout,"\tIntegral value - %lg", finalSum);
+    //fprintf(stdout,"\tIntegral value - %lg", finalSum);
 
-    free(threadsID);
     free(threadsInfo);
+    free(threadsID);
 
-    return;
+    return finalSum;
 }
 
 /* stuff to calculate integral */
@@ -89,24 +98,25 @@ static void initThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads,
     /* general initialization stuff */
     for (int iThread = 0; iThread < noThreads + noEmptyThreads; ++iThread)
     {
-        ((ThreadInfo*)(info + iThread * sizeThreadInfo))->deltaX = DELTA_X;
-        ((ThreadInfo*)(info + iThread * sizeThreadInfo))->numCPU = -1;
+        ((ThreadInfo*) (info + iThread * sizeThreadInfo))->dX = DELTA_X;
+    
+        ((ThreadInfo*) (info + iThread * sizeThreadInfo))->numCPU = -1;
     }
 
     /* for ordered threads */
     for (int iThread = 0; iThread < noThreads; iThread++) 
     {
-        ((ThreadInfo*)(info + iThread * sizeThreadInfo))->a = START_LIMIT + iThread * intLength;
+        ((ThreadInfo*) (info + iThread * sizeThreadInfo))->a = START_LIMIT + iThread * intLength;
 
-        ((ThreadInfo*)(info + iThread * sizeThreadInfo))->b = ((ThreadInfo *)(info + iThread * sizeThreadInfo))->a + intLength;
+        ((ThreadInfo*) (info + iThread * sizeThreadInfo))->b = ((ThreadInfo *)(info + iThread * sizeThreadInfo))->a + intLength;
     }
 
     /* for empty threads */
     for (int iThread = noThreads; iThread < noThreads + noEmptyThreads; iThread++) 
     {
-        ((ThreadInfo*)(info + iThread * sizeThreadInfo))->a = START_LIMIT;
+        ((ThreadInfo*) (info + iThread * sizeThreadInfo))->a = START_LIMIT;
         
-        ((ThreadInfo*)(info + iThread * sizeThreadInfo))->b = START_LIMIT + intLength;
+        ((ThreadInfo*) (info + iThread * sizeThreadInfo))->b = START_LIMIT + intLength;
     }
 }
 
@@ -116,7 +126,8 @@ static void *pthreadStartFunc(void* arg)
     int numCPU              = ((ThreadInfo*) threadsInfo)->numCPU;
 
 
-    /* set CPU affinity of a thread if there was empty threads */
+    /*  if there is >0 empty threads we should 
+        set CPU affinity of a threads except zero */
     if (numCPU > 0)
     {
         cpu_set_t cpu = {};
@@ -130,8 +141,8 @@ static void *pthreadStartFunc(void* arg)
     }
 
     /* calculate int */
-    for (double x = threadsInfo->a; x < threadsInfo->b; x += threadsInfo->deltaX)
-        threadsInfo->sum += function(x) * threadsInfo->deltaX;
+    for (double x = threadsInfo->a; x < threadsInfo->b; x += threadsInfo->dX)
+        threadsInfo->sum += function(x) * threadsInfo->dX;
 
     return NULL;
 }
