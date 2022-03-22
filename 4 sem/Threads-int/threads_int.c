@@ -9,7 +9,9 @@ double function(double x)
 int main(int argc, char *argv[])
 {
     if (argc != 2)
-        ERR_HANDLER("./xxx <NO threads>Z");
+        ERR_HANDLER("use: ./xxx <NO threads>");
+
+    DEBPRINT("pid = %ld\n", (long)getpid());
 
     double intVal = calcInt(argv[1], function);
 
