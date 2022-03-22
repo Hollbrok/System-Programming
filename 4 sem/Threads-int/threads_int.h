@@ -71,16 +71,18 @@ static long getNumber(char *numString);
 static void *threadInfoConstr(size_t num_threads, size_t *size);
 
 /* initialize a,b, deltaX, numCPU according to type of threads (main or empty) */
-static void initThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads,
-                            int noEmptyThreads, double intLength);
+static void initThreadsInfo(void *info, size_t sizeThreadInfo, int noProc,
+                            int noThreads, int noEmptyThreads, double intLength);
 
 /* function that every thread will execute */
 static void *pthreadStartFunc(void *arg);
 
+static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads, int noEmptyThreads);
+
 /* info stuff */
 
 static const double START_LIMIT  = 0;
-static const double FINISH_LIMIT = 3;
+static const double FINISH_LIMIT = 5;
 static const double DELTA_X      = 0.0000001; /* calculation offset (accuracy) */
 
 /*  [all results were obtained using wolframalpha]
