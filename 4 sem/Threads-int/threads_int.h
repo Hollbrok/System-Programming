@@ -27,7 +27,7 @@
 
 #define DEBPRINT(args...)                                               \
     do {                                                                \
-        if(DEBUG_REGIME) {                                              \
+        if(DEB_REGIME) {                                              \
             if (NEED_LINE)                                              \
                 fprintf(stderr, "LINE: %d\n", __LINE__);                \
             if (NEED_PID)                                               \
@@ -56,7 +56,6 @@ typedef struct ThreadInfo
 
     double a;               /* value from from which the calculation of the integral begins */
     double b;               /* value of the end of the integral calculation                 */
-    double dX;              /* calculation offset (accuracy)                                */
     
     int numCPU;             /* to set CPU affinity of the thread if there was empty threads */
 
@@ -81,8 +80,8 @@ static void *pthreadStartFunc(void *arg);
 /* info stuff */
 
 static const double START_LIMIT  = 0;
-static const double FINISH_LIMIT = 1;
-static const double DELTA_X      = 0.0000001;
+static const double FINISH_LIMIT = 3;
+static const double DELTA_X      = 0.0000001; /* calculation offset (accuracy) */
 
 /*  [all results were obtained using wolframalpha]
 
