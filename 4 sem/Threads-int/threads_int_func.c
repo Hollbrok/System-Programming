@@ -40,9 +40,11 @@ double calcInt(char *strNum, IntFunc intFunc)
     if (threadsID == NULL)
         ERR_HANDLER("Can`t calloc memory for threadsID");
 
-    initThreadsInfo(threadsInfo, sizeThreadInfo, 
+    initThreadsInfo(threadsInfo, sizeThreadInfo, noProc, 
                     noThreads, noEmptyThreads, 
                     (FINISH_LIMIT - START_LIMIT) / noThreads);
+
+    //dumpThreadsInfo(threadsInfo, sizeThreadInfo, noThreads, noEmptyThreads);
 
     /* creating of threads */
 
@@ -86,32 +88,37 @@ static void *threadInfoConstr(size_t noThreads, size_t *size)
     return malloc(noThreads * (*size));
 }
 
-static void initThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads,
-                            int noEmptyThreads, double intLength)
+static void initThreadsInfo(void *info, size_t sizeThreadInfo, int noProc, 
+                            int noThreads, int noEmptyThreads, double intLength)
 {
-    /* general initialization stuff */
-    for (int iThread = 0; iThread < noThreads + noEmptyThreads; ++iThread)
-    {    
-        if (noEmptyThreads > 0)
-            ((ThreadInfo *)(info + iThread * sizeThreadInfo))->numCPU = iThread;
-        else
-            ((ThreadInfo *) (info + iThread * sizeThreadInfo))->numCPU = -1;
-    }
+    if (noThreads > noProc)
+        intLength = intLength * noThreads / noProc;
 
     /* for ordered threads */
-    for (int iThread = 0; iThread < noThreads; iThread++) 
+    for (int iThread = 0; iThread < noThreads /* + noEmptyThreads*/; ++iThread)
     {
+        /* for this threads we shouldn't set CPU affinity to not to slow down*/
+        if (iThread >= noProc)
+        {
+            ((ThreadInfo *) (info + iThread * sizeThreadInfo))->numCPU = -2;
+            continue;
+        } 
+        
+        ((ThreadInfo *)(info + iThread * sizeThreadInfo))->numCPU = iThread % noProc;
+
         ((ThreadInfo *) (info + iThread * sizeThreadInfo))->a = START_LIMIT + iThread * intLength;
 
         ((ThreadInfo *) (info + iThread * sizeThreadInfo))->b = ((ThreadInfo *)(info + iThread * sizeThreadInfo))->a + intLength;
     }
 
-    /* for empty threads */
+    /* for empty threads if they exist */
     for (int iThread = noThreads; iThread < noThreads + noEmptyThreads; iThread++) 
     {
         ((ThreadInfo*) (info + iThread * sizeThreadInfo))->a = START_LIMIT;
         
         ((ThreadInfo*) (info + iThread * sizeThreadInfo))->b = START_LIMIT + intLength;
+        
+        ((ThreadInfo *) (info + iThread * sizeThreadInfo))->numCPU = -1;
     }
     
 }
@@ -134,7 +141,12 @@ static void *pthreadStartFunc(void* arg)
 
         if (pthread_setaffinity_np(id, sizeof(cpu_set_t), &cpu) < 0)
             ERR_HANDLER("Error in setaffinity");
+    
     }
+
+    /* noThreads > noProc in system => returns null for no slowdown*/
+    if (numCPU == -2)
+        return NULL;
 
     /* calculate int */
     for (double x = threadsInfo->a; x < threadsInfo->b; x += DELTA_X)
@@ -171,4 +183,13 @@ static long getNumber(char *numString)
     }
     
     return gNumber;
+}
+
+static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads, int noEmptyThreads)
+{
+    for (int iThread = 0; iThread < noThreads + noEmptyThreads; ++iThread)
+    
+        fprintf(stderr, "[%d] numCPU = %d\n", iThread, ((ThreadInfo *) (info + iThread * sizeThreadInfo))->numCPU);
+
+    return;
 }
