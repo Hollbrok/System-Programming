@@ -19,7 +19,7 @@ OBJECTS = $(SOURCES:.c=.o)
 
 EXECUTABLE = xxx
 
-all: exec run_tests
+all: exec #run_tests
 
 # compile stuff
 
@@ -35,10 +35,10 @@ $(EXECUTABLE): $(OBJECTS)
 
 # for testing speed 
 
-maxThreads = 16
+#maxThreads = 16
 
-run_tests:
-		sh ./test_speed.sh $(maxThreads)
+#run_tests:
+#		sh ./test_speed.sh $(maxThreads)
 
 # clean stuff
 
