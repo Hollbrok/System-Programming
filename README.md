@@ -17,7 +17,7 @@
     </details>
 - [ ] __2 semestr__ <details><summary></summary>
     - [X] __Binary tree of search__
-    - [ ] __Threads integrator__
+    - [X] __Threads integrator__
     - [ ] __Multy-PC integrator__
     </details>
 </details>
