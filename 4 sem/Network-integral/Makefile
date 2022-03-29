@@ -7,13 +7,13 @@ ADDIT_FLAGS = -pthread -lm
 
 # pathes
 
-MAIN_PC_PATH 	= ./MainPC
+MAIN_PC_PATH 	= MainPC
 MAIN_PC_SOURCES = $(MAIN_PC_PATH)/main.c
 MAIN_PC_OBJS	= $(MAIN_PC_SOURCES:.c=.o)
 MAIN_PC_EXEC	= mainPc_exec
 
 
-CLIENT_PATH  	= ./Client
+CLIENT_PATH  	= Client
 CLIENT_SOURCES 	= $(CLIENT_PATH)/main.c $(CLIENT_PATH)/threads_int_func.c
 CLIENT_OBJS		= $(CLIENT_SOURCES:.c=.o)
 CLIENT_EXEC		= client_exec
@@ -65,6 +65,6 @@ $(MAIN_PC_EXEC): $(MAIN_PC_OBJS)
 .PHONY: clean
 
 clean:
-	cd $(MAIN_PC_PATH)   && rm -rf *.o *.d \
-	cd ../$(CLIENT_PATH) && rm -rf *.o *.d
+	cd $(MAIN_PC_PATH) && rm -rf *.o *.d
+	cd $(CLIENT_PATH) && rm -rf *.o *.d
 
