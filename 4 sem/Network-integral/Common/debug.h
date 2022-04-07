@@ -24,4 +24,4 @@
     do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
 
-#define MAX(a, b) (a) > (b) ? (a) : (b)
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
