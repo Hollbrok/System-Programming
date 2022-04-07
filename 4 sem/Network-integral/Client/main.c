@@ -36,21 +36,40 @@ void clientInt()
 
     /* main part */
 
-	//char sendline[MAXLINE] = "test1";
-    char recvline[MAXLINE];
-    //Writen(sockfd, sendline, strlen(sendline));
+    /* send 1st msg that we are in */
+
+    struct ReadyMsg readyMsg = { .r = '1' };
+    Writen(sockfd, &readyMsg, sizeof(readyMsg));
+
+    /* recover info about noPc and noThreads */
+
+    struct CalcInfo calcInfo;
+    bzero(&calcInfo, sizeof(calcInfo));
 
     int noRead;
-    if ((noRead = Readn(sockfd, recvline, MAXLINE)) == 0)//Readline(sockfd, recvline, MAXLINE) == 0)
-		err_quit("ReadLine: server terminated prematurely");
+    if ((noRead = Readn(sockfd, &calcInfo, sizeof(calcInfo))) == 0)
+		err_quit("Readn: client terminated prematurely");
     else 
         fprintf(stderr, "recover %d bytes\n", noRead);
-    
-    int *numberp = (int *)recvline;
-    fprintf(stderr, "[%d]", *numberp);
-    write(STDOUT_FILENO, recvline, strlen(recvline));
 
-    //str_cli(stdin, sockfd);		/* do it all */
+    /* calc integral */
+
+    double intLength = (GENERAL_FINISH_INT - GENERAL_START_INT) 
+                        / calcInfo.noPc;
+
+    double a = GENERAL_START_INT + intLength * calcInfo.iClient;
+    double b = a + intLength;
+
+        /* add dump if needed */
+
+    struct IntResult intRes;
+    intRes.result = calcInt(calcInfo.noThreads, a, b);
+
+    /* send to the server result of integral */
+
+    Writen(sockfd, &intRes, sizeof(intRes));
+
+    close(sockfd);
 
     fprintf(stderr, "SUCCESS\n");
     exit(EXIT_SUCCESS);

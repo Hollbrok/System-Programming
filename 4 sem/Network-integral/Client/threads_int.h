@@ -30,8 +30,8 @@ typedef struct ThreadInfo
 static double function(double x);
 
 /* main function for integral calculation; returns result of integral sum */
-double cancInt(size_t noThreads);
-double calcInt_s(char *strNum);
+double calcInt(size_t noThreads, int a, int b);
+double calcInt_s(char *strNum, int a, int b);
 
 /* allocate memory for threads data according to cache line size */
 static void *threadInfoConstr(size_t num_threads, size_t *size);
@@ -47,8 +47,12 @@ static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads, in
 
 /* info stuff */
 
-static const double START_LIMIT  = 0;
-static const double FINISH_LIMIT = 5;
+//static const double START_LIMIT  = 0;
+//static const double FINISH_LIMIT = 5;
+
+#define GENERAL_START_INT 0
+#define GENERAL_FINISH_INT 5
+
 static const double DELTA_X      = 0.0000001; /* calculation offset (accuracy) */
 
 /*  [all results were obtained using wolframalpha]

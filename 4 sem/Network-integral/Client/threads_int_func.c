@@ -17,6 +17,9 @@ static void *threadInfoConstr(size_t noThreads, size_t *size)
     return malloc(noThreads * (*size));
 }
 
+static int START_LIMIT;
+static int FINISH_LIMIT;
+
 static void initThreadsInfo(void *info, size_t sizeThreadInfo, int noProc, 
                             int noThreads, int noEmptyThreads, double intLength)
 {
@@ -94,9 +97,12 @@ static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads,
     return;
 }
 
-/* calculate integral of function from 0 to 1 in <noThreads> threads */
-double calcInt(size_t noThreads)
+/* calculate integral of function from a to b in <noThreads> threads */
+double calcInt(size_t noThreads, int a, int b)
 {
+    START_LIMIT = a;
+    FINISH_LIMIT = b;
+
     if (noThreads <= 0)
     {
         fprintf(stderr, "NO threads must be > 0\n");
@@ -165,10 +171,10 @@ double calcInt(size_t noThreads)
 }
 
 /* calculate integral of function from 0 to 1 in <argv1> threads */
-double calcInt_s(char *strNum)
+double calcInt_s(char *strNum, int a, int b)
 {
     /* usr number of threads to calculate int */
-    return calcInt(getNumber(strNum));
+    return calcInt(getNumber(strNum), a, b);
 }
 
 ////
