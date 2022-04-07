@@ -84,36 +84,6 @@ static void *pthreadStartFunc(void* arg)
     return NULL;
 }
 
-static long getNumber(char *numString)
-{
-    if (*numString == '\0')
-    {
-        fprintf(stderr, "empty number argument\n");
-        exit(EXIT_FAILURE);
-    }
-
-    long gNumber;
-    char* endOfEnter;
-
-    const int baseOfNumber = 10;
-    errno = 0;
-
-    gNumber = strtol(numString, &endOfEnter, baseOfNumber);
-
-    if(*endOfEnter != '\0')
-    {
-        fprintf(stderr, "strtol error\n");
-        exit(EXIT_FAILURE);
-    }
-    if (errno != 0)
-    {
-        fprintf(stderr, "strtol error\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    return gNumber;
-}
-
 static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads, 
                             int noEmptyThreads)
 {
@@ -124,11 +94,9 @@ static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads,
     return;
 }
 
-/* calculate integral of function from 0 to 1 in <argv1> threads */
-double calcInt(char *strNum)
+/* calculate integral of function from 0 to 1 in <noThreads> threads */
+double calcInt(size_t noThreads)
 {
-    /* usr number of threads to calculate int */
-    int noThreads = getNumber(strNum);
     if (noThreads <= 0)
     {
         fprintf(stderr, "NO threads must be > 0\n");
@@ -194,6 +162,13 @@ double calcInt(char *strNum)
     free(threadsID);
 
     return finalSum;
+}
+
+/* calculate integral of function from 0 to 1 in <argv1> threads */
+double calcInt_s(char *strNum)
+{
+    /* usr number of threads to calculate int */
+    return calcInt(getNumber(strNum));
 }
 
 ////
