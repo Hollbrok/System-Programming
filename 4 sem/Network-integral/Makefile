@@ -7,10 +7,14 @@ ADDIT_FLAGS = -pthread -lm
 
 # pathes
 
-MAIN_PC_PATH 	= MainPC
-MAIN_PC_SOURCES = $(MAIN_PC_PATH)/main.c
-MAIN_PC_OBJS	= $(MAIN_PC_SOURCES:.c=.o)
-MAIN_PC_EXEC	= mainPc_exec
+LIB_PATH		= Common/
+LIB_SOURCES 	= $(LIB_PATH)/error.c $(LIB_PATH)/wrapped.c
+LIB_OBJS		= $(LIB_SOURCES:.c=.o)
+
+SERVER_PATH 	= Server
+SERVER_SOURCES 	= $(SERVER_PATH)/main.c
+SERVER_OBJS		= $(SERVER_SOURCES:.c=.o)
+SERVER_EXEC		= server_exec
 
 
 CLIENT_PATH  	= Client
@@ -28,7 +32,7 @@ OBJECTS = $(SOURCES:.c=.o)
 
 # names of output files
 
-all: client mainPC # run_tests
+all: client server # run_tests
 
 ### compile stuff
 
@@ -39,15 +43,15 @@ all: client mainPC # run_tests
 
 client: $(CLIENT_SOURCES) $(CLIENT_EXEC)
 
-$(CLIENT_EXEC): $(CLIENT_OBJS)
-		$(CC) $(CLIENT_OBJS) $(ADDIT_FLAGS) -o $@
+$(CLIENT_EXEC): $(CLIENT_OBJS) $(LIB_OBJS)
+		$(CC) $(CLIENT_OBJS) $(LIB_OBJS) $(ADDIT_FLAGS) -o $@
 
-# mainPC
+# Server
 
-mainPC: $(MAIN_PC_SOURCES) $(MAIN_PC_EXEC)
+server: $(SERVER_SOURCES) $(SERVER_EXEC)
 
-$(MAIN_PC_EXEC): $(MAIN_PC_OBJS)
-		$(CC) $(MAIN_PC_OBJS) $(ADDIT_FLAGS) -o $@
+$(SERVER_EXEC): $(SERVER_OBJS) $(LIB_OBJS)
+		$(CC) $(SERVER_OBJS) $(LIB_OBJS) $(ADDIT_FLAGS) -o $@
 
 ## 
 
@@ -65,6 +69,7 @@ $(MAIN_PC_EXEC): $(MAIN_PC_OBJS)
 .PHONY: clean
 
 clean:
-	cd $(MAIN_PC_PATH) && rm -rf *.o *.d
+	cd $(SERVER_PATH) && rm -rf *.o *.d
 	cd $(CLIENT_PATH) && rm -rf *.o *.d
+	cd $(LIB_PATH) && rm -rf *.o *.d
 
