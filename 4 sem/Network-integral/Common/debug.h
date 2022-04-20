@@ -1,4 +1,5 @@
-#pragma once
+#ifndef	__debug_h__
+#define	__debug_h__
 
 /* debug and errs handling stuff */
 
@@ -23,5 +24,4 @@
 #define ERR_HANDLER(msg)    \
     do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
-
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif	/* __debug_h__ */

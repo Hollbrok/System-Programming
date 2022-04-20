@@ -1,5 +1,5 @@
-#ifndef	__unp_h
-#define	__unp_h
+#ifndef	__info_h__
+#define	__info_h__
 
 
 #include	<sys/types.h>	/* basic system data types */
@@ -52,12 +52,22 @@
 #define	MAXLINE		4096	/* max text line length */
 #define	BUFFSIZE	8192	/* buffer size for reads and writes */
 
-/* Define some port number that can be used for our examples */
-#define	SERV_PORT		 9878			/* TCP and UDP */
-#define	SERV_PORT_STR	"9878"			/* TCP and UDP */
+#define TIMEOUT_SEC 8
+#define TIMEOUT_USEC 0
 
-#define	min(a,b)	((a) < (b) ? (a) : (b))
-#define	max(a,b)	((a) > (b) ? (a) : (b))
+/* Define some port number that can be used for our examples */
+#define	SERV_PORT		 9878			/*  */
+#define	SERV_PORT_STR	"9878"			/*  */
+
+#define min(a,b)                    \
+   ({   __typeof__ (a) _a = (a);    \
+        __typeof__ (b) _b = (b);    \
+        _a < _b ? _a : _b;        })
+
+#define max(a,b)                    \
+   ({   __typeof__ (a) _a = (a);    \
+        __typeof__ (b) _b = (b);    \
+        _a > _b ? _a : _b;        })
 
 
 /* structures */
@@ -127,4 +137,4 @@ void	 err_quit(const char *, ...);
 void	 err_ret(const char *, ...);
 void	 err_sys(const char *, ...);
 
-#endif	/* __unp_h */
+#endif /* __info_h__ */
