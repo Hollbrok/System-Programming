@@ -1,15 +1,16 @@
-#include "../Common/unp.h"
+#include "../Common/info.h"
 #include "../Common/debug.h"
 
 void serverInt(int noPc, int noThreads);
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
-    {
-        fprintf(stderr, "ERROR. use: %s <NO pc> <NO threads>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
+    if (argc > 1 && strcmp(argv[1], "--help") == 0)
+        err_quit("USAGE: %s <NO pc> <NO threads>\n", argv[0]);
+    else if (argc != 3)
+        err_quit("Incorrect NO arguments\n"
+                 "USAGE: %s <NO pc> <NO threads>\n", argv[0]);
+
 
     DEBPRINT("pid = %ld\n", (long)getpid());
 
@@ -29,14 +30,38 @@ void serverInt(int noPc, int noThreads)
 	socklen_t			clilen;
 	struct sockaddr_in	cliaddr, servaddr;
 
+    /* creates socket and sets options */
+
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);
+
+    int nonZero = 0xFF; /* setsockopt requires a nonzero *optval to turn the option on */
+
+    if (setsockopt (listenfd, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero)) != 0) 
+        err_sys("setsockopt for server listen socket (SO_REUSEADDR)");
+
+    struct timeval timeout = 
+    {
+            .tv_sec = TIMEOUT_SEC,
+            .tv_usec = TIMEOUT_USEC
+    };
+
+    if (setsockopt (listenfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) != 0)
+        err_sys("setsockopt for server listen socket (SO_RCVTIMEO)");
+
+    if (setsockopt (listenfd, SOL_SOCKET, SO_KEEPALIVE, &nonZero, sizeof(nonZero)) != 0)
+        err_sys("setsockopt for server listen socket (SO_KEEPALIVE)");
+
+    /* */
 
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family      = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port        = htons(SERV_PORT);
 
+
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+
+    /* */
 
 	Listen(listenfd, LISTENQ);
 
