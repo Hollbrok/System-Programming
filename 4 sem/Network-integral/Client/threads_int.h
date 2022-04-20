@@ -1,7 +1,7 @@
 #ifndef THREADS_INT_H
 #define THREADS_INT_H
 
-#include "../Common/unp.h"
+#include "../Common/info.h"
 #include "../Common/debug.h"
 
 #define _GNU_SOURCE             /* See feature_test_macros(7) */
@@ -30,8 +30,8 @@ typedef struct ThreadInfo
 static double function(double x);
 
 /* main function for integral calculation; returns result of integral sum */
-double calcInt(size_t noThreads, int a, int b);
-double calcInt_s(char *strNum, int a, int b);
+double calcInt(size_t noThreads, double a, double b);
+double calcInt_s(char *strNum, double a, double b);
 
 /* allocate memory for threads data according to cache line size */
 static void *threadInfoConstr(size_t num_threads, size_t *size);

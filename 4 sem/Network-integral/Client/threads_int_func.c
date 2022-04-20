@@ -17,14 +17,15 @@ static void *threadInfoConstr(size_t noThreads, size_t *size)
     return malloc(noThreads * (*size));
 }
 
-static int START_LIMIT;
-static int FINISH_LIMIT;
+static double START_LIMIT;
+static double FINISH_LIMIT;
 
 static void initThreadsInfo(void *info, size_t sizeThreadInfo, int noProc, 
                             int noThreads, int noEmptyThreads, double intLength)
 {
     if (noThreads > noProc)
         intLength = intLength * noThreads / noProc;
+
 
     /* for ordered threads */
     for (int iThread = 0; iThread < noThreads /* + noEmptyThreads*/; ++iThread)
@@ -91,16 +92,21 @@ static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads,
                             int noEmptyThreads)
 {
     for (int iThread = 0; iThread < noThreads + noEmptyThreads; ++iThread)
-    
-        fprintf(stderr, "[%d] numCPU = %d\n", iThread, ((ThreadInfo *) (info + iThread * sizeThreadInfo))->numCPU);
-
+    {
+        fprintf(stderr, "[%d]: numCPU = %d\n"
+                        "\t a = %lf\n"
+                        "\t b = %lf\n", 
+                        iThread, ((ThreadInfo *) (info + iThread * sizeThreadInfo))->numCPU,
+                        ((ThreadInfo *) (info + iThread * sizeThreadInfo))->a,
+                        ((ThreadInfo *) (info + iThread * sizeThreadInfo))->b);
+    }
     return;
 }
 
 /* calculate integral of function from a to b in <noThreads> threads */
-double calcInt(size_t noThreads, int a, int b)
+double calcInt(size_t noThreads, double a, double b)
 {
-    START_LIMIT = a;
+    START_LIMIT  = a;
     FINISH_LIMIT = b;
 
     if (noThreads <= 0)
@@ -117,7 +123,7 @@ double calcInt(size_t noThreads, int a, int b)
     int noEmptyThreads = noProc > noThreads? noProc - noThreads : 0;
 
     /* max NO threads of noProc and noThreads */
-    int maxThreads = MAX(noProc, noThreads);
+    int maxThreads = max(noProc, noThreads);
 
     /* allocate memory, but we should take into consideration cache line size */
 
@@ -137,7 +143,8 @@ double calcInt(size_t noThreads, int a, int b)
                     noThreads, noEmptyThreads, 
                     (FINISH_LIMIT - START_LIMIT) / noThreads);
 
-    //dumpThreadsInfo(threadsInfo, sizeThreadInfo, noThreads, noEmptyThreads);
+    if (DEB_REGIME)
+        dumpThreadsInfo(threadsInfo, sizeThreadInfo, noThreads, noEmptyThreads);
 
     /* creating of threads */
 
@@ -171,7 +178,7 @@ double calcInt(size_t noThreads, int a, int b)
 }
 
 /* calculate integral of function from 0 to 1 in <argv1> threads */
-double calcInt_s(char *strNum, int a, int b)
+double calcInt_s(char *strNum, double a, double b)
 {
     /* usr number of threads to calculate int */
     return calcInt(getNumber(strNum), a, b);

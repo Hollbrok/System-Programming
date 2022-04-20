@@ -1,4 +1,4 @@
-#include "../Common/unp.h"
+#include "../Common/info.h"
 #include "../Common/debug.h"
 
 #include "threads_int.h"
@@ -7,11 +7,11 @@ void clientInt();
 
 int main(int argc, char *argv[])
 {
-    if (argc != 1)
-    {
-        fprintf(stderr, "ERROR. use: %s\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
+    if (argc > 1 && strcmp(argv[1], "--help") == 0)
+        err_quit("USAGE: %s\n", argv[0]);
+    else if (argc != 1)
+        err_quit("Incorrect NO arguments\n"
+                 "USAGE: %s\n", argv[0]);
 
     DEBPRINT("pid = %ld\n", (long)getpid());
 
@@ -54,7 +54,12 @@ void clientInt()
 
     /* calc integral */
 
-    double intLength = (GENERAL_FINISH_INT - GENERAL_START_INT) 
+    fprintf(stderr, "read info:\n"
+                    "iClient = %d\n"
+                    "noPc = %d\n"
+                    "noThreads = %d\n", calcInfo.iClient, calcInfo.noPc, calcInfo.noThreads);
+
+    double intLength = (float)(GENERAL_FINISH_INT - GENERAL_START_INT)
                         / calcInfo.noPc;
 
     double a = GENERAL_START_INT + intLength * calcInfo.iClient;
@@ -62,8 +67,12 @@ void clientInt()
 
         /* add dump if needed */
 
+    fprintf(stderr, "a = %lf, b = %lf\n", a, b);
+
     struct IntResult intRes;
     intRes.result = calcInt(calcInfo.noThreads, a, b);
+
+    fprintf(stderr, "integtal result = [%lf]", intRes.result);
 
     /* send to the server result of integral */
 
