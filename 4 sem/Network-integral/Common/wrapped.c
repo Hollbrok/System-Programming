@@ -68,15 +68,10 @@ int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr)
 {
 	int n;
 
-again:
 	if ( (n = accept(fd, sa, salenptr)) < 0) 
     {
-#ifdef	EPROTO
-		if (errno == EPROTO || errno == ECONNABORTED)
-#else
-		if (errno == ECONNABORTED)
-#endif
-			goto again;
+		if (errno == EAGAIN)
+            return -2;
 		else
 			err_sys("accept error");
 	}
@@ -144,6 +139,23 @@ const char* Inet_ntop(int family, const void *addrptr, char *strptr, size_t len)
 		err_sys("inet_ntop error");		/* sets errno */
 	return ptr;
 }
+
+/* include inet_pton */
+int inet_pton(int family, const char *strptr, void *addrptr)
+{
+    if (family == AF_INET) {
+    	struct in_addr  in_val;
+
+        if (inet_aton(strptr, &in_val)) {
+            memcpy(addrptr, &in_val, sizeof(struct in_addr));
+            return (1);
+        }
+		return(0);
+    }
+	errno = EAFNOSUPPORT;
+    return (-1);
+}
+/* end inet_pton */
 
 void Inet_pton(int family, const char *strptr, void *addrptr)
 {
@@ -265,5 +277,28 @@ ssize_t Readn(int fd, void *ptr, size_t nbytes)
 	return n;
 }
 
+ssize_t Sendto(int fd, const void *ptr, size_t nbytes, int flags,
+	   const struct sockaddr *sa, socklen_t salen)
+{
+	if (sendto(fd, ptr, nbytes, flags, sa, salen) != (ssize_t)nbytes)
+		err_sys("sendto error");
+    else 
+        return (ssize_t)nbytes; 
+}
+
+ssize_t Recv(int fd, void *ptr, size_t nbytes, int flags)
+{
+	ssize_t n;
+
+	if ( (n = recv(fd, ptr, nbytes, flags)) < 0)
+		err_sys("recv error");
+	return(n);
+}
+
+void Send(int fd, const void *ptr, size_t nbytes, int flags)
+{
+	if (send(fd, ptr, nbytes, flags) != (ssize_t)nbytes)
+		err_sys("send error");
+}
 
 
