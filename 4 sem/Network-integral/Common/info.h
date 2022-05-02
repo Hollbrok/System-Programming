@@ -52,12 +52,15 @@
 #define	MAXLINE		4096	/* max text line length */
 #define	BUFFSIZE	8192	/* buffer size for reads and writes */
 
-#define TIMEOUT_SEC 8
+#define TIMEOUT_SEC 5
 #define TIMEOUT_USEC 0
 
-/* Define some port number that can be used for our examples */
-#define	SERV_PORT		 9878			/*  */
+/* Define some port number that can we use*/
+#define	SERV_PORT		 9878			/* TCP server port */
 #define	SERV_PORT_STR	"9878"			/*  */
+
+#define CL_PORT          9888           /* client port  */
+#define CL_PORT_STR     "9888"          /*  */
 
 #define min(a,b)                    \
    ({   __typeof__ (a) _a = (a);    \
@@ -122,7 +125,7 @@ ssize_t	 Recvfrom(int, void *, size_t, int, SA *, socklen_t *);
 ssize_t	 Recvmsg(int, struct msghdr *, int);
 int		 Select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 void	 Send(int, const void *, size_t, int);
-void	 Sendto(int, const void *, size_t, int, const SA *, socklen_t);
+ssize_t	 Sendto(int, const void *, size_t, int, const SA *, socklen_t);
 void	 Sendmsg(int, const struct msghdr *, int);
 void	 Setsockopt(int, int, int, const void *, socklen_t);
 void	 Shutdown(int, int);
