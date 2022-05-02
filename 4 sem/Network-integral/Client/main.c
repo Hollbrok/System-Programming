@@ -104,7 +104,7 @@ void clientInt()
 
     /* calc integral */
 
-    DEBPRINT(stderr, "read info:\n"
+    DEBPRINT("read info:\n"
                     "iClient = %d\n"
                     "noPc = %d\n"
                     "noThreads = %d\n", calcInfo.iClient, calcInfo.noPc, calcInfo.noThreads);
@@ -117,12 +117,12 @@ void clientInt()
 
         /* add dump if needed */
 
-    DEBPRINT(stderr, "a = %lf, b = %lf\n", a, b);
+    DEBPRINT("a = %lf, b = %lf\n", a, b);
 
     struct IntResult intRes;
     intRes.result = calcInt(calcInfo.noThreads, a, b);
 
-    DEBPRINT(stderr, "integtal result = [%lf]\n", intRes.result);
+    DEBPRINT("integtal result = [%lf]\n", intRes.result);
 
     /* send to the server result of integral */
 
