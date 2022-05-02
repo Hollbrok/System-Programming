@@ -143,8 +143,8 @@ double calcInt(size_t noThreads, double a, double b)
                     noThreads, noEmptyThreads, 
                     (FINISH_LIMIT - START_LIMIT) / noThreads);
 
-    if (DEB_REGIME)
-        dumpThreadsInfo(threadsInfo, sizeThreadInfo, noThreads, noEmptyThreads);
+    
+    //dumpThreadsInfo(threadsInfo, sizeThreadInfo, noThreads, noEmptyThreads);
 
     /* creating of threads */
 
