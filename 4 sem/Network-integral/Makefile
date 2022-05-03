@@ -14,13 +14,13 @@ LIB_OBJS		= $(LIB_SOURCES:.c=.o)
 SERVER_PATH 	= Server
 SERVER_SOURCES 	= $(SERVER_PATH)/main.c
 SERVER_OBJS		= $(SERVER_SOURCES:.c=.o)
-SERVER_EXEC		= server_exec
+SERVER_EXEC		= server
 
 
 CLIENT_PATH  	= Client
 CLIENT_SOURCES 	= $(CLIENT_PATH)/main.c $(CLIENT_PATH)/threads_int_func.c
 CLIENT_OBJS		= $(CLIENT_SOURCES:.c=.o)
-CLIENT_EXEC		= client_exec
+CLIENT_EXEC		= client
 
 
 
@@ -32,7 +32,7 @@ OBJECTS = $(SOURCES:.c=.o)
 
 # names of output files
 
-all: client server # run_tests
+all: Bclient Bserver # run_tests
 
 ### compile stuff
 
@@ -41,14 +41,14 @@ all: client server # run_tests
 
 # client
 
-client: $(CLIENT_SOURCES) $(CLIENT_EXEC)
+Bclient: $(CLIENT_SOURCES) $(CLIENT_EXEC)
 
 $(CLIENT_EXEC): $(CLIENT_OBJS) $(LIB_OBJS)
 		$(CC) $(CLIENT_OBJS) $(LIB_OBJS) $(ADDIT_FLAGS) -o $@
 
 # Server
 
-server: $(SERVER_SOURCES) $(SERVER_EXEC)
+Bserver: $(SERVER_SOURCES) $(SERVER_EXEC)
 
 $(SERVER_EXEC): $(SERVER_OBJS) $(LIB_OBJS)
 		$(CC) $(SERVER_OBJS) $(LIB_OBJS) $(ADDIT_FLAGS) -o $@

@@ -75,11 +75,6 @@
 
 /* structures */
 
-struct ReadyMsg /* (no needed anymore) */
-{
-    char r;
-};
-
 #define GENERAL_START_INT 0
 #define GENERAL_FINISH_INT 5
 
@@ -88,12 +83,6 @@ struct CalcInfo
     double a;
     double b;
 };
-
-//{
-//    size_t noPc;            /* NO all PCs (no needed anymore) */
-//    size_t iClient;         /* client serial number           */
-//    size_t totalThreads;    /* sum of all clients threads    */
-//};
 
 struct CliInfo
 {
@@ -111,7 +100,7 @@ long getNumber(char *numString);
 
 
 ssize_t readline(int fd, void *vptr, size_t maxlen);
-ssize_t	 writen(int, const void *, size_t);
+ssize_t	writen(int, const void *, size_t);
 
 
 int		inet_pton(int, const char *, void *);

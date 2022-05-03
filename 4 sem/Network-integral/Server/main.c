@@ -24,8 +24,7 @@ void serverInt(int noPc)
 {
     int					listenFd;
     int                 nonZero;
-	//socklen_t			clilen;
-	struct sockaddr_in	/*cliaddr,*/ servAddr;
+	struct sockaddr_in  servAddr;
 
     listenFd = Socket(AF_INET, SOCK_STREAM, 0); /* NON_BLOCK? */
 
@@ -50,6 +49,8 @@ void serverInt(int noPc)
 
 	Bind(listenFd, (SA *) &servAddr, sizeof(servAddr));
 
+    fprintf(stderr, "SERVER: BIND TCP SOCKET\n");
+
     DEBPRINT("after BIND\n");
 
     /* broadcast stuff */
@@ -60,8 +61,6 @@ void serverInt(int noPc)
     int bcFd;
 
     bcFd = Socket(AF_INET, SOCK_DGRAM, 0);
-
-    //int nonZero = 1; /* setsockopt requires a nonzero *optval to turn the option on */
     
     Setsockopt(bcFd, SOL_SOCKET, SO_BROADCAST, &nonZero, sizeof(nonZero));
     Setsockopt(bcFd, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero));
@@ -137,15 +136,16 @@ void serverInt(int noPc)
 
         servAddrs[iClient].sin_family = AF_INET;
         servAddrs[iClient].sin_port   = htons(CL_PORT/*SERV_PORT*/);
-
-        //if (Readn(bcFd/*connFds[iClient]*/, &getReady, sizeof(getReady)) != sizeof(getReady))
-        //    err_quit("Readn: server terminated prematurely (read ready msg)");
     }
 
     DEBPRINT("GOT %d real workers\n", iClient);
 
     int connPcs = iClient;
-
+    if (connPcs == 0)
+    {
+        fprintf(stderr, "got 0 workers, exit.\n");
+        exit(EXIT_FAILURE);
+    }
 
     /* from now time can be counted */
 
@@ -196,6 +196,7 @@ void serverInt(int noPc)
     DEBPRINT("after send data\n");
 
     /* get results */
+
     for (int iClient = 0; iClient < connPcs/*noPc*/; iClient++)
     {
         DEBPRINT("getting data from %d client\n", iClient);

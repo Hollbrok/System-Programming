@@ -3,7 +3,7 @@
 
 /* debug and errs handling stuff */
 
-#define DEB_REGIME   1
+#define DEB_REGIME   0
 #define NEED_SLEEP   0
 #define NEED_LINE    0
 #define NEED_PID     0
