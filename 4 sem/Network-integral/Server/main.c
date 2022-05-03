@@ -178,6 +178,7 @@ void serverInt(int noPc)
     if (connPcs == 0)
     {
         fprintf(stderr, "got 0 workers, exit.\n");
+        close(listenFd);
         return;//exit(EXIT_FAILURE);
     }
 

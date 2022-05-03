@@ -35,7 +35,7 @@
 
 
 /* POSIX renames "Unix domain" as "local IPC."
-   Not all systems DefinE AF_LOCAL and PF_LOCAL (yet). */
+   Not all systems define AF_LOCAL and PF_LOCAL (yet). */
 #ifndef	AF_LOCAL
 #define AF_LOCAL	AF_UNIX
 #endif
@@ -44,7 +44,7 @@
 #endif
 
 
-#define MAX_PC_DIGITS 4     //maximum number of digits in NO PCs number ===> max NO PCs 9999 */
+#define MAX_PC_DIGITS 4     /*maximum number of digits in NO PCs number ===> max NO PCs 9999 */
 
 /* Following could be derived from SOMAXCONN in <sys/socket.h>, but many
    kernels still #define it as 5, while actually supporting many more */
@@ -54,6 +54,7 @@
 #define	MAXLINE		4096	/* max text line length */
 #define	BUFFSIZE	8192	/* buffer size for reads and writes */
 
+/* timeout constants */
 #define ACCEPT_TIMEOUT_SEC  0       /* in sec  waiting time in accept */
 #define ACCEPT_TIMEOUT_USEC 100000  /* in usec -//-                                                      */
 
@@ -61,11 +62,11 @@
 #define CALC_TIMEOUT_USEC 0     /* in usec -//-                                                         */
 
 /* Define some port number that can we use*/
-#define	SERV_PORT		 9878			/* TCP server port */
-#define	SERV_PORT_STR	"9878"			/*  */
+#define	SERV_PORT		 9878			/* server port */
+#define	SERV_PORT_STR	"9878"			/* string version of server port */
 
 #define CL_PORT          9888           /* client port  */
-#define CL_PORT_STR     "9888"          /*  */
+#define CL_PORT_STR     "9888"          /* string version of client port */
 
 #define min(a,b)                    \
    ({   __typeof__ (a) _a = (a);    \
@@ -101,50 +102,60 @@ struct IntResult
 
 
 /* cmd line number parser ( returns <long> number according to numString with error handling) */
-long getNumber(char *numString, int *errorState);
+long    getNumber(char *numString, int *errorState);
 
 
 ssize_t readline(int fd, void *vptr, size_t maxlen);
-ssize_t	writen(int, const void *, size_t);
+ssize_t	writen(int fd, const void *vptr, size_t n);
 
 
-int		inet_pton(int, const char *, void *);
+int		inet_pton(int family, const char *strptr, void *addrptr);
+void    Inet_pton(int family, const char *strptr, void *addrptr);
 
-void    Inet_pton(int, const char *, void *);
-
-void    Write(int, void *, size_t);
-
-#define	SA	struct sockaddr
+#define	SA struct sockaddr
 
 			/* prototypes for our socket wrapper functions: see {Sec errors} */
-int		 Accept(int, SA *, socklen_t *);
-void	 Bind(int, const SA *, socklen_t);
-void	 Connect(int, const SA *, socklen_t);
-void	 Getpeername(int, SA *, socklen_t *);
-void	 Getsockname(int, SA *, socklen_t *);
-void	 Getsockopt(int, int, int, void *, socklen_t *);
-void	 Listen(int, int);
+int		 Accept(int fd, struct sockaddr *sa, socklen_t *salenptr);
+void	 Bind(int fd, const struct sockaddr *sa, socklen_t salen);
+void	 Connect(int fd, const struct sockaddr *sa, socklen_t salen);
+void	 Getpeername(int fd, struct sockaddr *sa, socklen_t *salenptr);
 
-ssize_t	 Readline(int, void *, size_t);
-ssize_t	 Readn(int, void *, size_t);
-ssize_t	 Recv(int, void *, size_t, int);
-ssize_t	 Recvfrom(int, void *, size_t, int, SA *, socklen_t *);
-ssize_t	 Recvmsg(int, struct msghdr *, int);
-int		 Select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
-void	 Send(int, const void *, size_t, int);
-ssize_t	 Sendto(int, const void *, size_t, int, const SA *, socklen_t);
+void	 Getsockname(int fd, struct sockaddr *sa, socklen_t *salenptr);
+void	 Getsockopt(int fd, int level, int optname, 
+            void *optval, socklen_t *optlenptr);
+
+void	 Listen(int fd, int backlog);
+
+ssize_t	 Readline(int fd, void *ptr, size_t maxlen);
+ssize_t	 Readn(int fd, void *ptr, size_t nbytes);
+ssize_t	 Recv(int fd, void *ptr, size_t nbytes, int flags);
+
+//ssize_t	 Recvfrom(int, void *, size_t, int, SA *, socklen_t *);
+//ssize_t	 Recvmsg(int, struct msghdr *, int);
+//int		 Select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+
+void	 Send(int fd, const void *ptr, size_t nbytes, 
+    int flags);
+
+ssize_t	 Sendto(int fd, const void *ptr, size_t nbytes, int flags,
+	   const struct sockaddr *sa, socklen_t salen);
+
 void	 Sendmsg(int, const struct msghdr *, int);
 void	 Setsockopt(int, int, int, const void *, socklen_t);
-void	 Shutdown(int, int);
-int		 Sockatmark(int);
-int		 Socket(int, int, int);
-void	 Socketpair(int, int, int, int *);
-void	 Writen(int, void *, size_t);
 
-void	 err_dump(const char *, ...);
-void	 err_msg(const char *, ...);
-void	 err_quit(const char *, ...);
-void	 err_ret(const char *, ...);
-void	 err_sys(const char *, ...);
+//void	 Shutdown(int, int);
+//int    Sockatmark(int);
+
+int		 Socket(int family, int type, int protocol);
+
+//void	 Socketpair(int, int, int, int *);
+
+void	 Writen(int fd, void *ptr, size_t nbytes);
+
+void	 err_dump(const char *fmt, ...);
+void	 err_msg(const char *fmt, ...);
+void	 err_quit(const char *fmt, ...);
+void	 err_ret(const char *fmt, ...);
+void	 err_sys(const char *fmt, ...);
 
 #endif /* __info_h__ */
