@@ -7,18 +7,20 @@ void clientInt(int noThreads);
 
 int main(int argc, char *argv[])
 {
-    if (argc > 1 && strcmp(argv[1], "--help") == 0)
-        err_quit("USAGE: %s <NO threads>\n", argv[0]);
-    else if (argc != 2)
-        err_quit("Incorrect NO arguments\n"
-                 "USAGE: %s <NO threads>\n", argv[0]);
+    if ((argc > 1 && strcmp(argv[1], "--help") == 0) || argc != 2)
+        err_quit("USAGE: \n"
+                 "for specific performance : %s <NO threads>\n"
+                 "for max performance      : %s -1\n", argv[0], argv[0]);
 
     //DEBPRINT("pid = %ld\n", (long)getpid());
 
     int errorState = 0;
     int noThreads = getNumber(argv[1], &errorState);
+
     if (noThreads > 0 && errorState == 0)
         clientInt(noThreads);
+    if (noThreads == -1) /* using max performance */
+        clientInt(sysconf(_SC_NPROCESSORS_ONLN));
     else
         printf("Incorrect NO Threads\n");
 
