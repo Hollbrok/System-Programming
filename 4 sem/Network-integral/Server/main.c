@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     {
         while (1)
         {
-            printf("Enter number of wanted PCs: ");
+            printf("Enter number of wanted PCs (-1 for quit): ");
             fflush(stdout);
 
             char noPcStr[MAX_PC_DIGITS + 1];
@@ -28,6 +28,8 @@ int main(int argc, char *argv[])
             int noPc = getNumber(noPcStr, &errorState);
             if (noPc > 0 && errorState == 0)
                 serverInt(noPc);
+            else if (noPc == -1)
+                exit(EXIT_SUCCESS);
             else
                 printf("Incorrect NO PCs\n");
         }
@@ -56,12 +58,12 @@ void serverInt(int noPc)
     nonZero = 1;
     Setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero));
 
-    struct timeval timeout = {
-            .tv_sec = TIMEOUT_SEC,
-            .tv_usec = TIMEOUT_USEC
+    struct timeval acceptTimeout = {
+            .tv_sec  = ACCEPT_TIMEOUT_SEC,
+            .tv_usec = ACCEPT_TIMEOUT_USEC
     };
 
-    Setsockopt(listenFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    Setsockopt(listenFd, SOL_SOCKET, SO_RCVTIMEO, &acceptTimeout, sizeof(acceptTimeout));
     Setsockopt(listenFd, SOL_SOCKET, SO_KEEPALIVE, &nonZero, sizeof(nonZero));
 
     // add alive stuff
@@ -151,13 +153,20 @@ void serverInt(int noPc)
         {
             DEBPRINT("got all clients\nafter accept\n");
 
-            servAddrs[iClient].sin_family = AF_INET;
-            servAddrs[iClient].sin_port   = htons(CL_PORT/*SERV_PORT*/);
+            //servAddrs[iClient].sin_family = AF_INET;
+            //servAddrs[iClient].sin_port   = htons(CL_PORT/*SERV_PORT*/);
 
             break;
         }
 
         DEBPRINT("after success accept\n");
+
+        struct timeval connFdTimeout = {
+            .tv_sec  = CALC_TIMEOUT_SEC,
+            .tv_usec = CALC_TIMEOUT_USEC
+        };
+
+        Setsockopt(connFds[iClient], SOL_SOCKET, SO_RCVTIMEO, &connFdTimeout, sizeof(connFdTimeout));
 
         servAddrs[iClient].sin_family = AF_INET;
         servAddrs[iClient].sin_port   = htons(CL_PORT/*SERV_PORT*/);

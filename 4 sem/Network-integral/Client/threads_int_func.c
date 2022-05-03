@@ -177,11 +177,20 @@ double calcInt(size_t noThreads, double a, double b)
     return finalSum;
 }
 
-/* calculate integral of function from 0 to 1 in <argv1> threads */
+/* calculate integral of function from 0 to 1 in strNum threads */
 double calcInt_s(char *strNum, double a, double b)
 {
     /* usr number of threads to calculate int */
-    return calcInt(getNumber(strNum), a, b);
+    int errorState = 0;
+    int noThreads = getNumber(strNum, &errorState);
+    if (noThreads > 0 && errorState == 0)
+        return calcInt(noThreads, a, b);
+    else
+    {
+        printf("Incorrect strNum arguments in calcInt_s (NAN was returned)\n");
+        return NAN;
+    }
+
 }
 
 ////

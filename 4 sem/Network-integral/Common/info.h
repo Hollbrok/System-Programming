@@ -44,8 +44,7 @@
 #endif
 
 
-#define MAX_PC_DIGITS 4     /* maximum number of digits in NO PCs number ===> max NO PCs 9999 */
-
+#define MAX_PC_DIGITS 4     //maximum number of digits in NO PCs number ===> max NO PCs 9999 */
 
 /* Following could be derived from SOMAXCONN in <sys/socket.h>, but many
    kernels still #define it as 5, while actually supporting many more */
@@ -55,8 +54,11 @@
 #define	MAXLINE		4096	/* max text line length */
 #define	BUFFSIZE	8192	/* buffer size for reads and writes */
 
-#define TIMEOUT_SEC 5
-#define TIMEOUT_USEC 0
+#define ACCEPT_TIMEOUT_SEC  0       /* in sec  waiting time in accept */
+#define ACCEPT_TIMEOUT_USEC 100000  /* in usec -//-                                                      */
+
+#define CALC_TIMEOUT_SEC  30    /* in sec  allotted time for calculating the integral for the client    */
+#define CALC_TIMEOUT_USEC 0     /* in usec -//-                                                         */
 
 /* Define some port number that can we use*/
 #define	SERV_PORT		 9878			/* TCP server port */

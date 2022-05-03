@@ -15,8 +15,12 @@ int main(int argc, char *argv[])
 
     //DEBPRINT("pid = %ld\n", (long)getpid());
 
-    int noThreads = getNumber(argv[1]);
-    clientInt(noThreads);
+    int errorState = 0;
+    int noThreads = getNumber(argv[1], &errorState);
+    if (noThreads > 0 && errorState == 0)
+        clientInt(noThreads);
+    else
+        printf("Incorrect NO Threads\n");
 
     return EXIT_SUCCESS;
 }
