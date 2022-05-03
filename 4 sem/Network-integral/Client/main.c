@@ -45,23 +45,27 @@ void clientInt(int noThreads)
     sockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     
-    int sk = Socket(AF_INET, SOCK_DGRAM, 0);
+    int bcsk = Socket(AF_INET, SOCK_DGRAM, 0);
 
     int nonZero = 1; /* setsockopt requires a nonzero *optval to turn the option on */
 
-    Setsockopt(sk, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero));
+    Setsockopt(bcsk, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero));
 
-    Bind(sk, (struct sockaddr *) &sockAddr, sizeof(sockAddr));
+    Bind(bcsk, (struct sockaddr *) &sockAddr, sizeof(sockAddr));
 
-    int server_tcp_port = 0;
+    int servTcpPort = 0;
 
     DEBPRINT("go to recv\n");
 
-    while (server_tcp_port != SERV_PORT)
-        recvfrom(sk, &server_tcp_port, sizeof (int), 
+    recvfrom(bcsk, &servTcpPort, sizeof (int), 
                  0, (struct sockaddr *) &peerAddr, &peerAddrLen);
+    if (servTcpPort != SERV_PORT)
+    {
+        fprintf(stderr, "error on recv server port occurs\n");
+        return;
+    }
 
-    //printf("SERVER TCP PORT = %d\n", server_tcp_port);
+    //printf("SERVER TCP PORT = %d\n", servTcpPort);
     //printf("SERVER ADDR = %s\n", inet_ntoa(peerAddr.sin_addr));
 
     bzero(&servAddr, sizeof(servAddr));
