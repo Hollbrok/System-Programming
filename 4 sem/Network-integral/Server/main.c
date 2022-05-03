@@ -1,63 +1,54 @@
 #include "../Common/info.h"
 #include "../Common/debug.h"
 
-void serverInt(int noPc, int noThreads);
+void serverInt(int noPc);
 
 int main(int argc, char *argv[])
 {
     if (argc > 1 && strcmp(argv[1], "--help") == 0)
-        err_quit("USAGE: %s  <NO pc> <NO threads>\n", argv[0]);
-    else if (argc != 3)
+        err_quit("USAGE: %s  <NO PCs>\n", argv[0]);
+    else if (argc != 2)
         err_quit("Incorrect NO arguments\n"
-                 "USAGE: %s <NO pc> <NO threads>\n", argv[0]);
+                 "USAGE: %s <NO PCs>\n", argv[0]);
 
     int noPc = getNumber(argv[1]);
-    int noThreads = getNumber(argv[2]);
+    //int noThreads = getNumber(argv[2]);
 
-    serverInt(noPc, noThreads);
+    serverInt(noPc);
 
     fprintf(stderr, "SUCCESS\n");
     exit(EXIT_SUCCESS);
 }
 
-void serverInt(int noPc, int noThreads)
+void serverInt(int noPc)
 {
-    int					listenfd;
-	pid_t				childpid;
-	socklen_t			clilen;
-	struct sockaddr_in	cliaddr, servaddr;
+    int					listenFd;
+    int                 nonZero;
+	//socklen_t			clilen;
+	struct sockaddr_in	/*cliaddr,*/ servAddr;
 
+    listenFd = Socket(AF_INET, SOCK_STREAM, 0); /* NON_BLOCK? */
 
-    listenfd = Socket(AF_INET, SOCK_STREAM, 0); /* NON_BLOCK? */
+    nonZero = 1;
+    Setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero));
 
-    int nonZero = 1;
-
-    if (setsockopt (listenfd, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero)) != 0) 
-        err_sys("setsockopt for server listen socket (SO_REUSEADDR)");
-
-    struct timeval timeout = 
-    {
+    struct timeval timeout = {
             .tv_sec = TIMEOUT_SEC,
             .tv_usec = TIMEOUT_USEC
     };
 
-    if (setsockopt (listenfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != 0)
-        err_sys("setsockopt for server listen socket (SO_RCVTIMEO)");
+    Setsockopt(listenFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    Setsockopt(listenFd, SOL_SOCKET, SO_KEEPALIVE, &nonZero, sizeof(nonZero));
 
-    if (setsockopt (listenfd, SOL_SOCKET, SO_KEEPALIVE, &nonZero, sizeof(nonZero)) != 0)
-        err_sys("setsockopt for server listen socket (SO_KEEPALIVE)");
+    // add alive stuff
 
-    // keep alive stuff
-
-    bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family      = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY/*INADDR_LOOPBACK*/);
-	servaddr.sin_port        = htons(SERV_PORT);
+    bzero(&servAddr, sizeof(servAddr));
+	servAddr.sin_family      = AF_INET;
+	servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servAddr.sin_port        = htons(SERV_PORT);
     
-    //Inet_pton(AF_INET, "10.55.129.99", &servaddr.sin_addr.s_addr);
 
-
-	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+	Bind(listenFd, (SA *) &servAddr, sizeof(servAddr));
 
     DEBPRINT("after BIND\n");
 
@@ -66,19 +57,14 @@ void serverInt(int noPc, int noThreads)
     DEBPRINT("BC START\n");
 
     struct sockaddr_in bcAddr;
-    int bcfd;
+    int bcFd;
 
-    bcfd = Socket(AF_INET, SOCK_DGRAM, 0);
+    bcFd = Socket(AF_INET, SOCK_DGRAM, 0);
 
     //int nonZero = 1; /* setsockopt requires a nonzero *optval to turn the option on */
-    if (setsockopt (bcfd, SOL_SOCKET, SO_BROADCAST, &nonZero, sizeof(nonZero)) < 0)
-    {
-        close(bcfd);
-        err_sys("setsockopt (BC)");
-    }
-
-    if (setsockopt (bcfd, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero)) != 0) 
-        err_sys("setsockopt for server listen socket (SO_REUSEADDR)");
+    
+    Setsockopt(bcFd, SOL_SOCKET, SO_BROADCAST, &nonZero, sizeof(nonZero));
+    Setsockopt(bcFd, SOL_SOCKET, SO_REUSEADDR, &nonZero, sizeof(nonZero));
 
     bzero(&bcAddr, sizeof(bcAddr));
 
@@ -86,28 +72,26 @@ void serverInt(int noPc, int noThreads)
     bcAddr.sin_port = htons(CL_PORT);
     bcAddr.sin_addr.s_addr = INADDR_BROADCAST;
 
-    Bind(bcfd, (struct sockaddr *) &bcAddr, sizeof(bcAddr));
+    Bind(bcFd, (struct sockaddr *) &bcAddr, sizeof(bcAddr));
 
-    struct sockaddr ss;
-    socklen_t len = sizeof(ss);
-    if (getsockname(bcfd, (SA *) &ss, &len) < 0)
-        return;
-        
-    DEBPRINT("server port = %d\n"
-           "server addr = %s\n", htons(((struct sockaddr_in*)(&ss))->sin_port),
-                                 inet_ntoa(((struct sockaddr_in*)(&ss))->sin_addr));
-
-
-    for (int sendConn = 0; sendConn < 1/*noPc*/; ++sendConn)
+    if (DEB_REGIME)
     {
-        int msg = SERV_PORT;
-
-        DEBPRINT("sendConn = %d\n", sendConn);
-
-        Sendto(bcfd, &msg, sizeof msg, 0, (struct sockaddr *) &bcAddr, sizeof(bcAddr));        
+        struct sockaddr ss;
+        socklen_t len = sizeof(ss);
+        if (getsockname(bcFd, (SA *) &ss, &len) < 0)
+            return;
+        
+        DEBPRINT("server port = %d\n"
+                 "server addr = %s\n", htons(((struct sockaddr_in*)(&ss))->sin_port),
+                                       inet_ntoa(((struct sockaddr_in*)(&ss))->sin_addr));
     }
+    
 
-    close(bcfd);
+    /* broadcast */
+    
+    int bcMsg = SERV_PORT;
+    Sendto(bcFd, &bcMsg, sizeof(bcMsg), 0, (struct sockaddr *) &bcAddr, sizeof(bcAddr));        
+    close(bcFd);
 
     DEBPRINT("BC END\n");
 
@@ -117,7 +101,7 @@ void serverInt(int noPc, int noThreads)
 
     DEBPRINT("before listen bind\n");
 
-	Listen(listenfd, LISTENQ);
+	Listen(listenFd, LISTENQ);
 
     DEBPRINT("after listen\n");
 
@@ -133,13 +117,11 @@ void serverInt(int noPc, int noThreads)
 
     int iClient = 0;
 
-    for (; iClient < noPc; iClient++)
+    for (; iClient < noPc; ++iClient)
     {
-        clilen = sizeof(cliaddr);
-
         DEBPRINT("before accept\n");
 
-	    connFds[iClient] = Accept(listenfd, (SA *) &cliaddr, &clilen);
+	    connFds[iClient] = Accept(listenFd, NULL, NULL);
         
         if (connFds[iClient] == -2) /* EAGAIN == Resource temporarily unavailable */
         {
@@ -150,12 +132,13 @@ void serverInt(int noPc, int noThreads)
 
             break;
         }
+
         DEBPRINT("after success accept\n");
 
         servAddrs[iClient].sin_family = AF_INET;
         servAddrs[iClient].sin_port   = htons(CL_PORT/*SERV_PORT*/);
 
-        //if (Readn(bcfd/*connFds[iClient]*/, &getReady, sizeof(getReady)) != sizeof(getReady))
+        //if (Readn(bcFd/*connFds[iClient]*/, &getReady, sizeof(getReady)) != sizeof(getReady))
         //    err_quit("Readn: server terminated prematurely (read ready msg)");
     }
 
@@ -171,15 +154,39 @@ void serverInt(int noPc, int noThreads)
 
     DEBPRINT("start of sending info to clients\n");
 
+    /* got clients NOthreads to optimal divition of the work */
+
+    size_t totalThreads = 0;
+    size_t clisThreads[connPcs]; /* no threads of clients */
+    for (int iClient = 0; iClient < connPcs; ++iClient)
+    {
+        struct CliInfo iClientInfo;
+
+        Recv(connFds[iClient], &iClientInfo, sizeof(iClientInfo), 0);
+
+        clisThreads[iClient] = iClientInfo.noThreads;
+        totalThreads += iClientInfo.noThreads;
+    }
+
+    DEBPRINT("TOTAL Threads = %d\n", totalThreads);
+
     /* send needed info for calc */
-    for (int iClient = 0; iClient < connPcs/*noPc*/; iClient++)
+
+    double lastEnd = GENERAL_START_INT;
+    for (int iClient = 0; iClient < connPcs/*noPc*/; ++iClient)
     {
         DEBPRINT("iClient = %d\n", iClient);
 
+        double intLength = (double)(GENERAL_FINISH_INT - GENERAL_START_INT) * clisThreads[iClient]
+                        / totalThreads;
+
+        double a = lastEnd;
+        double b = a + intLength;
+        lastEnd = b;
+
         struct CalcInfo calcInfo = {
-            .iClient = iClient,
-            .noPc = connPcs,        /*NO connected PCs */
-            .noThreads = noThreads,
+            .a = a,
+            .b = b,
         };
 
         Sendto(connFds[iClient], &calcInfo, sizeof(calcInfo), 0,
@@ -215,5 +222,5 @@ void serverInt(int noPc, int noThreads)
 	fprintf(stderr, "result = %lf\n"
                     "real time of calculation: %.3f secs.\n", totalIntResult, elapsed);
 
-    close(bcfd);
+    close(bcFd);
 }

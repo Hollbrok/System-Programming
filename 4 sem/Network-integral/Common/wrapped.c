@@ -295,10 +295,18 @@ ssize_t Recv(int fd, void *ptr, size_t nbytes, int flags)
 	return(n);
 }
 
-void Send(int fd, const void *ptr, size_t nbytes, int flags)
+void Send(int fd, const void *ptr, size_t nbytes, 
+    int flags)
 {
 	if (send(fd, ptr, nbytes, flags) != (ssize_t)nbytes)
 		err_sys("send error");
+}
+
+void Setsockopt(int socket, int level, int option_name,
+    const void *option_value, socklen_t option_len)
+{
+    if (setsockopt (socket, level, option_name, option_value, option_len) != 0) 
+        err_sys("setsockopt");
 }
 
 

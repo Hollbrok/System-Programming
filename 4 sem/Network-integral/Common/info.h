@@ -75,21 +75,34 @@
 
 /* structures */
 
-struct ReadyMsg
+struct ReadyMsg /* (no needed anymore) */
 {
     char r;
 };
 
+#define GENERAL_START_INT 0
+#define GENERAL_FINISH_INT 5
+
 struct CalcInfo
 {
-    size_t noPc;
-    size_t noThreads;
-    size_t iClient;
+    double a;
+    double b;
+};
+
+//{
+//    size_t noPc;            /* NO all PCs (no needed anymore) */
+//    size_t iClient;         /* client serial number           */
+//    size_t totalThreads;    /* sum of all clients threads    */
+//};
+
+struct CliInfo
+{
+    size_t noThreads;       /* NO client threads*/
 };
 
 struct IntResult
 {
-    double result;
+    double result;          /* client integral result */
 };
 
 

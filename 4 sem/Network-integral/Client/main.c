@@ -3,24 +3,25 @@
 
 #include "threads_int.h"
 
-void clientInt();
+void clientInt(int noThreads);
 
 int main(int argc, char *argv[])
 {
     if (argc > 1 && strcmp(argv[1], "--help") == 0)
-        err_quit("USAGE: %s\n", argv[0]);
-    else if (argc != 1)
+        err_quit("USAGE: %s <NO threads>\n", argv[0]);
+    else if (argc != 2)
         err_quit("Incorrect NO arguments\n"
-                 "USAGE: %s\n", argv[0]);
+                 "USAGE: %s <NO threads>\n", argv[0]);
 
     //DEBPRINT("pid = %ld\n", (long)getpid());
 
-    clientInt();
+    int noThreads = getNumber(argv[1]);
+    clientInt(noThreads);
 
     return EXIT_SUCCESS;
 }
 
-void clientInt()
+void clientInt(int noThreads)
 {
     int					sockfd;
 	struct sockaddr_in	servaddr;
@@ -82,6 +83,11 @@ void clientInt()
 
     /* main part */
 
+    /* send info about out NO threads*/
+
+    struct CliInfo cliNOThreads = { .noThreads = noThreads};
+    Send(sockfd, &cliNOThreads, sizeof(cliNOThreads), 0/*MSG_NOSIGNAL*/);
+
     /* send 1st msg that we are in */
 
         //struct ReadyMsg readyMsg = { .r = '1' };
@@ -104,29 +110,30 @@ void clientInt()
 
     /* calc integral */
 
-    DEBPRINT("read info:\n"
-                    "iClient = %d\n"
-                    "noPc = %d\n"
-                    "noThreads = %d\n", calcInfo.iClient, calcInfo.noPc, calcInfo.noThreads);
+    /*DEBPRINT("read info:\n"
+             "iClient = %d\n"
+             "noPc = %d\n"
+             "totalThreads = %d\n", calcInfo.iClient,
+              calcInfo.noPc, calcInfo.noThreads);
 
-    double intLength = (float)(GENERAL_FINISH_INT - GENERAL_START_INT)
-                        / calcInfo.noPc;
+    double intLength = (float)(GENERAL_FINISH_INT - GENERAL_START_INT) * noThreads
+                        / (calcInfo.totalThreads);
 
     double a = GENERAL_START_INT + intLength * calcInfo.iClient;
-    double b = a + intLength;
+    double b = a + intLength;*/
 
         /* add dump if needed */
 
-    DEBPRINT("a = %lf, b = %lf\n", a, b);
+    DEBPRINT("a = %lf, b = %lf\n", calcInfo.a, calcInfo.b);
 
     struct IntResult intRes;
-    intRes.result = calcInt(calcInfo.noThreads, a, b);
+    intRes.result = calcInt(noThreads/*calcInfo.noThreads*/, calcInfo.a, calcInfo.b);
 
     DEBPRINT("integtal result = [%lf]\n", intRes.result);
 
     /* send to the server result of integral */
 
-    Send(sockfd, &intRes, sizeof(intRes), MSG_NOSIGNAL);
+    Send(sockfd, &intRes, sizeof(intRes), 0/*MSG_NOSIGNAL*/);
 
     close(sockfd);
 
