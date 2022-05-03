@@ -5,18 +5,43 @@ void serverInt(int noPc);
 
 int main(int argc, char *argv[])
 {
-    if (argc > 1 && strcmp(argv[1], "--help") == 0)
-        err_quit("USAGE: %s  <NO PCs>\n", argv[0]);
-    else if (argc != 2)
-        err_quit("Incorrect NO arguments\n"
-                 "USAGE: %s <NO PCs>\n", argv[0]);
+    if ((argc > 1 && strcmp(argv[1], "--help") == 0) || argc != 2)
+    {
+        fprintf(stderr, "USAGE:\n"
+            "1) For one-time launch: %s <NO PCs>\n"
+            "2) For loop:            %s --loop\n", argv[0], argv[0]);
+        
+        exit(EXIT_SUCCESS);
+    }
+    else if (argc > 1 && strcmp(argv[1], "--loop") == 0)
+    {
+        while (1)
+        {
+            printf("Enter number of wanted PCs: ");
+            fflush(stdout);
 
-    int noPc = getNumber(argv[1]);
-    //int noThreads = getNumber(argv[2]);
+            char noPcStr[MAX_PC_DIGITS + 1];
+            fgets(noPcStr, MAX_PC_DIGITS, stdin);
+            noPcStr[strlen(noPcStr) - 1] = '\0';
+            
+            int errorState = 0;
+            int noPc = getNumber(noPcStr, &errorState);
+            if (noPc > 0 && errorState == 0)
+                serverInt(noPc);
+            else
+                printf("Incorrect NO PCs\n");
+        }
+    }
 
-    serverInt(noPc);
+    /* 1 argument: NO PCs; and without loop */
+    int errorState = 0;
+    int noPc = getNumber(argv[1], &errorState);
+    if (noPc > 0 && errorState == 0)
+        serverInt(noPc);
+    else
+        printf("Incorrect NO PCs\n");
 
-    fprintf(stderr, "SUCCESS\n");
+    DEBPRINT("END OF PROGRAMM\n");
     exit(EXIT_SUCCESS);
 }
 
@@ -144,7 +169,7 @@ void serverInt(int noPc)
     if (connPcs == 0)
     {
         fprintf(stderr, "got 0 workers, exit.\n");
-        exit(EXIT_FAILURE);
+        return;//exit(EXIT_FAILURE);
     }
 
     /* from now time can be counted */
@@ -223,5 +248,5 @@ void serverInt(int noPc)
 	fprintf(stderr, "result = %lf\n"
                     "real time of calculation: %.3f secs.\n", totalIntResult, elapsed);
 
-    close(bcFd);
+    close(listenFd);
 }

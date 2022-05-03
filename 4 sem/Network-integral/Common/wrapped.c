@@ -1,12 +1,13 @@
 /* include writen */
 #include	"info.h"
 
-long getNumber(char *numString)
+long getNumber(char *numString, int *errorState)
 {
     if (*numString == '\0')
     {
         fprintf(stderr, "empty number argument\n");
-        exit(EXIT_FAILURE);
+        *errorState = -1;
+        return 0; //exit(EXIT_FAILURE);
     }
 
     long gNumber;
@@ -19,13 +20,15 @@ long getNumber(char *numString)
 
     if(*endOfEnter != '\0')
     {
-        fprintf(stderr, "strtol error\n");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "strtol error ( != \'0\')\n");
+        *errorState = -2;
+        return 0; //exit(EXIT_FAILURE);
     }
     if (errno != 0)
     {
-        fprintf(stderr, "strtol error\n");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "strtol error (errno != 0)\n");
+        *errorState = -3;
+        return 0; //exit(EXIT_FAILURE);
     }
     
     return gNumber;

@@ -44,6 +44,9 @@
 #endif
 
 
+#define MAX_PC_DIGITS 4     /* maximum number of digits in NO PCs number ===> max NO PCs 9999 */
+
+
 /* Following could be derived from SOMAXCONN in <sys/socket.h>, but many
    kernels still #define it as 5, while actually supporting many more */
 #define	LISTENQ		1024	/* 2nd argument to listen() */
@@ -96,7 +99,7 @@ struct IntResult
 
 
 /* cmd line number parser ( returns <long> number according to numString with error handling) */
-long getNumber(char *numString);
+long getNumber(char *numString, int *errorState);
 
 
 ssize_t readline(int fd, void *vptr, size_t maxlen);
