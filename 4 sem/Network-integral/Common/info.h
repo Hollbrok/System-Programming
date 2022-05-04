@@ -55,10 +55,10 @@
 #define	BUFFSIZE	8192	/* buffer size for reads and writes */
 
 /* timeout constants */
-#define ACCEPT_TIMEOUT_SEC  0       /* in sec  waiting time in accept */
-#define ACCEPT_TIMEOUT_USEC 100000  /* in usec -//-                                                      */
+#define ACCEPT_TIMEOUT_SEC  1       /* in sec  waiting time in accept */
+#define ACCEPT_TIMEOUT_USEC 0  /* in usec -//-                                                      */
 
-#define CALC_TIMEOUT_SEC  30    /* in sec  allotted time for calculating the integral for the client    */
+#define CALC_TIMEOUT_SEC  120    /* in sec  allotted time for calculating the integral for the client    */
 #define CALC_TIMEOUT_USEC 0     /* in usec -//-                                                         */
 
 /* Define some port number that can we use*/
