@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 
 void clientInt(int noThreads)
 {
-    int					sockFd;
-	struct sockaddr_in	servAddr;
+    int                 sockFd;
+    struct sockaddr_in  servAddr;
 
     /* find broadcast server connection */
 
@@ -88,13 +88,15 @@ void clientInt(int noThreads)
 
     /* connect to server */
 
-	sockFd = Socket(AF_INET, SOCK_STREAM, 0);
+    sockFd = Socket(AF_INET, SOCK_STREAM, 0);
 
     //  set alive
 
     DEBPRINT("CLIENT: CONNECTING TCP SOCKET\n");
     DEBPRINT("before connect to server\n");
-	Connect(sockFd, (SA *) &servAddr, sizeof(servAddr));
+    
+    Connect(sockFd, (SA *) &servAddr, sizeof(servAddr));
+    
     DEBPRINT("after connected to server\n");
 
         /* main part */
