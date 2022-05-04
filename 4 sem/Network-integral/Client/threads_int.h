@@ -53,7 +53,7 @@ static void dumpThreadsInfo(void *info, size_t sizeThreadInfo, int noThreads, in
 //#define GENERAL_START_INT 0
 //#define GENERAL_FINISH_INT 5
 
-static const double DELTA_X      = 0.0000001; /* calculation offset (accuracy) */
+static const double DELTA_X      = 0.00000001; /* calculation offset (accuracy) */
 
 /*  [all results were obtained using wolframalpha]
     correct value of 

@@ -18,9 +18,11 @@ int main(int argc, char *argv[])
     int noThreads = getNumber(argv[1], &errorState);
 
     if (noThreads > 0 && errorState == 0)
-        clientInt(noThreads);
+        while (1)
+            clientInt(noThreads);
     if (noThreads == -1) /* using max performance */
-        clientInt(sysconf(_SC_NPROCESSORS_ONLN));
+        while (1)
+            clientInt(sysconf(_SC_NPROCESSORS_ONLN));
     else
         printf("Incorrect NO Threads\n");
 
@@ -59,13 +61,17 @@ void clientInt(int noThreads)
 
     DEBPRINT("go to recv\n");
 
+    fprintf(stderr, "Waiting for server..\n");
     recvfrom(bcsk, &servTcpPort, sizeof (int), 
                  0, (struct sockaddr *) &peerAddr, &peerAddrLen);
+    fprintf(stderr, "Got server.\n");
     if (servTcpPort != SERV_PORT)
     {
         fprintf(stderr, "error on recv server port occurs\n");
         return;
     }
+
+    close(bcsk);
 
     //printf("SERVER TCP PORT = %d\n", servTcpPort);
     //printf("SERVER ADDR = %s\n", inet_ntoa(peerAddr.sin_addr));
@@ -86,7 +92,7 @@ void clientInt(int noThreads)
 
     //  set alive
 
-    fprintf(stderr, "CLIENT: CONNECTING TCP SOCKET\n");
+    DEBPRINT("CLIENT: CONNECTING TCP SOCKET\n");
     DEBPRINT("before connect to server\n");
 	Connect(sockFd, (SA *) &servAddr, sizeof(servAddr));
     DEBPRINT("after connected to server\n");
@@ -124,5 +130,5 @@ void clientInt(int noThreads)
     close(sockFd);
 
     fprintf(stderr, "SUCCESS\n");
-    exit(EXIT_SUCCESS);
+    return;
 }
