@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
 void serverInt(int noPc)
 {
-    int					listenFd;
+    int                 listenFd;
     int                 nonZero;
 	struct sockaddr_in  servAddr;
 
@@ -74,7 +74,7 @@ void serverInt(int noPc)
 	servAddr.sin_port        = htons(SERV_PORT);
     
 
-	Bind(listenFd, (SA *) &servAddr, sizeof(servAddr));
+    Bind(listenFd, (SA *) &servAddr, sizeof(servAddr));
 
     fprintf(stderr, "SERVER: BIND TCP SOCKET\n");
 
@@ -121,13 +121,12 @@ void serverInt(int noPc)
 
     DEBPRINT("BC END\n");
 
-
     /*  end of broadcast  |
         start of listening  */
 
     DEBPRINT("before listen bind\n");
 
-	Listen(listenFd, LISTENQ);
+    Listen(listenFd, LISTENQ);
 
     DEBPRINT("after listen\n");
 
@@ -255,7 +254,7 @@ void serverInt(int noPc)
     long microseconds = endT.tv_usec - beginT.tv_usec;
     double elapsed = seconds + microseconds*1e-6;
 
-	fprintf(stderr, "result = %lf\n"
+    fprintf(stderr, "result = %lf\n"
                     "real time of calculation: %.3f secs.\n", totalIntResult, elapsed);
 
     close(listenFd);
