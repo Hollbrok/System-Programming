@@ -2,7 +2,7 @@
 
 VALGRIND_FLAGS = --leak-check=full --show-leak-kinds=all
 
-CFLAGS = -g -MD -c 
+CFLAGS = -g -MD -c -std=c99
 ADDIT_FLAGS = -pthread -lm
 
 # pathes
