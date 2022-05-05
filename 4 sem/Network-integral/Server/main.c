@@ -66,7 +66,27 @@ void serverInt(int noPc)
     Setsockopt(listenFd, SOL_SOCKET, SO_RCVTIMEO, &acceptTimeout, sizeof(acceptTimeout));
     Setsockopt(listenFd, SOL_SOCKET, SO_KEEPALIVE, &nonZero, sizeof(nonZero));
 
-    // add alive stuff
+
+        /* broken connection stuff */
+
+    /* IPPROTO_TCP family: TCP_KEEPIDLE TCP_KEEPINTVL TCP_KEEPINTVL */
+
+    /*  Now, let's assume connection has been broken due to network failure.
+        Network failure can be produced by removing LAN cable at the client.
+        Now, server will close the connection after "TCP_KEEPINTVL * TCP_KEEPCNT". */
+
+    /*  In Linux OS,there is a relation between TCP_KEEPIDLE and 
+        TCP_KEEPINTVL. TCP_KEEPIDLE can not be lower than TCP_KEEPINTVL.*/
+
+    int keepCnt     = KEEP_CNT;
+    int keepIdle    = KEEP_IDLE;
+    int keepIntvl   = KEEP_INTVL;
+
+    Setsockopt(listenFd, IPPROTO_TCP, TCP_KEEPCNT, &keepCnt, sizeof(int));
+    Setsockopt(listenFd, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
+    Setsockopt(listenFd, IPPROTO_TCP, TCP_KEEPINTVL, &keepIntvl, sizeof(int));
+
+    /* */
 
     bzero(&servAddr, sizeof(servAddr));
 	servAddr.sin_family      = AF_INET;

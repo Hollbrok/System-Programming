@@ -90,7 +90,16 @@ void clientInt(int noThreads)
 
     sockFd = Socket(AF_INET, SOCK_STREAM, 0);
 
-    //  set alive
+    /* broken connection stuff */
+    int keepCnt     = KEEP_CNT;
+    int keepIdle    = KEEP_IDLE;
+    int keepIntvl   = KEEP_INTVL;
+
+    Setsockopt(sockFd, IPPROTO_TCP, TCP_KEEPCNT, &keepCnt, sizeof(int));
+    Setsockopt(sockFd, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
+    Setsockopt(sockFd, IPPROTO_TCP, TCP_KEEPINTVL, &keepIntvl, sizeof(int));
+
+    /* */
 
     DEBPRINT("Client: connecting TCP socket\n");
 

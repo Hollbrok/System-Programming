@@ -25,6 +25,7 @@
 #include    <sys/time.h>
 #include    <math.h>
 
+#include    <netinet/tcp.h>
 
 
 
@@ -55,11 +56,23 @@
 #define	BUFFSIZE	8192	/* buffer size for reads and writes */
 
 /* timeout constants */
+
 #define ACCEPT_TIMEOUT_SEC  0       /* in sec  waiting time in accept */
 #define ACCEPT_TIMEOUT_USEC 100000  /* in usec -//-                                                      */
 
-#define CALC_TIMEOUT_SEC  10000    /* in sec  allotted time for calculating the integral for the client    */
-#define CALC_TIMEOUT_USEC 0     /* in usec -//-                                                         */
+#define CALC_TIMEOUT_SEC  30       /* in sec  allotted time for calculating the integral for the client    */
+#define CALC_TIMEOUT_USEC 0         /* in usec -//-                                                         */
+
+/* broken connection stuff */
+
+#define KEEP_CNT   5 /* The maximum number of keepalive probes
+                        TCP should send before dropping the connection. */
+
+#define KEEP_IDLE  2 /* The time (in seconds) the connection needs to
+                        remain idle before TCP starts sending keepalive probes,
+                        if the socket option SO_KEEPALIVE has been set on this socket.*/
+
+#define KEEP_INTVL 1 /* The time (in seconds) between individual keepalive probes. */
 
 /* Define some port number that can we use*/
 #define	SERV_PORT		 9878			/* server port */
