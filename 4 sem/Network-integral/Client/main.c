@@ -92,9 +92,8 @@ void clientInt(int noThreads)
 
     //  set alive
 
-    DEBPRINT("CLIENT: CONNECTING TCP SOCKET\n");
-    DEBPRINT("before connect to server\n");
-    
+    DEBPRINT("Client: connecting TCP socket\n");
+
     Connect(sockFd, (SA *) &servAddr, sizeof(servAddr));
     
     DEBPRINT("after connected to server\n");
@@ -104,7 +103,7 @@ void clientInt(int noThreads)
     /* send info about out NO threads*/
 
     struct CliInfo cliNOThreads = { .noThreads = noThreads};
-    Send(sockFd, &cliNOThreads, sizeof(cliNOThreads), 0/*MSG_NOSIGNAL*/);
+    Send(sockFd, &cliNOThreads, sizeof(cliNOThreads), MSG_NOSIGNAL);
     
     /* receive info about noPc and noThreads */
 
@@ -121,13 +120,13 @@ void clientInt(int noThreads)
     DEBPRINT("a = %lf, b = %lf\n", calcInfo.a, calcInfo.b);
 
     struct IntResult intRes;
-    intRes.result = calcInt(noThreads/*calcInfo.noThreads*/, calcInfo.a, calcInfo.b);
+    intRes.result = calcInt(noThreads, calcInfo.a, calcInfo.b);
 
     DEBPRINT("integtal result = [%lf]\n", intRes.result);
 
     /* send to the server result of integral */
 
-    Send(sockFd, &intRes, sizeof(intRes), 0/*MSG_NOSIGNAL*/);
+    Send(sockFd, &intRes, sizeof(intRes), MSG_NOSIGNAL);
 
     close(sockFd);
 

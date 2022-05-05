@@ -51,8 +51,8 @@ void serverInt(int noPc)
 {
     int                 listenFd;
     int                 nonZero;
-	struct sockaddr_in  servAddr;
-
+    struct sockaddr_in  servAddr;
+    
     listenFd = Socket(AF_INET, SOCK_STREAM, 0); /* NON_BLOCK? */
 
     nonZero = 1;
@@ -76,9 +76,7 @@ void serverInt(int noPc)
 
     Bind(listenFd, (SA *) &servAddr, sizeof(servAddr));
 
-    fprintf(stderr, "SERVER: BIND TCP SOCKET\n");
-
-    DEBPRINT("after BIND\n");
+    Listen(listenFd, LISTENQ);
 
     /* broadcast stuff */
 
@@ -114,6 +112,8 @@ void serverInt(int noPc)
     
 
     /* broadcast */
+
+    
     
     int bcMsg = SERV_PORT;
     Sendto(bcFd, &bcMsg, sizeof(bcMsg), 0, (struct sockaddr *) &bcAddr, sizeof(bcAddr));        
@@ -124,19 +124,12 @@ void serverInt(int noPc)
     /*  end of broadcast  |
         start of listening  */
 
-    DEBPRINT("before listen bind\n");
-
-    Listen(listenFd, LISTENQ);
-
-    DEBPRINT("after listen\n");
-
     double totalIntResult = 0;
 
     int connFds[noPc];
 
     struct sockaddr_in servAddrs[noPc];
     socklen_t addrLen = sizeof(servAddrs[0]);
-
 
     /* waiting for all clients */
 
@@ -171,8 +164,6 @@ void serverInt(int noPc)
         servAddrs[iClient].sin_port   = htons(CL_PORT/*SERV_PORT*/);
     }
 
-    DEBPRINT("GOT %d real workers\n", iClient);
-
     int connPcs = iClient;
     if (connPcs == 0)
     {
@@ -180,6 +171,9 @@ void serverInt(int noPc)
         close(listenFd);
         return;//exit(EXIT_FAILURE);
     }
+
+    fprintf(stderr, "GOT %d real workers\n", iClient);
+    DEBPRINT("GOT %d real workers\n", iClient);
 
     /* from now time can be counted */
 
@@ -196,7 +190,19 @@ void serverInt(int noPc)
     {
         struct CliInfo iClientInfo;
 
-        Recv(connFds[iClient], &iClientInfo, sizeof(iClientInfo), 0);
+        ssize_t recvRet = Recv(connFds[iClient], &iClientInfo, sizeof(iClientInfo), 0);
+
+        if (recvRet != sizeof(iClientInfo))
+        {
+            fprintf(stderr, "Client disconnected\n");
+            
+            for (int iClient = 0; iClient < connPcs/*noPc*/; iClient++)
+                close(connFds[iClient]);
+
+            close(listenFd);
+
+            return;
+        }
 
         clisThreads[iClient] = iClientInfo.noThreads;
         totalThreads += iClientInfo.noThreads;
@@ -237,7 +243,20 @@ void serverInt(int noPc)
         DEBPRINT("CLIENT addr = %s\n", inet_ntoa(servAddrs[iClient].sin_addr));
        
         struct IntResult intRes;
-        Recv(connFds[iClient], &intRes, sizeof(intRes), 0);
+
+        ssize_t recvRet = Recv(connFds[iClient], &intRes, sizeof(intRes), 0);
+
+        if (recvRet != sizeof(intRes))
+        {
+            fprintf(stderr, "Client disconnected\n");
+            
+            for (int iClient = 0; iClient < connPcs/*noPc*/; iClient++)
+                close(connFds[iClient]);
+
+            close(listenFd);
+
+            return;
+        }
     
         totalIntResult += intRes.result;
         DEBPRINT("after recv with result = [%lf]\n", intRes.result);
